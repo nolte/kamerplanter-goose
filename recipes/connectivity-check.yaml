@@ -34,10 +34,14 @@ prompt: |
   not shell out, do not fetch URLs.
 
   Hard constraints for this entire run:
-  - Call NO tool that changes state. Forbidden on Kamerplanter: confirm_care_task,
-    archive_plant, and anything else that writes. Forbidden on Home Assistant:
-    any tool that turns something on or off, sets a value, or runs a script,
-    scene, or automation.
+  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
+    `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site` —
+    and anything else that writes. Forbidden on Home Assistant: any tool that
+    turns something on or off, sets a value, or runs a script, scene, or
+    automation.
+  - Two Home Assistant tools have no classified effect and are also forbidden
+    here, by name: `TimeTillErnte` and `time_till`. Their descriptions do not
+    say whether they act, so a read-only run must not call them.
   - Never print the value of an API key or token, not even partially.
   - Do not stop at the first failure. If a step fails, record it and continue
     with the remaining steps.
@@ -57,9 +61,11 @@ prompt: |
 
   Step 4 — Home Assistant payload.
   Call ONE read-only tool from step 3 — prefer `GetLiveContext` if it is there,
-  otherwise any tool that only reads state. Record a short summary of what it
-  returned: how many entities or areas, and one concrete example. If step 3
-  exposed no read-only tool, skip this step and say so.
+  otherwise `GetDateTime` or `todo_get_items`. Those three are the only ones
+  classified as read-only; do not pick a different tool on the grounds that it
+  looks harmless. Record a short summary of what it returned: how many entities
+  or areas, and one concrete example. If step 3 exposed none of the three, skip
+  this step and say so.
 
   Step 5 — Report.
   Print a Markdown report and nothing else after it:
