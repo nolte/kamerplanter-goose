@@ -1,0 +1,47 @@
+# Shared MCP extensions for every recipe in this repository.
+#
+# Load it by pointing Goose at this file:
+#
+#   export GOOSE_ADDITIONAL_CONFIG_FILES=$PWD/extensions.yaml
+#
+# IMPORTANT — this is an either/or, not a merge. Goose loads these extensions
+# only for recipes that declare NO `extensions:` block of their own. A recipe
+# with its own block ignores everything here; measured against Goose 1.45.0.
+#
+# Note the shape: here `extensions` is a MAP keyed by name and each entry needs
+# `enabled: true`. Inside a recipe the same data is a LIST without `enabled`.
+#
+# `env_keys` is load-bearing. Goose expands ${VAR} in an entry only for the
+# variables listed there; omit one and the literal "${VAR}" is sent as the
+# header value, which servers answer with 401.
+
+extensions:
+  kamerplanter:
+    enabled: true
+    type: streamable_http
+    name: kamerplanter
+    uri: "${KAMERPLANTER_URL}/api/v1/mcp"
+    env_keys: ["KAMERPLANTER_URL", "KAMERPLANTER_API_KEY"]
+    headers:
+      X-API-Key: "${KAMERPLANTER_API_KEY}"
+    timeout: 300
+
+  home_assistant:
+    enabled: true
+    type: streamable_http
+    name: home_assistant
+    uri: "${HA_URL}/api/mcp"
+    env_keys: ["HA_URL", "HA_MCP_TOKEN"]
+    headers:
+      Authorization: "Bearer ${HA_MCP_TOKEN}"
+    timeout: 300
+
+  github:
+    enabled: true
+    type: streamable_http
+    name: github
+    uri: "https://api.githubcopilot.com/mcp"
+    env_keys: ["GITHUB_MCP_PAT"]
+    headers:
+      Authorization: "Bearer ${GITHUB_MCP_PAT}"
+    timeout: 300

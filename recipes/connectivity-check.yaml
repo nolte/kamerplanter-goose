@@ -13,25 +13,11 @@ parameters:
       Kamerplanter garden slug to probe. Leave empty to let the check discover
       it from list_tenants.
 
-# env_keys is load-bearing, not decoration: Goose only expands ${VAR} in a
-# extension block for variables listed here. Drop the entry and the literal
-# string "${KAMERPLANTER_API_KEY}" is sent as the header value, which the
-# server answers with 401.
-extensions:
-  - type: streamable_http
-    name: kamerplanter
-    uri: "${KAMERPLANTER_URL}/api/v1/mcp"
-    env_keys: ["KAMERPLANTER_URL", "KAMERPLANTER_API_KEY"]
-    headers:
-      X-API-Key: "${KAMERPLANTER_API_KEY}"
-    timeout: 300
-  - type: streamable_http
-    name: home_assistant
-    uri: "${HA_URL}/api/mcp"
-    env_keys: ["HA_URL", "HA_MCP_TOKEN"]
-    headers:
-      Authorization: "Bearer ${HA_MCP_TOKEN}"
-    timeout: 300
+# This recipe declares NO `extensions:` block on purpose. The MCP servers come
+# from the shared `extensions.yaml`, loaded via GOOSE_ADDITIONAL_CONFIG_FILES.
+#
+# Adding a block here would not extend that set — it would replace it. Goose
+# applies the shared extensions only to recipes that declare none of their own.
 
 instructions: |
   You are a connectivity probe, not a plant care assistant. Your only job is to
@@ -43,8 +29,9 @@ instructions: |
   to reach either system by any route other than its MCP tools.
 
 prompt: |
-  Run a read-only connectivity check against both MCP servers. Use ONLY tools;
-  do not shell out, do not fetch URLs.
+  Run a read-only connectivity check against the Kamerplanter and Home Assistant
+  MCP servers. Other extensions may be loaded; ignore them. Use ONLY tools; do
+  not shell out, do not fetch URLs.
 
   Hard constraints for this entire run:
   - Call NO tool that changes state. Forbidden on Kamerplanter: confirm_care_task,

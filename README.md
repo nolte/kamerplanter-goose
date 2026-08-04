@@ -31,37 +31,46 @@ Recipes read their endpoints and credentials from the environment, so no secret 
 export KAMERPLANTER_URL="http://localhost:3000"
 export HA_URL="https://ha.example.com"
 
-# keep the two credentials out of your shell history — for example via pass
-export KAMERPLANTER_API_KEY=$(pass network/kamerplanter/api/token-mcp)
-export HA_MCP_TOKEN=$(pass network/homeassistant/api/token-mcp)
+# keep the credentials out of your shell history — for example via pass
+export KAMERPLANTER_API_KEY=$(pass path/to/kamerplanter/token-mcp)
+export HA_MCP_TOKEN=$(pass path/to/homeassistant/token-mcp)
+
+# the shared MCP extension definitions every recipe here relies on
+export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
 ```
 
-With [direnv](https://direnv.net/), put those four lines in a `.envrc` and they load per directory.
+With [direnv](https://direnv.net/), put those lines in a `.envrc` and they load per directory.
 
 
 ### Use the recipes
 
-Point Goose at this repository as a recipe source, then invoke recipes by name:
-
-```sh
-export GOOSE_RECIPE_GITHUB_REPO="nolte/kamerplanter-goose"
-
-goose recipe list -v
-goose run --recipe connectivity-check
-```
-
-Prefer a local checkout — for offline use, or to run a modified copy:
+Clone the repository. The recipes here declare no MCP servers of their own — those live in `extensions.yaml`, so a checkout is what makes them runnable:
 
 ```sh
 git clone https://github.com/nolte/kamerplanter-goose.git
-export GOOSE_RECIPE_PATH="$PWD/kamerplanter-goose/recipes"
+cd kamerplanter-goose
 
+export GOOSE_RECIPE_PATH="$PWD/recipes"
+export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
+
+goose recipe list -v
 goose run --recipe connectivity-check --params tenant=my-garden
 ```
 
 Start with `connectivity-check`. It is the walking skeleton of this repository: a read-only probe that calls both MCP servers and prints a PASS/FAIL table per step, so a broken URL, a revoked key, or a disabled MCP server is named before any real recipe runs.
 
 `GOOSE_RECIPE_PATH` takes several directories separated by `:`, so a private recipe folder can sit next to this one.
+
+### Consume the recipes from GitHub
+
+Goose can also pull recipes straight from this repository by name:
+
+```sh
+export GOOSE_RECIPE_GITHUB_REPO="nolte/kamerplanter-goose"
+goose run --recipe connectivity-check
+```
+
+This fetches the recipe but **not** `extensions.yaml`, and a recipe without extensions has no MCP servers to talk to. Point `GOOSE_ADDITIONAL_CONFIG_FILES` at a copy of that file — from a checkout, or your own equivalent — or the run starts with no tools.
 
 ### Inspect before you run
 
@@ -73,7 +82,7 @@ goose run --recipe connectivity-check --explain
 
 ### Write a recipe
 
-A recipe is a single YAML file under `recipes/`. The shape below is the house pattern — environment-substituted endpoints, an explicit read-only instruction, and one parameter per garden:
+A recipe is a single YAML file under `recipes/`. The house pattern declares **no** `extensions:` block — the MCP servers come from `extensions.yaml` — an explicit read-only instruction, and one parameter per garden:
 
 ```yaml
 version: "1.0.0"
@@ -86,22 +95,6 @@ parameters:
     requirement: required
     description: "Kamerplanter garden slug the run applies to"
 
-extensions:
-  - type: streamable_http
-    name: kamerplanter
-    uri: "${KAMERPLANTER_URL}/api/v1/mcp"
-    env_keys: ["KAMERPLANTER_URL", "KAMERPLANTER_API_KEY"]
-    headers:
-      X-API-Key: "${KAMERPLANTER_API_KEY}"
-    timeout: 300
-  - type: streamable_http
-    name: home_assistant
-    uri: "${HA_URL}/api/mcp"
-    env_keys: ["HA_URL", "HA_MCP_TOKEN"]
-    headers:
-      Authorization: "Bearer ${HA_MCP_TOKEN}"
-    timeout: 300
-
 instructions: |
   Read-only run. Never actuate a device and never write to Kamerplanter.
 
@@ -109,6 +102,8 @@ prompt: |
   For garden {{ tenant }}, list the care tasks due today, cross-check each one
   against the matching Home Assistant sensor, and report which are truly needed.
 ```
+
+To add a server, edit `extensions.yaml` rather than the recipe. Note the shape differs: there `extensions` is a map keyed by name with `enabled: true` per entry, while inside a recipe it would be a list.
 
 Validate it before committing:
 
@@ -118,7 +113,8 @@ goose recipe validate recipes/connectivity-check.yaml
 
 #### Notes
 
-- **`${VAR}` without `env_keys` is silently not expanded.** Goose substitutes an environment variable in an extension block only when the variable is listed in that extension's `env_keys`. Omit it and the literal string `${KAMERPLANTER_API_KEY}` goes over the wire as the header value — the recipe validates, starts, and fails with a `401` that looks like a bad key. Verified against Goose 1.45.0 by capturing what it actually sent.
+- **A recipe's own `extensions:` block replaces the shared ones, it does not extend them.** Declare one entry in a recipe and `extensions.yaml` is ignored entirely for that run — including the servers you did not redeclare. Goose applies the shared set only to recipes that declare none. Measured against Goose 1.45.0.
+- **`${VAR}` without `env_keys` is silently not expanded.** Goose substitutes an environment variable in an extension entry only when the variable is listed in that entry's `env_keys`. Omit it and the literal string `${KAMERPLANTER_API_KEY}` goes over the wire as the header value — the recipe validates, starts, and fails with a `401` that looks like a bad key. Verified against Goose 1.45.0 by capturing what it actually sent.
 - **`prompt` is not optional in practice.** A recipe with only `instructions` loads fine but fails a headless run with `no text provided for prompt`. Constraints that must hold belong in `prompt`, not only in `instructions`.
 - **Recipe discovery is flat.** Goose lists `*.yaml` directly under each configured directory; nested folders are not walked. Keep `recipes/` flat and encode grouping in the filename.
 - **The Kamerplanter API key carries your full permissions.** It grants exactly the gardens its account is an active member of. Issue a separate key for Goose so it can be revoked on its own.
@@ -129,7 +125,9 @@ goose recipe validate recipes/connectivity-check.yaml
 ```
 recipes/                       one Goose recipe per file, flat — the shipped artifact
   connectivity-check.yaml      read-only probe for both MCP servers
-.envrc                         direnv: endpoints plus pass-backed credentials for local runs
+extensions.yaml                the MCP servers, declared once for every recipe
+spec/mcp/                      what each MCP backend offers, EN canonical + DE
+.envrc                         direnv: endpoints, pass-backed credentials, config path
 ```
 
 ## Related repositories
