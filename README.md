@@ -3,7 +3,7 @@
 [![Goose](https://img.shields.io/badge/Goose-1.45%2B-black.svg)](https://github.com/block/goose)
 [![Status](https://img.shields.io/badge/status-early%20stage-orange.svg)](#status)
 
-Shareable [Goose](https://github.com/block/goose) recipes that turn a plant setup into an agent task. Each recipe wires one or more [Model Context Protocol](https://modelcontextprotocol.io/) servers — [Kamerplanter](https://github.com/nolte/kamerplanter) for plant data, [Home Assistant](https://www.home-assistant.io/) for sensors and actuators — into a repeatable run, so plant care becomes something you invoke rather than something you assemble.
+Shareable [Goose](https://github.com/block/goose) recipes for anyone running [Kamerplanter](https://github.com/nolte/kamerplanter) and [Home Assistant](https://www.home-assistant.io/). Each one wires those [Model Context Protocol](https://modelcontextprotocol.io/) servers into a repeatable plant-care run you invoke by name.
 
 ## Purpose
 
@@ -28,18 +28,15 @@ The recipes stay portable: they declare the MCP servers they need and nothing ab
 Recipes read their endpoints and credentials from the environment, so no secret is ever written into a recipe file:
 
 ```sh
-export KAMERPLANTER_API_KEY="kp_live_..."
-export HA_URL="https://ha.example.com"
-export HA_MCP_TOKEN="eyJ..."
-```
-
-```sh
-export HA_URL="https://home-assistant.just-a-lab.duckdns.org/"
 export KAMERPLANTER_URL="http://localhost:3000"
+export HA_URL="https://ha.example.com"
 
-export HA_MCP_TOKEN=$(pass network/homeassistant/api/token-mcp )
-export KAMERPLANTER_API_KEY=$(pass network/kamerplanter/api/token-mcp )
+# keep the two credentials out of your shell history — for example via pass
+export KAMERPLANTER_API_KEY=$(pass network/kamerplanter/api/token-mcp)
+export HA_MCP_TOKEN=$(pass network/homeassistant/api/token-mcp)
 ```
+
+With [direnv](https://direnv.net/), put those four lines in a `.envrc` and they load per directory.
 
 
 ### Use the recipes
@@ -116,7 +113,7 @@ prompt: |
 Validate it before committing:
 
 ```sh
-goose recipe validate recipes/daily-plant-check.yaml
+goose recipe validate recipes/connectivity-check.yaml
 ```
 
 #### Notes
@@ -130,10 +127,9 @@ goose recipe validate recipes/daily-plant-check.yaml
 ## Structure
 
 ```
-recipes/            one Goose recipe per file, flat — the shipped artifact
-docs/               setup guides per MCP backend, recipe catalog
-project/            portfolio manifest, roadmap, features
-spec/               conventions this repository holds itself to
+recipes/                       one Goose recipe per file, flat — the shipped artifact
+  connectivity-check.yaml      read-only probe for both MCP servers
+.envrc                         direnv: endpoints plus pass-backed credentials for local runs
 ```
 
 ## Related repositories
