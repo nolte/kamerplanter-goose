@@ -1,0 +1,47 @@
+version: "1.0.0"
+title: "Provider Surface Check"
+description: >-
+  Diagnostic: inventories every tool the running agent can reach and separates
+  what Goose supplied from what the provider brought along
+
+# No `extensions:` block, on purpose. Run it twice — once with
+# GOOSE_ADDITIONAL_CONFIG_FILES set and once with it unset. The difference
+# between the two inventories is exactly what Goose contributed; whatever shows
+# up in BOTH runs came from the provider, not from this repository.
+
+instructions: |
+  You are taking an inventory, not doing work. Report the tool surface you can
+  actually see, verbatim and complete.
+
+  Never guess at a tool's existence and never omit one because it looks
+  irrelevant. If you are unsure whether something is callable, say so rather
+  than deciding for the reader.
+
+prompt: |
+  Take an inventory of every tool available to you in this session. Call NO
+  tool while doing it — this is a listing, not an execution. Do not shell out,
+  do not read or write files, do not fetch URLs.
+
+  Report exactly these four sections and nothing else.
+
+  ## 1. MCP tools
+  Every tool whose name looks like `mcp__<server>__<tool>`. Group them by
+  `<server>` and give the count per server plus up to five tool names each.
+  If there are none, write "none".
+
+  ## 2. Execution and file access
+  State yes/no with the exact tool name for each: shell or command execution;
+  file reading; file writing or editing; network fetch of a URL.
+
+  ## 3. Agent and orchestration tools
+  Name any tool that spawns subagents, schedules work, runs workflows, manages
+  tasks, or loads skills. If there are none, write "none".
+
+  ## 4. Everything else
+  Names only, comma-separated, of any remaining tool not covered above.
+
+  Close with a single line:
+
+  SURFACE: <n> MCP servers, <m> non-MCP tools
+
+  Count servers in section 1 and tools across sections 2 to 4.

@@ -1,0 +1,59 @@
+version: "1.0.0"
+title: "Provider Plugin Check"
+description: >-
+  Diagnostic: determines whether Claude Code plugin skills and plugin agent
+  types are actually usable from inside a Goose session
+
+# Companion to provider-surface-check. That one asks which tools exist; this
+# one asks whether the plugin registry behind `Skill` and `Agent` is populated
+# when the agent runs under Goose rather than under Claude Code directly.
+#
+# Declares no extensions — the question is about the provider, not about MCP.
+
+instructions: |
+  You are running a capability probe. The point is to find out what fails, so a
+  failure is a result worth reporting precisely, not a problem to route around.
+
+  When a call fails, quote the error verbatim. Never substitute a different
+  skill or agent type to make a step succeed, and never report a capability as
+  available because it seems like it should be.
+
+prompt: |
+  Determine whether Claude Code plugin skills and plugin agent types work from
+  here. Read-only throughout: do not write or edit files, do not run git
+  commands that change anything, do not push.
+
+  Step 1 — Skill registry.
+  Without calling anything, list the names of every skill you could load with
+  the `Skill` tool. If the list is empty or you cannot see one, say exactly
+  that. Report whether any name carries a plugin prefix like `nolte-shared:`
+  or `frontend-design:`.
+
+  Step 2 — Load a plugin skill.
+  Call `Skill` with the name `frontend-design:frontend-design`. It is pure
+  guidance and executes nothing. Report whether the call succeeded and, if it
+  did, quote the first line of what came back. If it failed, quote the error.
+
+  Step 3 — Agent type registry.
+  Without calling anything, list every agent type you could pass to the `Agent`
+  tool. Report whether any carries a plugin prefix.
+
+  Step 4 — Dispatch a plugin agent.
+  Call `Agent` with subagent_type `nolte-shared:project-structure-reviewer` and
+  the prompt "Reply with the single word: reachable. Do not audit anything."
+  That agent is read-only by definition. Report whether the dispatch succeeded
+  and quote either its reply or the error.
+
+  Step 5 — Report.
+  Print this table and nothing after it:
+
+  | # | Probe | Result | Evidence |
+  |---|-------|--------|----------|
+
+  Result is exactly AVAILABLE, UNAVAILABLE, or ERROR. Evidence is one line:
+  the observed names, the returned text, or the verbatim error.
+
+  Close with two lines:
+
+  PLUGIN SKILLS: <available or unavailable>
+  PLUGIN AGENTS: <available or unavailable>
