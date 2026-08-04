@@ -13,6 +13,8 @@ This is the load-bearing consequence for recipes here: **a recipe must not hard-
 
 The catalog section below is a **measurement of the reference instance**, taken 2026-08-04, not a contract. It is recorded because it shows what the mechanism actually produces — including two tools that exist only on that instance.
 
+Recipe mechanics — where an extension may be declared, how `env_keys` expansion behaves, what the provider adds to the agent — are specified once in [the Goose recipe project pattern](../../goose/recipe-project-pattern/en.md) and are not restated here.
+
 Readers: authors of recipes in this repository, and operators wiring a Home Assistant instance up to them.
 
 ## Goals
@@ -84,7 +86,6 @@ Both are custom intents of the reference instance and appear on no stock Home As
 ## Requirements
 
 - **MUST** reach the server through a `streamable_http` extension pointing at `${HA_URL}/api/mcp`, declared either in the recipe's own `extensions:` block or in the repository's shared `extensions.yaml`
-- **MUST NOT** declare an `extensions:` block of its own when it relies on the shared `extensions.yaml`; a recipe-local block **replaces** the shared set instead of extending it, silently dropping every server the recipe does not redeclare
 - **MUST** list `HA_URL` and `HA_MCP_TOKEN` in that extension's `env_keys`, wherever it is declared; without it Goose sends the literal `${...}` string as the header value
 - **MUST** pass the credential as `Authorization: Bearer <token>`, never inline in a recipe or config file
 - **MUST** discover the available tools at runtime and **MUST NOT** assume any named Home Assistant tool exists; every tool reference in a `prompt` is conditional ("prefer X if present, otherwise …")
@@ -101,7 +102,6 @@ Both are custom intents of the reference instance and appear on no stock Home As
 ## Acceptance Criteria
 
 - [ ] The extension is declared exactly once — in the recipe or in `extensions.yaml` — naming `streamable_http`, the `/api/mcp` path, and both env keys
-- [ ] No recipe relying on the shared `extensions.yaml` declares an `extensions:` block of its own
 - [ ] `goose recipe validate` passes on the recipe
 - [ ] No recipe prompt asserts unconditionally that a specific Home Assistant tool exists
 - [ ] A run against an instance lacking an expected tool produces a step marked as skipped or failed, naming the tool

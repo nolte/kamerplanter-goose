@@ -13,6 +13,8 @@ Daraus folgt das Tragende für Rezepte hier: **Ein Rezept darf keinen Home-Assis
 
 Der Katalogabschnitt unten ist eine **Messung der Referenzinstanz** vom 2026-08-04, kein Vertrag. Er ist festgehalten, weil er zeigt, was der Mechanismus tatsächlich hervorbringt — einschließlich zweier Tools, die nur auf dieser Instanz existieren.
 
+Rezept-Mechanik — wo eine Extension deklariert werden darf, wie sich die `env_keys`-Ersetzung verhält, was der Provider dem Agenten hinzufügt — ist einmal im [Goose-Rezept-Projektmuster](../../goose/recipe-project-pattern/de.md) spezifiziert und wird hier nicht wiederholt.
+
 Leserschaft: Autorinnen und Autoren von Rezepten in diesem Repository sowie Betreibende, die eine Home-Assistant-Instanz daran anschließen.
 
 ## Ziele
@@ -84,7 +86,6 @@ Beide sind eigene Intents der Referenzinstanz und erscheinen auf keinem Standard
 ## Anforderungen
 
 - **MUSS [MUST]** den Server über eine `streamable_http`-Extension erreichen, die auf `${HA_URL}/api/mcp` zeigt, deklariert entweder im eigenen `extensions:`-Block des Rezepts oder in der geteilten `extensions.yaml` des Repositorys
-- **DARF NICHT [MUST NOT]** einen eigenen `extensions:`-Block deklarieren, wenn es sich auf die geteilte `extensions.yaml` stützt; ein rezeptlokaler Block **ersetzt** den geteilten Satz, statt ihn zu erweitern, und lässt dabei still jeden Server fallen, den das Rezept nicht erneut deklariert
 - **MUSS [MUST]** `HA_URL` und `HA_MCP_TOKEN` in den `env_keys` dieser Extension aufführen, wo immer sie deklariert ist; ohne das sendet Goose die literale Zeichenkette `${...}` als Header-Wert
 - **MUSS [MUST]** die Zugangsdaten als `Authorization: Bearer <token>` übergeben, nie eingebettet in einer Rezept- oder Konfigurationsdatei
 - **MUSS [MUST]** die verfügbaren Tools zur Laufzeit ermitteln und **DARF NICHT [MUST NOT]** die Existenz eines benannten Home-Assistant-Tools voraussetzen; jede Werkzeugnennung in einem `prompt` ist bedingt formuliert („bevorzugt X, falls vorhanden, sonst …")
@@ -101,7 +102,6 @@ Beide sind eigene Intents der Referenzinstanz und erscheinen auf keinem Standard
 ## Akzeptanzkriterien
 
 - [ ] Die Extension ist genau einmal deklariert — im Rezept oder in `extensions.yaml` — und benennt `streamable_http`, den Pfad `/api/mcp` und beide Env-Keys
-- [ ] Kein Rezept, das sich auf die geteilte `extensions.yaml` stützt, deklariert einen eigenen `extensions:`-Block
 - [ ] `goose recipe validate` läuft für das Rezept durch
 - [ ] Kein Rezept-Prompt behauptet unbedingt, dass ein bestimmtes Home-Assistant-Tool existiert
 - [ ] Ein Lauf gegen eine Instanz ohne ein erwartetes Tool erzeugt einen als übersprungen oder fehlgeschlagen markierten Schritt, der das Tool benennt

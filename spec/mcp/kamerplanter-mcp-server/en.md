@@ -11,6 +11,8 @@ Two properties make it worth specifying rather than discovering per recipe. Firs
 
 Everything below marked *measured* was read from the reference instance on 2026-08-04 via `initialize`, `tools/list`, and a read-only `list_tenants` call. The upstream documentation marks the server **partially available**: the 12 tools are what is implemented; roughly 30 are specified in total.
 
+Recipe mechanics — where an extension may be declared, how `env_keys` expansion behaves, what the provider adds to the agent — are specified once in [the Goose recipe project pattern](../../goose/recipe-project-pattern/en.md) and are not restated here.
+
 Readers: authors of recipes in this repository, and anyone reviewing a recipe's declared extension block and prompt for correctness.
 
 ## Goals
@@ -121,7 +123,6 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 ## Requirements
 
 - **MUST** reach the server through a `streamable_http` extension pointing at `${KAMERPLANTER_URL}/api/v1/mcp`, declared either in the recipe's own `extensions:` block or in the repository's shared `extensions.yaml`
-- **MUST NOT** declare an `extensions:` block of its own when it relies on the shared `extensions.yaml`; a recipe-local block **replaces** the shared set instead of extending it, silently dropping every server the recipe does not redeclare
 - **MUST** list `KAMERPLANTER_URL` and `KAMERPLANTER_API_KEY` in that extension's `env_keys`, wherever it is declared; without it Goose sends the literal `${...}` string as the header value
 - **MUST** pass the credential as the `X-API-Key` header, never as a URL parameter and never inline in a recipe or config file
 - **MUST** resolve the garden explicitly: either accept a `tenant` recipe parameter or call `list_tenants` first; a recipe **MUST NOT** assume the key covers exactly one garden
@@ -140,7 +141,6 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 ## Acceptance Criteria
 
 - [ ] The extension is declared exactly once — in the recipe or in `extensions.yaml` — naming `streamable_http`, the `/api/v1/mcp` path, and both env keys
-- [ ] No recipe relying on the shared `extensions.yaml` declares an `extensions:` block of its own
 - [ ] `goose recipe validate` passes on the recipe
 - [ ] A run against a server with `MCP_SERVER_ENABLED` unset reports the opt-in variable, not a URL error
 - [ ] A run with a missing or revoked key reports `401` as an authentication failure, distinct from a permission failure
