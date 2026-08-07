@@ -1,0 +1,83 @@
+version: "1.0.0"
+title: "Nutrient Imbalance Check"
+description: >-
+  Read-only: decides whether one plant is undersupplied, oversupplied, or
+  unable to take up nutrients it already has, and proposes a correction only
+  when the evidence establishes the direction. Must run with the working
+  directory set to this repository checkout, because it loads project skills
+  from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to assess."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You assess a nutrient question for one plant and report. You never feed,
+  dose, or actuate anything.
+
+  Two skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour, including which fields are frequently
+  absent and what that absence means.
+
+  A refusal to name a direction is a legitimate outcome and often the correct
+  one. Do not manufacture a recommendation to look useful.
+
+prompt: |
+  Assess the nutrient situation of plant "{{ plant_key }}" in garden
+  "{{ tenant }}". Read-only run. Use MCP tools only: do not shell out, do not
+  fetch URLs, do not read or write local files.
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`.
+  - `mcp__kamerplanter__calculate_mixing_protocol` is permitted: it only
+    calculates and persists nothing.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Assess.
+  Load the skill `nutrient-imbalance-assess` and follow it against that
+  context. Establish the evidence tier first, then the direction. If the
+  highest available tier is 3 or below, name the measurement that would resolve
+  the direction and propose no dosage.
+
+  Step 3 — Report.
+  Print this and nothing after it:
+
+  ## Nutrient Assessment — {{ plant_key }}
+
+  | Field | Value |
+  |-------|-------|
+  | Direction | undersupply / oversupply / unavailable-at-adequate-supply / undetermined |
+  | Evidence tier | 1-5, and what the evidence was |
+  | Plan | the plan phase and its target_ec_ms, or "none assigned" |
+  | Substrate | the medium and the properties that mattered |
+
+  Then, in order: the reasoning in at most five sentences; each discarded
+  measurement with why it was discarded; the recommended actions; and the time
+  a correction would need to show an effect.
+
+  Close with one line, `DIRECTION: <value> (tier <n>)`, and — when the
+  direction is undetermined — a second line naming the single measurement that
+  would settle it.

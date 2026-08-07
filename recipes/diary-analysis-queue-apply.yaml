@@ -1,0 +1,143 @@
+version: "1.0.0"
+title: "Diary Analysis Queue"
+description: >-
+  WRITES to Kamerplanter: loads the pending diary-analysis queue and works
+  through it one entry at a time, claiming, analysing and submitting each
+  before touching the next. Must run with the working directory set to this
+  repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: run_id
+    input_type: string
+    requirement: required
+    description: >-
+      Discriminator for this run. Combined with the entry key it forms each
+      per-entry worker_id and idempotency key, so a retry is traceable and
+      does not double-write.
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: max_entries
+    input_type: string
+    requirement: optional
+    default: "3"
+    description: >-
+      Upper bound on entries handled in this run. Each entry costs a full
+      analysis, so a large value risks exhausting the context mid-queue and
+      leaving a claim open. Raise it deliberately.
+
+  - key: include_stale
+    input_type: string
+    requirement: optional
+    default: "true"
+    description: >-
+      Whether to also pick up entries whose previous analysis lease expired.
+      Set to "false" to process only entries nobody has attempted.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+#
+# This recipe deliberately does NOT use Goose's `sub_recipes:` mechanism.
+# Measured 2026-08-05 against Goose 1.45.0 with GOOSE_PROVIDER=claude-code:
+# neither a `sub_recipes:` block nor the `--sub-recipe` flag produces a
+# callable tool in the run — the provider replaces the Goose tool set, so the
+# sub-recipe tool is absent exactly like `load_skill`. Verified by a child
+# recipe that would have written marker files: none were written. The loop is
+# therefore driven inside this recipe, over the same skills the single-entry
+# recipe uses. For genuine per-entry process isolation, run
+# `scripts/analyse-queue.sh` instead, which starts one Goose process per entry.
+
+instructions: |
+  You work through an analysis queue, one entry at a time. You are not a
+  general plant care assistant, and you do not act on any plant.
+
+  Three skills carry the per-entry procedure. Load each one when the step calls
+  for it and follow it as written — they encode measured server behaviour that
+  is not discoverable from the tool schemas.
+
+  Treat every entry as its own small run. Finish it — including its submit —
+  before you look at the next one. Never hold two claims at once.
+
+  A failed entry is a result, not a reason to stop the queue. Record it and
+  continue with the next entry.
+
+prompt: |
+  Work through the pending diary-analysis queue for garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, do not read or
+  write local files.
+
+  Hard constraints for this entire run:
+  - The ONLY state-changing tools you may call are
+    `mcp__kamerplanter__claim_diary_analysis` and
+    `mcp__kamerplanter__submit_diary_analysis`, and only for an entry this run
+    has claimed. Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
+    `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`,
+    `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`.
+  - Call NO Home Assistant tool at all.
+  - Never print an API key, a token, or a lease token.
+  - Hold at most ONE claim at any moment. Submit the entry you hold before
+    claiming another.
+  - Once you hold a claim, you MUST reach that entry's submit on every path,
+    including tool failure and unusable photos.
+
+  Step 1 — Preconditions.
+  Call `mcp__kamerplanter__list_tenants` and read `mcp_permissions`. The queue
+  needs `mcp.write`. Without it, stop before claiming anything and report the
+  missing permission.
+
+  Step 2 — Load the queue.
+  Call `mcp__kamerplanter__list_pending_diary_analyses` with
+  include_stale {{ include_stale }}. Order the entries by `requested_at`,
+  oldest first, and take at most {{ max_entries }} of them. Print the selected
+  entry keys before you begin, and say how many were left untouched.
+
+  Entries with `photo_count` 0 are not candidates: record them as SKIP with
+  that reason and do not claim them.
+
+  Step 3 — The loop.
+  For each selected entry, in order, run the full single-entry cycle and finish
+  it before starting the next:
+
+    a. Load the skill `diary-analysis-claim` and follow its claim step for this
+       entry key. Use worker_id "diary-analysis-queue/{{ run_id }}/<entry_key>"
+       and lease_seconds 900.
+    b. Load the skill `plant-context-collect` and follow it for the claimed
+       entry's plant. Carry its gaps list forward.
+    c. Load the skill `plant-photo-read` and follow it against that context.
+    d. Return to `diary-analysis-claim` and follow its submit step. Set model to
+       the model you are running as, recipe_version to
+       "diary-analysis-queue/1.0.0", and idempotency_key to
+       "{{ run_id }}-<entry_key>-submit".
+
+  You have already loaded these skills after the first entry; follow them from
+  what you loaded rather than reloading them for each entry.
+
+  If any step for an entry fails, submit that entry as `failed` with the cause
+  in `error`, then continue the loop with the next entry.
+
+  Step 4 — Report.
+  Print this and nothing after it:
+
+  ## Diary Analysis Queue
+
+  | Entry | Plant | Status | Findings | Detail |
+  |-------|-------|--------|----------|--------|
+
+  One row per selected entry. Status is exactly COMPLETED, FAILED, or SKIP.
+  Findings is the count submitted. Detail is one line: the summary you
+  submitted, the verbatim error, or the skip reason.
+
+  Then, for each COMPLETED entry, list its findings as
+  `label (confidence): rationale`.
+
+  Close with three lines:
+
+  QUEUE TOTAL: <how many were pending>
+  PROCESSED: <completed> completed, <failed> failed, <skipped> skipped
+  REMAINING: <how many are still pending>
