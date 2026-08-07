@@ -1,6 +1,8 @@
 # kamerplanter-goose
 
+[![ci](https://github.com/nolte/kamerplanter-goose/actions/workflows/ci.yml/badge.svg)](https://github.com/nolte/kamerplanter-goose/actions/workflows/ci.yml)
 [![Goose](https://img.shields.io/badge/Goose-1.45%2B-black.svg)](https://github.com/block/goose)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-early%20stage-orange.svg)](#status)
 
 Shareable [Goose](https://github.com/block/goose) recipes for anyone running [Kamerplanter](https://github.com/nolte/kamerplanter) and [Home Assistant](https://www.home-assistant.io/). Each one wires those [Model Context Protocol](https://modelcontextprotocol.io/) servers into a repeatable plant-care run you invoke by name.
@@ -125,8 +127,22 @@ goose recipe validate recipes/connectivity-check.yaml
 ```
 recipes/                       one Goose recipe per file, flat — the shipped artifact
   connectivity-check.yaml      read-only probe for both MCP servers
+  nutrient-imbalance-check.yaml  read-only nutrient diagnosis for one plant
+  pest-pressure-check.yaml     read-only: is a pest suspicion biologically tenable
+  species-baseline-check.yaml  read-only: is the species record plausible, what is its cycle
+  domain-review.yaml           read-only: reviews a recipe or spec as one grower persona
+  diary-photo-analysis-apply.yaml  WRITES: analyses one queued diary entry
+  diary-analysis-queue-apply.yaml  WRITES: works through the queue, entry by entry
 extensions.yaml                the MCP servers, declared once for every recipe
+.claude/skills/                project-local skills the recipes load by name
+.claude/agents/                measurement probes only — see spec/goose/
+scripts/analyse-queue.sh       the queue loop as one Goose process per entry
+tests/validate_recipes.py      the house pattern as an executable check
+spec/goose/                    how a recipe project is built
 spec/mcp/                      what each MCP backend offers, EN canonical + DE
+spec/process/                  what a recipe does with them
+docs/                          the MkDocs site, one tree per language
+AUDIENCES.md                   who this repository is for, per audience
 .envrc                         direnv: endpoints, pass-backed credentials, config path
 ```
 
@@ -138,8 +154,10 @@ spec/mcp/                      what each MCP backend offers, EN canonical + DE
 
 ## Status
 
-Early stage. One recipe ships — `connectivity-check`, the walking skeleton — and it is the only one; the catalog described under Purpose is still ahead. No CI workflow and no release exist yet, and recipe names and parameters will change without notice until the first tagged release. Recipe syntax and the `env_keys` behaviour above are verified against Goose 1.45.0.
+Early stage. Nine recipes ship: three diagnostics (`connectivity-check`, `provider-surface-check`, `provider-plugin-check`), four read-only plant-care recipes (`nutrient-imbalance-check`, `pest-pressure-check`, `species-baseline-check`, `domain-review`), and two that write (`diary-photo-analysis-apply`, `diary-analysis-queue-apply`). Everything but the diagnostics loads project-local skills from `.claude/skills/`, so they must run with this checkout as the working directory — skill discovery is relative to the Goose process's cwd, and a recipe started elsewhere loses the skill without an error.
+
+No release exists yet, and recipe names and parameters will change without notice until the first tagged release. CI validates every recipe against the house pattern (`tests/validate_recipes.py`) and builds the documentation on each pull request. Recipe syntax, the `env_keys` behaviour above, and the skill-loading path are verified against Goose 1.45.0 with the `claude-code` provider.
 
 ## License
 
-Not yet licensed. A `LICENSE` file lands with the first release; until then, no usage rights are granted.
+[MIT](LICENSE). Copyright © 2026 nolte.

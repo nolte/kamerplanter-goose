@@ -1,0 +1,91 @@
+version: "1.0.0"
+title: "Pest Pressure Check"
+description: >-
+  Read-only: decides whether a suspected pest or disease on one plant is
+  biologically tenable, and names a control measure only when the identification
+  supports one. Must run with the working directory set to this repository
+  checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to assess."
+
+  - key: suspicion
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The observed symptom or a suspected organism. Leave empty to work from the
+      plant's recorded inspection history alone.
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You judge whether a pest suspicion holds up and report. You never treat,
+  confirm a task, or actuate anything.
+
+  Two skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — in particular which fields the pest record
+  does not carry, and what a claim resting on those fields is worth.
+
+  "Not contradicted" is a legitimate and common outcome, and it is weaker than
+  "identified". Do not upgrade one to the other to look decisive.
+
+prompt: |
+  Assess the pest situation of plant "{{ plant_key }}" in garden "{{ tenant }}".
+  The suspicion to test is "{{ suspicion }}"; when that is empty, work from the
+  plant's recorded inspection history alone. Read-only run. Use MCP tools only:
+  do not shell out, do not fetch URLs, do not read or write local files.
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Assess.
+  Load the skill `pest-pressure-assess` and follow it against that context.
+  Establish the evidence tier first, then run the falsification tests in order.
+  Propose a control measure only on tier 1, or on tier 4 plus an uncontradicted
+  tier 2. Below that, name the monitoring method that would resolve it.
+
+  Step 3 — Report.
+  Print this and nothing after it:
+
+  ## Pest Assessment — {{ plant_key }}
+
+  | Field | Value |
+  |-------|-------|
+  | Candidate | scientific name and catalogue key, or "none tenable" |
+  | Status | identified / not contradicted / rejected / undetermined |
+  | Evidence tier | 1-5, and what the evidence was |
+  | Inspection history | count of recorded inspections, or "not inspected" |
+  | Tests not run | the checks the record could not support, by name |
+
+  Then, in order: the reasoning in at most five sentences; each rejected
+  candidate with the test that rejected it; the recommended measures in IPM
+  order with each safety interval against the plant's harvest situation; and any
+  catalogue defect found, directed at nolte/kamerplanter.
+
+  Close with one line, `PEST: <status> — <candidate or none> (tier <n>)`, and —
+  when the status is not `identified` — a second line naming the single
+  observation that would settle it.

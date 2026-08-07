@@ -19,6 +19,7 @@ Readers: anyone adding a recipe here, and anyone starting a comparable Goose rep
 - A misconfigured credential produces a message naming the credential, not a false report about the server
 - The read/write boundary of a recipe is visible from its filename and enforced where Goose actually enforces things
 - The tools an agent really holds are knowable before a recipe is trusted with them
+- A recipe that reuses a project's skills states what it needs from the environment, rather than failing silently when it is missing
 - A new recipe costs a prompt, not a setup
 
 ## Non-Goals
@@ -76,6 +77,10 @@ The provider is not necessarily a bare model endpoint. Measured with `GOOSE_PROV
 
 A "read-only" recipe under such a provider holds shell access, file-write access, and the ability to spawn subagents. Its read-only property is **prompt discipline, not a technical boundary**. MCP tools from Goose extensions appear as `mcp__<server>__<tool>`.
 
+The count is not stable: a repeat inventory on 2026-08-05 returned **32** non-MCP tools from the same provider, of which only ten (`Agent`, `Bash`, `Edit`, `Read`, `ReportFindings`, `ScheduleWakeup`, `Skill`, `ToolSearch`, `Workflow`, `Write`) were directly callable — the rest were deferred behind `ToolSearch` and needed a schema fetch first. Deferred is not absent: `Bash` and `Write` are in the directly-callable set either way, so the boundary above does not move.
+
+**What the provider replaces is the whole Goose tool set, not part of it.** In that same inventory not one Goose platform extension appeared — no `developer`, `todo`, `analyze`, or `summon` tool — although all four are `enabled: true` in `~/.config/goose/config.yaml`. Only MCP extensions survive the substitution, as `mcp__*`. Anything Goose offers as a platform tool must therefore be assumed missing under this provider until measured present.
+
 ### Plugin availability
 
 Under the `claude-code` provider, measured:
@@ -86,6 +91,66 @@ Under the `claude-code` provider, measured:
 | Dispatch a plugin **agent** | fails | `Agent type '…' not found. Available agents: claude, Explore, general-purpose, Plan, statusline-setup` |
 
 Only skills from plugins that are installed and enabled are visible; skills reachable in an interactive Claude Code session by another mechanism are not.
+
+### Agents from a project checkout
+
+A plugin agent being unreachable says nothing about an agent defined in the checkout itself. Goose documents an agent layer of its own — Markdown files with `name`, `description`, and `model` frontmatter, discovered under `.agents/agents/`, `.goose/agents/`, and `.claude/agents/` in the project plus their `~` counterparts, and invoked conversationally by `@name` or by asking Goose to delegate. It names `.agents/agents/` as the location new project agents should use.
+
+Measured 2026-08-07 with two probe agents whose only job is to answer with one word, identical but for their directory:
+
+| Capability | Result | Evidence |
+|------------|--------|----------|
+| List a project-local **agent** type | works | `probe-agent-reachable` appeared in the registry beside the five built-ins, carrying its own `description` and `(Tools: Read)` |
+| Dispatch it from `.claude/agents/` | works | `Agent(subagent_type: probe-agent-reachable)` returned `reachable` |
+| Dispatch the twin from `.agents/agents/` | fails | `Agent type 'probe-agents-dir' not found. Available agents: claude, Explore, general-purpose, Plan, probe-agent-reachable, statusline-setup` |
+| Dispatch a plugin agent, same run | fails | `Agent type 'nolte-shared:project-structure-reviewer' not found.` — same available list |
+
+Three results in one run settle which layer is answering. The registry lists Claude Code's own built-ins (`Explore`, `Plan`, `general-purpose`), the dispatch goes through the provider's `Agent` tool with a `subagent_type`, and only the `.claude/` directory is read. **This is the provider's agent layer, not Goose's** — the exact counterpart of what happens to skills, where the provider's `.claude/skills/` reader survives and Goose's `load_skill` does not.
+
+The consequence is a trap, because the two layers disagree about where a file belongs:
+
+| Directory | Goose's documentation | Reachable from a recipe run here |
+|-----------|-----------------------|-----------------------------------|
+| `.claude/agents/` | supported, legacy | yes |
+| `.agents/agents/` | recommended for new project agents | **no** |
+| `~/.claude/plugins/*/agents/` | not Goose's mechanism | no |
+
+Following Goose's own recommendation puts a project agent where this provider cannot see it, and the failure is a plain "not found" against a list that looks complete. Whether Goose's `@name` invocation works under a native provider is untested here; only `claude-code` is configured, so "absent under this provider" and "absent everywhere" stay indistinguishable, exactly as with `load_skill`.
+
+Discovery is cwd-relative in the same way project skills are, and carries the same failure mode: a run started from another directory loses the agent without an error. Unlike a skill, an agent has no `disable-model-invocation` equivalent, so there is no way to hide one from a non-interactive run.
+
+This repository ships skills rather than agents regardless, because a skill runs in the caller's context and composes with the others rather than answering from a fresh one. The two probes exist to keep the statements above measurements rather than assumptions, and are the only agents here.
+
+### Skills from a project checkout
+
+Goose has a skill layer of its own — a `skills` platform extension, a `goose skills list` command, and a `load_skill` tool documented as "Load a skill's full content into your context so you can follow its instructions". It discovers skills under `.claude/skills/`, `.agents/skills/`, and `.goose/skills/` in the current project, plus `~/.agents/skills/`, `~/.agents/plugins/*/skills/`, and `builtin://skills/`.
+
+**Under the `claude-code` provider that layer is unreachable.** `goose skills list` run from a project checkout listed all 18 of its skills correctly, but a run started in that same directory reported `load_skill` absent — consistent with the whole-tool-set substitution above. `goose skills list` is a statement about discovery, not about runtime availability.
+
+What works instead is the provider's own equivalent, which reads the same `.claude/skills/` directory relative to the **working directory of the Goose process**. Measured end to end: a recipe resolved from `GOOSE_RECIPE_PATH` in one repository, run with the cwd set to a second repository, loaded that second repository's project skill and received the recipe's `{{ parameter }}` as the skill's `$ARGUMENTS`.
+
+One frontmatter key decides whether a project skill exists at all for a recipe run:
+
+| Skill frontmatter | Visible to a recipe run |
+|-------------------|-------------------------|
+| no `disable-model-invocation` key | yes |
+| `disable-model-invocation: true` | no |
+
+Measured with two otherwise identical probe skills in one directory: the run listed the first and not the second. The key means "only a human may invoke this, by slash command" — and a recipe run has no human. Goose's own `skills list` ignores the key and shows such skills anyway, so the two views disagree, and the optimistic one is the one that does not run the recipe.
+
+The working directory is the only lever. Measured, neither `GOOSE_SEARCH_PATHS` nor `GOOSE_WORKING_DIR` changed what was discovered; the recipe schema has no `skills:` key and `goose run` no corresponding flag. A symlink at `.claude/skills` pointing into another checkout **is** followed, which relocates discovery without relocating the process — but a skill that reads its own repository's files needs that repository as cwd regardless.
+
+### Sub-recipes
+
+The recipe schema accepts a `sub_recipes:` list — entries carrying `name`, `path`, `values`, and `sequential_when_repeated` — and `goose run` accepts a repeatable `--sub-recipe` flag. Both are the natural way to build a queue runner that calls a single-entry recipe once per item.
+
+**Neither works under the `claude-code` provider.** Measured 2026-08-05 with a child recipe whose only job was to `touch` a marker file: with a `sub_recipes:` block, and again with `--sub-recipe`, the run reported no sub-recipe tool and **no marker file was created**. The mechanism is registered as a Goose tool, so it disappears in the same tool-set substitution that removes `load_skill`.
+
+The failure mode is worth naming because it is not a clean error. Asked whether a sub-recipe tool exists, a run once answered `subrecipe__echo_child` — a plausible name constructed from the recipe's own `name:` field, with no such tool present. A model's claim that it invoked a sub-recipe is not evidence that anything ran; only an observable side effect is.
+
+A loop over N items therefore has two shapes here: iterate inside one recipe over shared skills, accepting one context for the whole batch, or start one Goose process per item from a shell script, which keeps per-item isolation at the cost of a process start.
+
+`goose plugin install <git-url>` installs a git repository carrying `plugin.json` (or `.goose-plugin/plugin.json`, or `.plugin/plugin.json`) plus `skills/`, `agents/`, and `.mcp.json` into `~/.agents/plugins/`, which lifts discovery out of the cwd on the Goose side. It does not help here: the tool that would load those skills is the one the provider removed.
 
 ## Project layout
 
@@ -107,9 +172,18 @@ spec/                          this layer plus one spec per backend
 - **MUST** keep `recipes/` flat; grouping **MUST** be encoded in filenames, because discovery does not walk subdirectories
 - **MUST** state in the repository's README that consuming recipes over `GOOSE_RECIPE_GITHUB_REPO` requires supplying the extension config separately
 - **MUST NOT** treat a read-only prompt as a security boundary under a provider that supplies execution tools; a recipe handling untrusted input **MUST** run under a provider without them, or under `--no-profile`
+- **MUST** state the required working directory in the `description` of a recipe that loads a project skill, since skill discovery is relative to the Goose process's cwd and a recipe run from elsewhere loses the skill without an error
+- **MUST NOT** call `load_skill`, or otherwise rely on Goose's own skill layer, under a provider that substitutes the Goose tool set; a name shown by `goose skills list` **MUST NOT** be treated as evidence that the skill is loadable at runtime
+- **MUST NOT** rely on `sub_recipes:` or `--sub-recipe` under such a provider, and **MUST** verify any claimed sub-recipe invocation by an observable side effect rather than by the run's own report, since a run will name a plausible sub-recipe tool that does not exist
+- **MUST NOT** carry `disable-model-invocation: true` in a project skill that a recipe is meant to load, since the key makes the skill invisible to every non-interactive run
+- **MUST** place a project agent under `.claude/agents/` rather than the `.agents/agents/` that Goose's own documentation recommends, since only the former is in the registry a run under this provider sees
+- **MUST** name the required working directory in the `description` of a recipe that dispatches a project-local agent, for the same reason it does for a skill: `.claude/agents/` resolves against the Goose process's cwd, and no frontmatter key exists to make an agent selectively invisible when it does not
+- **MUST NOT** dispatch a plugin-provided agent type from a recipe; only the built-in types and those defined in the working directory's `.claude/agents/` are in the registry a run sees
 - **SHOULD** ship a connectivity recipe that exercises every declared server read-only and reports per-server PASS/FAIL, and **SHOULD** run it before trusting any other recipe against a new environment
 - **SHOULD** ship a provider-surface recipe that inventories the agent's tools, so the execution surface is a measurement rather than an assumption
 - **SHOULD** report an absent tool as an explicit step result naming the tool, never as a silent substitution
+- **SHOULD** have a recipe that loads a skill report the load as a named step result, since a skill that fails to load leaves a run that still produces a plausible answer from the prompt alone
+- **SHOULD** verify skill availability by measurement in the target environment before a recipe depends on it, the same way the provider's tool surface is measured rather than assumed
 - **SHOULD** distinguish an unset credential from an unreachable server when reporting a failure, since an extension with an unset `env_keys` variable disappears without a warning
 - **MAY** declare extensions inside a single recipe when it is meant to be consumed standalone, accepting that it then forgoes the shared set entirely
 
@@ -125,6 +199,12 @@ spec/                          this layer plus one spec per backend
 - [ ] The README states the extension-config requirement for GitHub-sourced recipes
 - [ ] A connectivity recipe exists and passes against the current environment
 - [ ] A provider-surface recipe exists and its latest result is recorded
+- [ ] No recipe calls `load_skill`
+- [ ] No recipe declares `sub_recipes:` or is launched with `--sub-recipe` while the provider substitutes the Goose tool set
+- [ ] Every recipe that loads a project skill names the required working directory in its `description`
+- [ ] No skill loaded by a recipe carries `disable-model-invocation: true`
+- [ ] No recipe dispatches a plugin-provided agent type
+- [ ] Every project agent lives under `.claude/agents/`, not `.agents/agents/`
 - [ ] `goose recipe validate` passes for every file in `recipes/`
 
 ## Open Questions
@@ -133,9 +213,16 @@ spec/                          this layer plus one spec per backend
 - How several files are separated in `GOOSE_ADDITIONAL_CONFIG_FILES`, and whether `~/.config/goose/config.yaml` behaves identically to an additional file. Untested — the user's global config was deliberately left untouched.
 - Whether MCP servers configured in the provider's own settings are exposed to the Goose agent. The probe returned none, but the provider's servers were failing at the time, so "not forwarded" and "forwarded but broken" are indistinguishable from the result.
 - Whether a skill installed as a plugin becomes visible to Goose immediately or only after a session restart.
+- Whether `load_skill` appears under a native model provider such as `anthropic` or `openai`, which would make Goose's own skill layer — and with it `~/.agents/plugins/` and `goose plugin install` — usable. Untested: only `claude-code` is configured here, so "absent under this provider" and "absent everywhere" are not distinguishable from the measurement.
+- Whether Goose's own agent layer — `@name` invocation and the `.agents/agents/` directory it documents — works under a native model provider. Untested for the same reason `load_skill` is: only `claude-code` is configured, and under it the provider's agent layer answers instead. If it does, an agent would have two incompatible homes depending on the provider, which is worse than the current single one.
+- Whether distributing skills as a provider-side plugin is a steadier route than the cwd, given that the cwd is also what a skill's own file paths resolve against. Not measured; the two concerns pull in opposite directions and no recipe here yet depends on a skill.
+- Whether the deferred-tool split observed on 2026-08-05 varies by provider version or by session, and whether a tool can move between the deferred and directly-callable sets while a run is in progress.
 
 ## Source
 
 - Measured against Goose 1.45.0 with `GOOSE_PROVIDER=claude-code`, 2026-08-04: extension precedence and `env_keys` expansion captured with a local HTTP server logging inbound headers; recipe discovery probed with `goose recipe list`; tool surface and plugin availability probed with `recipes/provider-surface-check.yaml` and `recipes/provider-plugin-check.yaml`
-- `goose run --help`, `goose recipe --help` (Goose 1.45.0) for discovery and extension flags
+- Measured against Goose 1.45.0 with `GOOSE_PROVIDER=claude-code`, 2026-08-05: skill discovery probed with `goose skills list` from several working directories and with a symlinked skills directory; `load_skill` availability, the tool inventory, and the `disable-model-invocation` effect probed with headless `goose run --no-session` runs, the last against two purpose-built probe skills differing only in that key; parameter-to-`$ARGUMENTS` passing probed with a throwaway recipe on `GOOSE_RECIPE_PATH` run from a different repository's checkout; discovery paths and the plugin manifest layout read from the binary's embedded strings; sub-recipe availability probed with a child recipe whose only effect was creating a marker file, run once via a `sub_recipes:` block and once via `--sub-recipe`
+- Measured against Goose 1.45.0 with `GOOSE_PROVIDER=claude-code`, 2026-08-07: project-local agent discovery and dispatch probed with `recipes/provider-plugin-check.yaml` extended by three steps, against two purpose-built probe agents identical but for their directory — `.claude/agents/probe-agent-reachable.md` and `.agents/agents/probe-agents-dir.md`; the plugin-agent dispatch in the same run supplied the third contrasting result
+- Goose documentation, *Custom Agents* (`https://goose-docs.ai/docs/guides/context-engineering/custom-agents/`), read 2026-08-07, for the documented discovery directories, the `name` / `description` / `model` frontmatter, and the recommendation to use `.agents/agents/` — the recommendation the measurement above contradicts under this provider
+- `goose run --help`, `goose recipe --help`, `goose skills --help`, `goose plugin install --help` (Goose 1.45.0) for discovery and extension flags
 - Per-backend contracts: `spec/mcp/kamerplanter-mcp-server/en.md`, `spec/mcp/home-assistant-mcp-server/en.md`

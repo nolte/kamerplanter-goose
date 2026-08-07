@@ -7,9 +7,9 @@ Portfolio-Scope: local
 
 Recipes in this repository reach plant data through the MCP server that ships inside the Kamerplanter backend. That server is not a generic REST mirror: it exposes a curated, semantically high-level tool palette where one tool encapsulates a whole use case and returns compact JSON, instead of the model chaining several REST calls.
 
-Two properties make it worth specifying rather than discovering per recipe. First, the tool catalog is **fixed and enumerable** — measured live, the server offers exactly the 12 tools the upstream documentation lists, so a recipe author can know the full surface ahead of time. This is the sharp contrast to [Home Assistant](../home-assistant-mcp-server/en.md), whose catalog is assembled at runtime and differs per instance. Second, the server is **multi-tenant with a per-garden permission model**, so the same key may write in one garden and be refused the identical action in another. A recipe that ignores this produces errors that look like bugs but are correct refusals.
+Two properties make it worth specifying rather than discovering per recipe. First, the tool catalog is **enumerable and fully schema'd** — every tool declares a complete JSON Schema, so a recipe author can know the whole surface ahead of time by asking once. This is the sharp contrast to [Home Assistant](../home-assistant-mcp-server/en.md), whose catalog is assembled at runtime and differs per instance. Enumerable is not the same as fixed: the catalog grew from 12 tools to 43 between two measurements three days apart, so the surface is knowable per instance and per date rather than once and for all. Second, the server is **multi-tenant with a per-garden permission model**, so the same key may write in one garden and be refused the identical action in another. A recipe that ignores this produces errors that look like bugs but are correct refusals.
 
-Everything below marked *measured* was read from the reference instance on 2026-08-04 via `initialize`, `tools/list`, and a read-only `list_tenants` call. The upstream documentation marks the server **partially available**: the 12 tools are what is implemented; roughly 30 are specified in total.
+Everything below marked *measured* was read from the reference instance via `initialize`, `tools/list`, and read-only `tools/call` invocations — the transport, authentication and tenancy sections on 2026-08-04, the tool catalog and its field shapes on 2026-08-07. The upstream documentation marked the server **partially available** at the first measurement, with 12 of roughly 30 specified tools implemented; the second measurement found 43, so the implementation has overtaken that reading and the documentation is no longer the authority on scope.
 
 Recipe mechanics — where an extension may be declared, how `env_keys` expansion behaves, what the provider adds to the agent — are specified once in [the Goose recipe project pattern](../../goose/recipe-project-pattern/en.md) and are not restated here.
 
@@ -77,32 +77,55 @@ The reference instance's account holds role `lead` with all three permissions. T
 
 A call lacking the permission is rejected with `permission.denied` and audited as `status: "denied"`.
 
-## Tool Catalog (measured, 12 tools, 2026-08-04)
+## Tool Catalog (measured, 43 tools, 2026-08-07)
 
-The live catalog matches the documented one exactly. Unlike Home Assistant, **every `inputSchema` carries a full JSON Schema** — measured keys include `required`, `properties`, `$defs`, `additionalProperties`, and `title` — so a client can tell mandatory arguments from optional ones without being told.
+Unlike Home Assistant, **every `inputSchema` carries a full JSON Schema** — measured keys include `required`, `properties`, `$defs`, `additionalProperties`, and `title` — so a client can tell mandatory arguments from optional ones without being told.
 
-### Read tools (`mcp.read`)
+The catalog grows between measurements. An inventory on 2026-08-04 returned 12 tools and matched the documentation of the day; a re-inventory on 2026-08-07 returned **43**, the additional 31 all read tools. **Treat any count here as a floor, not a contract**, and re-run `tools/list` before assuming a tool is absent.
 
-| Tool | Required | Takes `tenant` | Purpose |
-|------|----------|:--------------:|---------|
-| `list_tenants` | — | no | Gardens the key covers, with role and `mcp_permissions` |
-| `list_species` | — | no | Plant species catalog (`limit`, `offset`) |
-| `get_species_info` | `species_key` | no | Master data for a species, incl. companion-planting hints |
-| `list_planting_runs` | — | yes | Planting runs (`status`, `limit`, `offset`) |
-| `list_tasks` | — | yes | Tasks (`status`, `limit`, `offset`) |
-| `get_due_care_tasks` | — | yes | Due and overdue care reminders (`urgency`) |
-| `get_harvest_readiness` | — | yes | Harvest-readiness overview (`limit`) |
-| `get_mcp_activity` | — | no | The account's own MCP call history (`limit`) |
+### Read tools (`mcp.read`), 38 measured
 
-Three read tools take no `tenant`: `list_tenants` and `get_mcp_activity` are account-scoped, and `list_species` / `get_species_info` serve the shared species catalog.
+Grouped by what a recipe reaches for, not by the server's own layering.
+
+| Group | Tools |
+|-------|-------|
+| Account and tenancy | `list_tenants`, `get_mcp_activity` |
+| Plants | `list_plants`, `get_plant`, `list_plants_at_location`, `list_planting_runs` |
+| Species and varieties | `list_species`, `get_species_info`, `list_cultivars`, `get_cultivar` |
+| Phases and lifecycle | `list_phase_definitions`, `get_sowing_calendar`, `list_overwintering_profiles`, `list_hardiness_zones` |
+| Care and tasks | `list_tasks`, `get_due_care_tasks`, `get_plant_care_log`, `get_harvest_readiness` |
+| Nutrition and medium | `get_plant_nutrient_plan`, `list_nutrient_plans`, `get_nutrient_plan`, `list_fertilizers`, `list_substrates`, `calculate_mixing_protocol` |
+| Plant protection | `get_plant_inspections`, `list_pests`, `get_pest`, `list_diseases`, `get_disease`, `get_treatment` |
+| Diary | `list_diary_entries`, `get_diary_entry`, `get_diary_entry_photos`, `list_pending_diary_analyses` |
+| Onboarding and vocabulary | `list_starter_kits`, `search_glossary` |
+
+Signatures worth naming, because a recipe gets them wrong otherwise:
+
+| Tool | Required | Takes `tenant` | Note |
+|------|----------|:--------------:|------|
+| `get_species_info` | `species_key` | no | `include_cultivars` optional; serves the shared catalog |
+| `get_pest` | `pest_key` | no | Returns nested `treatments[]` and `beneficials[]` in one call |
+| `get_disease` | `disease_key` | no | Carries `environmental_triggers[]` and `incubation_period_days` |
+| `get_treatment` | `treatment_key` | no | Carries `safety_interval_days` — the pre-harvest Karenz |
+| `get_plant_inspections` | `plant_key` | yes | IPM history; measured empty on a plant never inspected |
+| `get_sowing_calendar` | — | yes | **Refuses an unnarrowed call**: without `query` it answers `validation.error` naming the species count and the `limit` ceiling of 25 |
+| `list_phase_definitions` | — | no | 29 definitions measured; the lifecycle engine's vocabulary |
+| `search_glossary` | — | no | The project's own definitions of EC, VPD, Karenz |
+
+`calculate_mixing_protocol` computes and persists nothing, which is why it sits among the read tools despite its name.
+
+Four read tools take no `tenant`: `list_tenants` and `get_mcp_activity` are account-scoped; the species, pest, disease, treatment, glossary and hardiness catalogs are shared.
 
 ### Write tools (`mcp.write`)
 
 | Tool | Required | Purpose |
 |------|----------|---------|
+| `add_plant_diary_entry` | `plant_key`, `text` | Record an observation, problem, or measurement |
 | `confirm_care_task` | `plant_key`, `reminder_type` | Confirm a care reminder for a plant |
 | `archive_plant` | `plant_key` | Mark a plant disposed / given away / died — never a hard delete |
 | `set_plant_location` | `plant_key` | Move a plant to another site, location, or slot |
+| `claim_diary_analysis` | `entry_key`, `worker_id` | Claim an entry for analysis under a lease |
+| `submit_diary_analysis` | `entry_key`, `lease_token`, `status` | Write a result back and end the claim |
 
 ### Setup tool (`mcp.setup`)
 
@@ -110,7 +133,14 @@ Three read tools take no `tenant`: `list_tenants` and `get_mcp_activity` are acc
 |------|----------|---------|
 | `create_site` | `name` | Create a site root (apartment, garden, balcony, greenhouse, windowsill, grow tent) |
 
-Measured: all four state-changing tools expose `tenant`, `dry_run`, and `idempotency_key`.
+Measured: every state-changing tool exposes `tenant`, `dry_run`, and `idempotency_key`. No read tool carries either, which is the cheapest way to tell the two classes apart in a `tools/list` response.
+
+### What the catalog does not carry
+
+Two absences matter, because a process that assumes the field exists produces a confident answer with nothing behind it. Both measured 2026-08-07:
+
+- **`get_pest` has no humidity, host-range, prevention, or monitoring fields.** Measured on `Tetranychus urticae`, the record is `pest_key`, `scientific_name`, `common_name`, `common_name_de`, `pest_type`, `damage_symptoms`, `lifecycle_days`, `optimal_temp_min`, `optimal_temp_max`, `description`, `detection_symptom_hint`, plus nested `treatments[]` and `beneficials[]`. There is no `optimal_humidity_min/max`, no `host_plants`, no `prevention_tips`, no `monitoring_hints`, no `affected_plant_parts`, no severity or detection-difficulty rating, and no GBIF key. `get_disease` **does** carry `environmental_triggers[]` (`low_humidity`, `high_humidity`, `poor_air_circulation`, …), so the moisture axis exists for diseases and not for pests.
+- **`get_species_info` returns only the populated fields**, and the set differs per species. Measured, `Allium porrum` returned 23 fields including a full `seed_profile` (`germination_temp_min_c`/`max_c`, `sowing_depth_cm`, `days_to_germination`, `seed_viability_years`, `light_germination`, `pretreatment[]`, `thousand_seed_weight_g`, `sowing_density_per_m2`) and `growing_periods[]`; `Spathiphyllum wallisii` returned 18, with `plant_category` and no `seed_profile` at all. Neither carried `toxicity`, although the tool's own description advertises it. A missing key means "not populated for this species", never "does not apply".
 
 ### Response envelope
 
@@ -161,5 +191,6 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 ## Source
 
 - Live measurement of the reference instance, 2026-08-04: `initialize` (protocol `2025-06-18`, `Mcp-Session-Id`, `tools`-only capabilities), `tools/list` (12 tools with full JSON Schema), `tools/call list_tenants` (role `lead`, `mcp_permissions`, `structuredContent` envelope), `GET /mcp` → `405`, unauthenticated `POST` → `401`
+- Live measurement of the reference instance, 2026-08-07: `tools/list` (43 tools), and read-only `tools/call` for `list_tenants`, `list_pests`, `get_pest` (`Tetranychus urticae`), `list_diseases`, `list_species`, `get_species_info` (`Allium porrum`, `Spathiphyllum wallisii`), `list_plants`, `get_plant_inspections`, `list_phase_definitions`, `list_overwintering_profiles`, and `get_sowing_calendar` (both unnarrowed, which was refused, and with `query`). No write tool was called.
 - `nolte/kamerplanter` — `docs/en/api/mcp-server.md` (transport, authentication, tenancy, documented permission classes, tool purposes, audit trail), read 2026-08-04
 - Goose `env_keys` behaviour measured against Goose 1.45.0 by capturing the requests it issues; see `README.md` §Notes
