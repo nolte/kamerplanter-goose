@@ -1,0 +1,14 @@
+# Direct *runtime* dependencies of this repository, per
+# spec/project/project-structure/ §Python development and §Requirements file
+# format.
+#
+# The deliverable here is a set of Goose recipes plus the MCP extension
+# definitions and project skills they load — none of it installs or runs as a
+# Python package, so there is no runtime install set to pin. This file is the
+# documented placeholder permitted by §Requirements file format; replace it
+# with real, version-pinned entries as soon as a genuine runtime dependency
+# lands.
+#
+# The repository's *tooling* dependencies (the recipe contract validator) live
+# in requirements-dev.txt, and the docs-build toolchain stays in
+# docs/requirements.txt, so each component keeps its own focused install set.

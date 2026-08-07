@@ -1,0 +1,33 @@
+# Root project metadata and Python tooling configuration, per
+# spec/project/project-structure/ §Python development.
+#
+# This repository ships Goose recipes, MCP extension definitions, and project
+# skills — not an installable Python library. Its Python surface is the
+# repository's own tooling: the recipe contract validator under tests/. There
+# are therefore no *runtime* package dependencies; requirements.txt is the
+# documented placeholder permitted by §Requirements file format, and the
+# tooling install set lives in requirements-dev.txt. Run everything inside a
+# project-local virtual environment (`task setup`), never against system Python.
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kamerplanter-goose-tooling"
+version = "0.1.0"
+description = "Repository tooling for the kamerplanter-goose recipe catalog (recipe contract validator). Not a published library."
+readme = "README.md"
+requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "nolte", email = "nolte07@gmail.com" }]
+classifiers = [
+  "Private :: Do Not Upload",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+Homepage = "https://github.com/nolte/kamerplanter-goose"
+Repository = "https://github.com/nolte/kamerplanter-goose"
+Documentation = "https://nolte.github.io/kamerplanter-goose/"

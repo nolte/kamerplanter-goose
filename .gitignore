@@ -1,0 +1,44 @@
+# Claude Code — local / user-specific
+.claude/settings.local.json
+.claude/*.local.json
+.claude/.credentials.json
+
+# MkDocs build output
+/site/
+
+# Resume scratch — in-flight skill/agent state per spec/claude/resumable-work/
+/.resume/
+
+# Audit artifacts — findings convert to issues/PRs, the reports stay local
+/.audits/
+
+# Goose — session state and local recipe overrides
+.goose/
+
+# Environment — .envrc is tracked, the credentials it resolves are not
+.env
+.env.*
+!.env.example
+
+# Python (the docs toolchain and tests/ run in a project-local venv)
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Task runner cache
+.task/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

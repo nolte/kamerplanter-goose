@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recipes:
+    name: Recipe contract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the tooling install set
+        run: pip install -r requirements-dev.txt
+
+      # `goose` is not installed on the runner, so the validator skips the
+      # schema pass and checks the house-pattern rules only — the ones that
+      # fail silently at runtime rather than at validate time.
+      - name: Validate recipes against the house pattern
+        run: python tests/validate_recipes.py
+
+  docs:
+    name: Docs build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the docs toolchain
+        run: pip install -r docs/requirements.txt
+
+      # Same command `task docs` runs locally, so a local pass matches CI.
+      - name: Build the site
+        run: mkdocs build --strict
+
+  lint:
+    name: Pre-commit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install the tooling install set
+        run: pip install -r requirements-dev.txt
+
+      - name: Run every hook
+        run: pre-commit run --all-files --show-diff-on-failure

@@ -1,0 +1,16 @@
+# These settings are synced to GitHub by https://probot.github.io/apps/settings/
+
+_extends: gh-plumbing:.github/commons-settings.yml
+
+repository:
+  name: kamerplanter-goose
+  description: Shareable Goose recipes for Kamerplanter and Home Assistant
+  homepage: https://nolte.github.io/kamerplanter-goose
+  topics:
+    - goose
+    - mcp
+    - model-context-protocol
+    - kamerplanter
+    - home-assistant
+    - plant-care
+    - ai-agents

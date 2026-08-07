@@ -1,0 +1,12 @@
+# Development- and tooling-only dependencies for this repository's Python
+# surface, per spec/project/project-structure/ §Python development (the
+# requirements-dev SHOULD) and §Requirements file format. Installed into the
+# project-local virtual environment by `task setup`; never chained from
+# requirements.txt via -r (the Taskfile installs both files independently).
+#
+# What needs these:
+#   - tests/validate_recipes.py  -> PyYAML
+#
+# The docs-build toolchain (MkDocs plus plugins) stays in docs/requirements.txt.
+PyYAML==6.0.3
+pre-commit>=4.4,<5
