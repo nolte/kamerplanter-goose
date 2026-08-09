@@ -19,6 +19,21 @@ set -euo pipefail
 
 MAX_ENTRIES="${1:-3}"
 TENANT="${2:-}"
+
+# Validated, not trusted. `[ "$n" -ge "$MAX_ENTRIES" ]` is the left arm of an
+# && list, so set -e exempts it: a non-numeric value makes `test` fail, the
+# break is never reached, and the cap vanishes entirely — this loop then runs
+# a write-capable recipe against every one of up to 100 queued entries and
+# still exits 0. The usage line reads `[max_entries] [tenant]`, and the tenant
+# is the parameter a caller remembers, so `analyse-queue.sh my-garden` is the
+# obvious way to arrive here.
+case "$MAX_ENTRIES" in
+  '' | *[!0-9]*)
+    echo "max_entries must be a non-negative integer, got '$MAX_ENTRIES'." >&2
+    echo "Usage: $(basename "$0") [max_entries] [tenant]" >&2
+    exit 2
+    ;;
+esac
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_ID="queue-$(date +%Y%m%d-%H%M%S)"
 
@@ -62,8 +77,20 @@ mcp_call() {
     -d "$1"
 }
 
+# A Kamerplanter garden slug is lowercase alphanumerics and hyphens. Checking
+# that beats escaping it: interpolated raw, a slug carrying a quote or a
+# backslash produces invalid JSON, and the server's parse error then arrives as
+# an empty queue — which reads as "nothing to do" rather than as a typo.
 tenant_arg=""
-[ -n "$TENANT" ] && tenant_arg=",\"tenant\":\"$TENANT\""
+if [ -n "$TENANT" ]; then
+  case "$TENANT" in
+    *[!a-zA-Z0-9-_]*)
+      echo "tenant must be a garden slug (letters, digits, - and _), got '$TENANT'." >&2
+      exit 2
+      ;;
+  esac
+  tenant_arg=",\"tenant\":\"$TENANT\""
+fi
 
 echo "Reading the analysis queue..."
 queue_json=$(mcp_call "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"list_pending_diary_analyses\",\"arguments\":{\"limit\":100,\"include_stale\":true$tenant_arg}}}")
