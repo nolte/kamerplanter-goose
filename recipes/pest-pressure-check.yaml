@@ -46,7 +46,7 @@ prompt: |
   The suspicion to test is "{{ suspicion }}"; when that is empty, work from the
   plant's recorded inspection history alone. Read-only run. Use MCP tools only:
   do not shell out, do not fetch URLs, and read or write no local file other
-  than loading the named skills.
+  than loading the named skills and the files they instruct you to read.
 
   Hard constraints for this entire run:
   - Call NO tool that changes state. Forbidden on Kamerplanter, by name:

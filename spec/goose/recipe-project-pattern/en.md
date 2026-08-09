@@ -168,7 +168,7 @@ spec/                          this layer plus one spec per backend
 - **MUST** resolve credentials from the environment; a literal credential **MUST NOT** appear in a recipe, in `extensions.yaml`, or in any tracked file
 - **MUST** place every constraint that has to hold in the recipe's `prompt`; `instructions` **MAY** carry framing and tone but **MUST NOT** be the only place a prohibition appears
 - **MUST** name the specific tools a read-only recipe may not call, rather than describing the category alone, so the prohibition does not depend on the model's classification
-- **MUST** carry an `-apply` filename suffix and state the effect in `description` when a recipe calls any state-changing tool
+- **MUST** carry an `-apply` filename suffix and state the effect in `description` when a recipe calls a tool that changes a backend's state — the `mcp.write` and `mcp.setup` classes. The suffix is a statement about somebody's garden, not about the filesystem: a recipe that only writes a report into the gitignored `.audits/` tree **MUST NOT** take the suffix, and **MUST** say what it writes in its `description` instead, since `-apply` would otherwise read as a warning about data nobody can lose
 - **MUST** keep `recipes/` flat; grouping **MUST** be encoded in filenames, because discovery does not walk subdirectories
 - **MUST** state in the repository's README that consuming recipes over `GOOSE_RECIPE_GITHUB_REPO` requires supplying the extension config separately
 - **MUST NOT** treat a read-only prompt as a security boundary under a provider that supplies execution tools; a recipe handling untrusted input **MUST** run under a provider without them, or under `--no-profile`
@@ -194,7 +194,8 @@ spec/                          this layer plus one spec per backend
 - [ ] Every `${VAR}` used in an extension is listed in that extension's `env_keys`
 - [ ] No tracked file contains a literal credential
 - [ ] Every prohibition a recipe depends on appears in its `prompt`
-- [ ] Every recipe calling a state-changing tool has an `-apply` filename
+- [ ] Every recipe calling an `mcp.write` or `mcp.setup` tool has an `-apply` filename
+- [ ] Every recipe that writes anything at all says so in its `description`, whether or not it carries the suffix
 - [ ] `recipes/` contains no subdirectories
 - [ ] The README states the extension-config requirement for GitHub-sourced recipes
 - [ ] A connectivity recipe exists and passes against the current environment

@@ -73,7 +73,7 @@ These are the failure modes `spec/goose/recipe-project-pattern/en.md` exists to 
 
 ## Conventions
 
-- A recipe that calls any state-changing tool carries an `-apply` filename suffix, opens its `description` with `WRITES to …`, and states the effect there.
+- A recipe that calls an `mcp.write` or `mcp.setup` tool carries an `-apply` filename suffix, opens its `description` with `WRITES to …`, and states the effect there. The suffix is about a garden, not the filesystem — `domain-review` writes a report into the gitignored `.audits/` tree, says so in its `description`, and deliberately does not take the suffix.
 - Credentials never appear in a tracked file; they come from the environment via `.envrc` and `pass`.
 - A recipe that loads a project skill names the required working directory in its `description`.
 - Recipes close with a fixed PASS/FAIL or status table and a machine-readable final line (`SUBMITTED: completed`, `NOT CLAIMED: <reason>`), so a run's outcome is greppable.

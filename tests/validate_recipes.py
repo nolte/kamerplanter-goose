@@ -74,8 +74,14 @@ class Findings:
 
 
 PROHIBITION_PATTERN = re.compile(
-    r"(?i)(forbidden|never call|do not call|must not call)"
+    r"(?i)(forbidden|never call|do not call|must not call|must not be called)"
 )
+
+BULLET_PATTERN = re.compile(r"^(\s*)[-*]\s")
+
+# An imperative that turns a named tool back into a call even inside a unit
+# that also forbids something.
+CALL_VERB_PATTERN = re.compile(r"(?i)\b(call|calls|invoke|invokes|run|runs)\b")
 
 
 def tool_pattern(tool: str) -> re.Pattern:
@@ -91,21 +97,90 @@ def tool_pattern(tool: str) -> re.Pattern:
     return re.compile(rf"(?<![A-Za-z0-9_])(?:mcp__[A-Za-z0-9_]+__)?{re.escape(tool)}\b")
 
 
-def prohibition_spans(body: str) -> list[tuple[int, int]]:
-    """Character ranges in which naming a state-changing tool forbids it rather
-    than calls it.
+def instruction_units(body: str) -> list[tuple[int, int]]:
+    """Split the body into the smallest self-contained instruction units:
+    blank-line-separated paragraphs, and inside a paragraph, each top-level
+    list item with its continuation lines.
 
-    A prohibition reaches to the end of its own sentence and no further. The
-    house pattern spreads the forbidden tools over several lines after the
-    phrase — "Forbidden on Kamerplanter, by name:" then a list closing with a
-    period — so the sentence, not the line, is the right unit. Anything after
-    that period is an instruction again.
+    The unit — not the sentence — is what a prohibition governs. The house
+    pattern writes a forbidden-tool list as a bullet whose items wrap over
+    several lines, sometimes as nested bullets, and any sentence-based rule
+    either stops inside that list (rejecting a correct recipe) or runs past
+    the blank line into the steps below it (exempting a real call).
     """
-    spans = []
-    for match in PROHIBITION_PATTERN.finditer(body):
-        end = body.find(".", match.end())
-        spans.append((match.start(), len(body) if end == -1 else end + 1))
-    return spans
+    units = []
+    for paragraph in re.finditer(r"[^\n]+(?:\n[^\n]+)*", body):
+        lines = paragraph.group(0).split("\n")
+        indents = [
+            len(match.group(1))
+            for line in lines
+            if (match := BULLET_PATTERN.match(line))
+        ]
+        top_level = min(indents) if indents else None
+
+        start, offset = paragraph.start(), paragraph.start()
+        for line in lines:
+            match = BULLET_PATTERN.match(line)
+            is_sibling = match is not None and len(match.group(1)) == top_level
+            if is_sibling and offset > start:
+                units.append((start, offset))
+                start = offset
+            offset += len(line) + 1
+        units.append((start, paragraph.end()))
+    return units
+
+
+def sentence_at(body: str, position: int, start: int, end: int) -> str:
+    """The sentence around `position`, clipped to the unit [start, end)."""
+    left = max(
+        (body.rfind(sep, start, position) for sep in (". ", ".\n", ":\n", "\n\n")),
+        default=-1,
+    )
+    right = min(
+        (
+            found
+            for sep in (". ", ".\n")
+            if (found := body.find(sep, position, end)) != -1
+        ),
+        default=end,
+    )
+    return body[max(left, start) : right]
+
+
+def names_a_call(body: str, position: int, start: int, end: int) -> bool:
+    """Whether the tool at `position` is being called rather than forbidden.
+
+    Two granularities, because neither alone survives the shapes recipes are
+    actually written in. The *unit* (paragraph or list item) is what a
+    prohibition governs: the house pattern writes a forbidden-tool list as a
+    bullet wrapping over several lines, so a sentence rule would stop inside
+    it. But a prose unit can mix both — "Forbidden: X. Now call Y." is one
+    paragraph — so within a prohibiting unit a *sentence* that carries a call
+    verb and no prohibition of its own is still a call.
+
+    This is a heuristic over prose and cannot be exhaustive. `--self-test`
+    holds the shapes it is known to get right; extend it before trusting a new
+    one.
+    """
+    sentence = sentence_at(body, position, start, end)
+    return bool(CALL_VERB_PATTERN.search(sentence)) and not PROHIBITION_PATTERN.search(
+        sentence
+    )
+
+
+def calls_state_changing_tools(body: str) -> list[str]:
+    """State-changing tools this body calls, ignoring those it only forbids."""
+    units = instruction_units(body)
+    calling = set()
+    for tool in STATE_CHANGING_TOOLS:
+        for match in tool_pattern(tool).finditer(body):
+            unit = next(
+                ((s, e) for s, e in units if s <= match.start() < e), (0, len(body))
+            )
+            forbidding = PROHIBITION_PATTERN.search(body[unit[0] : unit[1]])
+            if not forbidding or names_a_call(body, match.start(), *unit):
+                calling.add(tool)
+    return sorted(calling)
 
 
 def load_yaml(path: Path, findings: Findings) -> dict | None:
@@ -181,17 +256,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
         # therefore disables this check entirely: a recipe that forbids one
         # write tool and calls another passes. Exempt per *occurrence* instead,
         # and only inside the prohibiting sentence itself.
-        prohibited = prohibition_spans(body)
-        calling = sorted(
-            {
-                tool
-                for tool in STATE_CHANGING_TOOLS
-                for match in tool_pattern(tool).finditer(body)
-                if not any(
-                    start <= match.start() < end for start, end in prohibited
-                )
-            }
-        )
+        calling = calls_state_changing_tools(body)
         if calling:
             findings.error(
                 where,
@@ -417,9 +482,98 @@ def run_goose_validate(findings: Findings) -> None:
             findings.error(f"recipes/{path.name}", f"goose validate — {output}")
 
 
+# Every shape the write-guard is known to get right. It is the only check here
+# whose failure is silent — a broken guard reports OK — and it has already died
+# twice unnoticed: once because `\b<tool>\b` cannot match `mcp__server__<tool>`,
+# once because any prohibition anywhere exempted the whole recipe. Add the shape
+# before changing the heuristic.
+WRITE_GUARD_CASES = [
+    ("bare call, no prohibition", "Call confirm_care_task now.", ["confirm_care_task"]),
+    (
+        "prefixed call, no prohibition",
+        "Then call `mcp__kamerplanter__archive_plant`.",
+        ["archive_plant"],
+    ),
+    (
+        "house-pattern prohibition list",
+        "- Call NO tool that changes state. Forbidden on Kamerplanter, by name:\n"
+        "  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,\n"
+        "  `mcp__kamerplanter__submit_diary_analysis`.",
+        [],
+    ),
+    (
+        "nested bullet list, real call after a blank line",
+        "- Call NO tool that changes state. Forbidden by name:\n"
+        "  - `mcp__kamerplanter__confirm_care_task`\n"
+        "  - `mcp__kamerplanter__archive_plant`\n"
+        "\n"
+        "Step 1 - Collect context, then call\n"
+        "`mcp__kamerplanter__submit_diary_analysis` with the result.",
+        ["submit_diary_analysis"],
+    ),
+    (
+        "forbids one tool, calls another in the same paragraph",
+        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
+        "Now call mcp__kamerplanter__submit_diary_analysis to persist the result.",
+        ["submit_diary_analysis"],
+    ),
+    (
+        "sibling bullet ends the prohibition",
+        "- Forbidden: `mcp__kamerplanter__archive_plant`.\n"
+        "- Then call `mcp__kamerplanter__create_site`.",
+        ["create_site"],
+    ),
+    (
+        "period inside the prohibiting sentence",
+        "Forbidden by name (see spec/mcp/kamerplanter-mcp-server/en.md): "
+        "`mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__create_site`.",
+        [],
+    ),
+    (
+        "tools named before the phrase",
+        "`mcp__kamerplanter__archive_plant` and `mcp__kamerplanter__create_site` "
+        "are forbidden.",
+        [],
+    ),
+    (
+        "passive prohibition",
+        "`mcp__kamerplanter__create_site` must not be called.",
+        [],
+    ),
+    (
+        "prohibition after the call does not excuse it",
+        "Call archive_plant.\n\nForbidden: create_site.",
+        ["archive_plant"],
+    ),
+    ("substring is not a match", "unarchive_plantx and archive_plants", []),
+]
+
+
+def run_self_test() -> int:
+    failures = 0
+    for name, body, expected in WRITE_GUARD_CASES:
+        actual = calls_state_changing_tools(body)
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(WRITE_GUARD_CASES)} write-guard case(s) failed.")
+        return 1
+    print(f"OK — {len(WRITE_GUARD_CASES)} write-guard cases hold.")
+    return 0
+
+
 def main() -> int:
+    if "--self-test" in sys.argv:
+        return run_self_test()
+
     if not RECIPES_DIR.is_dir():
         print("recipes/ is missing", file=sys.stderr)
+        return 1
+
+    # The write-guard reports OK when it is broken, so the recipes are only
+    # meaningfully checked once its own cases hold.
+    if run_self_test() != 0:
         return 1
 
     findings = Findings()

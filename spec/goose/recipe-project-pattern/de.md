@@ -168,7 +168,7 @@ spec/                          diese Ebene plus eine Spec je Backend
 - **MUSS [MUST]** Zugangsdaten aus der Umgebung beziehen; ein literales Zugangsdatum **DARF NICHT [MUST NOT]** in einem Rezept, in `extensions.yaml` oder in einer versionierten Datei auftauchen
 - **MUSS [MUST]** jede Nebenbedingung, die gelten muss, in den `prompt` des Rezepts setzen; `instructions` **KANN [MAY]** Rahmen und Ton tragen, **DARF** aber **NICHT [MUST NOT]** der einzige Ort eines Verbots sein
 - **MUSS [MUST]** die konkreten Tools benennen, die ein nur lesendes Rezept nicht aufrufen darf, statt nur die Kategorie zu beschreiben, damit das Verbot nicht von der Einordnung des Modells abhängt
-- **MUSS [MUST]** das Dateinamens-Suffix `-apply` tragen und die Wirkung in `description` benennen, wenn ein Rezept ein zustandsänderndes Tool aufruft
+- **MUSS [MUST]** das Dateinamens-Suffix `-apply` tragen und die Wirkung in `description` benennen, wenn ein Rezept ein Tool aufruft, das den Zustand eines Backends ändert — die Klassen `mcp.write` und `mcp.setup`. Das Suffix ist eine Aussage über den Garten von jemandem, nicht über das Dateisystem: Ein Rezept, das nur einen Bericht in den gitignorierten `.audits/`-Baum schreibt, **DARF** das Suffix **NICHT** tragen und **MUSS** stattdessen in seiner `description` sagen, was es schreibt — sonst läse sich `-apply` als Warnung vor Daten, die niemand verlieren kann
 - **MUSS [MUST]** `recipes/` flach halten; Gruppierung **MUSS [MUST]** in Dateinamen kodiert werden, da das Auffinden keine Unterverzeichnisse durchläuft
 - **MUSS [MUST]** im README des Repositorys angeben, dass der Bezug von Rezepten über `GOOSE_RECIPE_GITHUB_REPO` das separate Bereitstellen der Extension-Konfiguration erfordert
 - **DARF NICHT [MUST NOT]** einen nur lesenden Prompt als Sicherheitsgrenze behandeln, wenn der Provider Ausführungswerkzeuge mitbringt; ein Rezept, das nicht vertrauenswürdige Eingaben verarbeitet, **MUSS [MUST]** unter einem Provider ohne solche Werkzeuge oder unter `--no-profile` laufen
@@ -194,7 +194,8 @@ spec/                          diese Ebene plus eine Spec je Backend
 - [ ] Jede in einer Extension verwendete `${VAR}` steht in deren `env_keys`
 - [ ] Keine versionierte Datei enthält ein literales Zugangsdatum
 - [ ] Jedes Verbot, auf das sich ein Rezept stützt, steht in seinem `prompt`
-- [ ] Jedes Rezept, das ein zustandsänderndes Tool aufruft, trägt einen `-apply`-Dateinamen
+- [ ] Jedes Rezept, das ein `mcp.write`- oder `mcp.setup`-Tool aufruft, trägt einen `-apply`-Dateinamen
+- [ ] Jedes Rezept, das überhaupt etwas schreibt, sagt das in seiner `description` — mit Suffix oder ohne
 - [ ] `recipes/` enthält keine Unterverzeichnisse
 - [ ] Das README benennt die Anforderung an die Extension-Konfiguration für über GitHub bezogene Rezepte
 - [ ] Ein Konnektivitätsrezept existiert und läuft gegen die aktuelle Umgebung durch

@@ -38,8 +38,9 @@ instructions: |
 prompt: |
   Verify the baseline for species "{{ species_key }}", using garden
   "{{ tenant }}" for the instance's own frost dates. Read-only run. Use MCP
-  tools and web research only: do not shell out, and do not read or write local
-  files other than loading the named skills.
+  tools and web research only: do not shell out, and read or write no local file
+  other than loading the named skills and the files they instruct you to
+  read.
 
   Hard constraints for this entire run:
   - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
