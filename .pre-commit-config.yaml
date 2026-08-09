@@ -41,6 +41,13 @@ repos:
       - id: validate-recipes
         name: validate goose recipes against the house pattern
         entry: python3 tests/validate_recipes.py
-        language: system
+        # `language: python` rather than `system`: the script imports yaml at
+        # module level, and `task setup` installs PyYAML into .venv only. Under
+        # `system` the hook runs whatever python3 the PATH offers, so a machine
+        # that followed the documented setup exactly fails every commit with
+        # ModuleNotFoundError. It passes here by accident of this developer's
+        # global site-packages.
+        language: python
+        additional_dependencies: ["PyYAML==6.0.3"]
         files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
         pass_filenames: false
