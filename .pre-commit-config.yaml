@@ -48,6 +48,11 @@ repos:
         # ModuleNotFoundError. It passes here by accident of this developer's
         # global site-packages.
         language: python
+        # Keep in step with requirements-dev.txt by hand: Renovate's
+        # pre-commit manager bumps `rev:` on remote repos and never touches
+        # additional_dependencies, so a bump there would leave the Pre-commit
+        # job and every local commit on the old wheel while Recipe contract
+        # runs the new one. Both are required checks.
         additional_dependencies: ["PyYAML==6.0.3"]
         files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
         pass_filenames: false

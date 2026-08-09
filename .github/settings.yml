@@ -15,43 +15,38 @@ repository:
     - plant-care
     - ai-agents
 
-# The inherited commons deliberately ships `required_status_checks.contexts: []`
-# for develop and tells consumers to declare their own — so without this block
-# the branch has no protection at all. Measured 2026-08-09: the API answered
-# `Branch not protected` (404) for develop, and the `automerge` label the
+# The inherited commons ships `required_status_checks.contexts: []` for develop
+# and tells consumers to declare their own — so without this block the branch
+# has no protection at all. Measured 2026-08-09: the API answered `Branch not
+# protected` (404) for develop, and the `automerge` label the automerge
 # workflow keys on did not exist either. Every CI job was advisory.
 #
-# BOTH branches are declared, not just develop. `_extends` merges this file
-# with the commons, and `branches:` is a list there carrying master and
-# develop. Whether Probot replaces the list or concatenates it is not stated
-# anywhere we can rely on, and the two answers differ sharply: a replace would
-# have dropped master's protection entirely while this file only meant to add
-# develop's contexts. Declaring both is correct under either semantics —
-# replace applies exactly these two, concatenate appends them after the
-# commons' pair so the later entry for each name wins.
+# Probot merges `branches:` entries from `_extends` BY NAME
+# (probot/settings passes `arrayMerge: mergeArrayByName`), so only the keys
+# named here override the commons. An earlier revision of this file copied the
+# commons' `master` block on the theory that a list might be replaced wholesale;
+# that was wrong, and copying it would only have frozen this repository at one
+# commons revision. `master` is also not a branch here — the pair is
+# develop/main — so the commons' entry for it is an inert no-op either way.
 #
-# master mirrors the commons verbatim; only develop's `contexts` is new. Those
-# names are the job-level `name:` values from .github/workflows/ci.yml, which
-# is what GitHub reports as the check context — the job ids would silently
-# never match anything.
+# `restrictions: null` is load-bearing, not tidying. The commons declare
+# `restrictions.apps: [nolte-portfolio-app]`, but GitHub accepts push
+# restrictions only on ORGANISATION-owned repositories; `gh api users/nolte`
+# reports `User`. On a personal account the branch-protection PUT is rejected
+# outright and the Settings App drops the ENTIRE update — not just the
+# unsupported field — so every context declared below would be silently
+# ignored. Measured across the portfolio: nolte/gh-plumbing inherits the
+# restrictions, declares three contexts and has one live; nolte/kamerplanter
+# and nolte/claude-shared set `restrictions: null` and get all of theirs.
+# nolte/kamerplanter's own settings.yml records the same measurement.
 #
-# `restrictions` is kept as the commons has it. This account is a User, not an
-# Organisation, and GitHub limits push restrictions to organisation-owned
-# repositories; the commons documents that the Settings App skips the field
-# silently for such repositories. Dropping it here would be an unforced change
-# to master's declared intent, and setting it to null would differ from the
-# portfolio default for no reason this repository has.
+# Verify after any change to this block:
+#   gh api repos/nolte/kamerplanter-goose/branches/develop/protection \
+#     --jq '.required_status_checks.contexts'
+#
+# Context names are the job-level `name:` values from .github/workflows/ci.yml,
+# which is what GitHub reports; the job ids would silently never match.
 branches:
-  - name: master
-    protection:
-      required_pull_request_reviews: null
-      required_status_checks: null
-      enforce_admins: true
-      restrictions:
-        users: []
-        teams: []
-        apps:
-          - nolte-portfolio-app
   - name: develop
     protection:
       required_pull_request_reviews: null
@@ -62,8 +57,16 @@ branches:
           - Docs build
           - Pre-commit
       enforce_admins: true
-      restrictions:
-        users: []
-        teams: []
-        apps:
-          - nolte-portfolio-app
+      restrictions: null
+
+  # main is the presentation branch that release-cd-refresh-master.yml
+  # fast-forwards on release, and the branch repo_url points at. It carried no
+  # protection at all (404). No required checks: nothing runs on it that does
+  # not already run on develop, and a fast-forward is linear by construction.
+  - name: main
+    protection:
+      required_pull_request_reviews: null
+      required_status_checks: null
+      enforce_admins: true
+      required_linear_history: true
+      restrictions: null
