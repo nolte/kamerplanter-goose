@@ -203,16 +203,42 @@ def prohibition_spans(body: str) -> list[tuple[int, int]]:
             after = SENTENCE_END_PATTERN.search(unit, match.end(), region_end)
             right = after.end() if after else region_end + 1
 
-            # Then over any following lines that carry nothing but tool names.
-            while right < len(unit):
-                stop = unit.find("\n", right)
-                stop = len(unit) if stop == -1 else stop
-                if not is_name_only(unit[right:stop]):
-                    break
-                right = stop + 1
+            absolute_right = start + min(right, len(unit))
 
-            spans.append((start + left, start + min(right, len(unit))))
+            # Then over any following lines that carry nothing but tool names.
+            # This crosses unit boundaries on purpose: a forbidden-tool list
+            # written as top-level bullets puts every entry in its own unit, and
+            # a line that is only tool names cannot be an instruction wherever
+            # it sits.
+            while absolute_right < len(body):
+                stop = body.find("\n", absolute_right)
+                stop = len(body) if stop == -1 else stop
+                if not is_name_only(body[absolute_right:stop]):
+                    break
+                absolute_right = stop + 1
+
+            spans.extend(exempt_clauses(body, start + left, absolute_right))
     return spans
+
+
+def exempt_clauses(body: str, left: int, right: int) -> list[tuple[int, int]]:
+    """Split a prohibition span at semicolons and keep only the clauses that
+    actually forbid something.
+
+    A semicolon joins a prohibition to its opposite often enough to matter —
+    "Do not call `archive_plant`; call `add_plant_diary_entry` instead" is one
+    sentence, and treating it whole exempts the call. A clause survives only if
+    it carries a prohibition phrase of its own or is nothing but tool names,
+    which is what keeps a genuine `X; Y` name list exempt.
+    """
+    clauses, cursor = [], left
+    for piece in re.finditer(r"[^;]+", body[left:right]):
+        begin, stop = left + piece.start(), left + piece.end()
+        text = body[begin:stop]
+        if PROHIBITION_PATTERN.search(text) or is_name_only(text.strip()):
+            clauses.append((begin, stop))
+        cursor = stop
+    return clauses
 
 
 def calls_state_changing_tools(body: str) -> list[str]:
@@ -309,6 +335,19 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 f"({', '.join(calling)}) outside a prohibition and without an "
                 "`-apply` filename suffix.",
             )
+    # A recipe that writes a file says so, suffix or not. `-apply` is reserved
+    # for backend state, so a report-writing recipe has nothing else to warn
+    # with — and a reader who granted the run on the strength of "read-only"
+    # finds files in their checkout.
+    writes_a_file = re.search(r"(?i)\bwrite[s]?\b[^.\n]{0,60}?`?\.audits/", body)
+    if writes_a_file and not re.search(r"(?i)\bwrite", description):
+        findings.error(
+            where,
+            "instructs the run to write a file but its `description` never "
+            "says so. The `-apply` suffix is reserved for backend state, so "
+            "the description is the only place a reader can learn it.",
+        )
+
     if is_apply and not re.match(r"(?i)\s*writes\b", description.strip()):
         findings.error(
             where,
@@ -617,6 +656,25 @@ WRITE_GUARD_CASES = [
         "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
         "1. Call `mcp__kamerplanter__create_site`.",
         ["create_site"],
+    ),
+    (
+        "forbidden list as top-level bullets",
+        "Forbidden on Kamerplanter, by name:\n"
+        "- `mcp__kamerplanter__archive_plant`\n"
+        "- `mcp__kamerplanter__create_site`",
+        [],
+    ),
+    (
+        "semicolon joins a prohibition to its opposite",
+        "- Do not call `mcp__kamerplanter__archive_plant`; call "
+        "`mcp__kamerplanter__add_plant_diary_entry` instead.",
+        ["add_plant_diary_entry"],
+    ),
+    (
+        "semicolon inside a genuine name list",
+        "Forbidden by name: `mcp__kamerplanter__archive_plant`; "
+        "`mcp__kamerplanter__create_site`.",
+        [],
     ),
     # connectivity-check's real shape: the list wraps, ends in an em dash, and
     # trails off into prose on the closing line.
