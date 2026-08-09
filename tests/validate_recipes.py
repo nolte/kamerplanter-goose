@@ -79,9 +79,16 @@ PROHIBITION_PATTERN = re.compile(
 
 BULLET_PATTERN = re.compile(r"^(\s*)[-*]\s")
 
-# An imperative that turns a named tool back into a call even inside a unit
-# that also forbids something.
-CALL_VERB_PATTERN = re.compile(r"(?i)\b(call|calls|invoke|invokes|run|runs)\b")
+# A line that opens a new structural element rather than continuing the
+# previous one: a bullet, a numbered step, a table row.
+STRUCTURAL_LINE_PATTERN = re.compile(r"^\s*(?:[-*]\s|\d+[.)]\s|\|)")
+
+# A token shaped like a tool identifier: snake_case, optionally carrying the
+# `mcp__<server>__` prefix. Prose words never match, because they have no
+# underscore.
+TOOL_TOKEN_PATTERN = re.compile(
+    r"^(?:mcp__[A-Za-z0-9]+__)?[a-z0-9]+(?:_[a-z0-9]+)+$"
+)
 
 
 def tool_pattern(tool: str) -> re.Pattern:
@@ -130,57 +137,95 @@ def instruction_units(body: str) -> list[tuple[int, int]]:
     return units
 
 
-def sentence_at(body: str, position: int, start: int, end: int) -> str:
-    """The sentence around `position`, clipped to the unit [start, end)."""
-    left = max(
-        (body.rfind(sep, start, position) for sep in (". ", ".\n", ":\n", "\n\n")),
-        default=-1,
-    )
-    right = min(
-        (
-            found
-            for sep in (". ", ".\n")
-            if (found := body.find(sep, position, end)) != -1
-        ),
-        default=end,
-    )
-    return body[max(left, start) : right]
+def is_name_only(line: str) -> bool:
+    """Whether a line carries nothing but tool names and punctuation — the
+    continuation of a forbidden-tool list, rather than an instruction."""
+    stripped = BULLET_PATTERN.sub("", line)
+    tokens = [token for token in re.split(r"[\s`,;:.|]+", stripped) if token]
+    return bool(tokens) and all(TOOL_TOKEN_PATTERN.match(t) for t in tokens)
 
 
-def names_a_call(body: str, position: int, start: int, end: int) -> bool:
-    """Whether the tool at `position` is being called rather than forbidden.
+SENTENCE_END_PATTERN = re.compile(r"\.(?=\s|$)")
 
-    Two granularities, because neither alone survives the shapes recipes are
-    actually written in. The *unit* (paragraph or list item) is what a
-    prohibition governs: the house pattern writes a forbidden-tool list as a
-    bullet wrapping over several lines, so a sentence rule would stop inside
-    it. But a prose unit can mix both — "Forbidden: X. Now call Y." is one
-    paragraph — so within a prohibiting unit a *sentence* that carries a call
-    verb and no prohibition of its own is still a call.
 
-    This is a heuristic over prose and cannot be exhaustive. `--self-test`
-    holds the shapes it is known to get right; extend it before trusting a new
-    one.
+def prohibition_spans(body: str) -> list[tuple[int, int]]:
+    """Character ranges in which naming a state-changing tool forbids it.
+
+    A prohibition covers **its own sentence, plus any following lines that
+    consist only of tool names**, clipped to its instruction unit.
+
+    Every part of that was learned from a shape that defeated an earlier
+    version, and `--self-test` holds one case per lesson:
+
+    - *Its own sentence*, not from the phrase forward, so "X and Y are
+      forbidden" covers tools named before the phrase.
+    - The sentence may *wrap over continuation lines*, because a real
+      forbidden-tool list does — sometimes trailing off into prose on the
+      closing line — but never over a line that opens a new structural element,
+      which is what stops a table row or a numbered step carrying a real call
+      from being swallowed.
+    - *Name-only continuation lines* extend it further, covering a list written
+      as nested bullets. Testing for names rather than for an English call verb
+      is what makes this language-independent: "Then `create_site` with the
+      plant_key" is not a list continuation whichever verb it uses, or none.
+    - *Clipped to the unit*, so a prohibition never reaches past a blank line
+      or a sibling bullet into the steps below it.
     """
-    sentence = sentence_at(body, position, start, end)
-    return bool(CALL_VERB_PATTERN.search(sentence)) and not PROHIBITION_PATTERN.search(
-        sentence
-    )
+    spans = []
+    for start, end in instruction_units(body):
+        unit = body[start:end]
+
+        def line_bounds(position: int) -> tuple[int, int]:
+            begin = unit.rfind("\n", 0, position) + 1
+            stop = unit.find("\n", position)
+            return begin, len(unit) if stop == -1 else stop
+
+        for match in PROHIBITION_PATTERN.finditer(unit):
+            region_start, region_end = line_bounds(match.start())
+
+            # Walk back over continuation lines so a sentence that began on an
+            # earlier line is covered whole.
+            while region_start > 0 and not STRUCTURAL_LINE_PATTERN.match(
+                unit[region_start : line_bounds(region_start)[1]]
+            ):
+                region_start = unit.rfind("\n", 0, region_start - 1) + 1
+
+            while region_end < len(unit):
+                next_start, next_end = region_end + 1, None
+                next_end = unit.find("\n", next_start)
+                next_end = len(unit) if next_end == -1 else next_end
+                if STRUCTURAL_LINE_PATTERN.match(unit[next_start:next_end]):
+                    break
+                region_end = next_end
+
+            before = [m.end() for m in SENTENCE_END_PATTERN.finditer(unit, region_start, match.start())]
+            left = before[-1] if before else region_start
+            after = SENTENCE_END_PATTERN.search(unit, match.end(), region_end)
+            right = after.end() if after else region_end + 1
+
+            # Then over any following lines that carry nothing but tool names.
+            while right < len(unit):
+                stop = unit.find("\n", right)
+                stop = len(unit) if stop == -1 else stop
+                if not is_name_only(unit[right:stop]):
+                    break
+                right = stop + 1
+
+            spans.append((start + left, start + min(right, len(unit))))
+    return spans
 
 
 def calls_state_changing_tools(body: str) -> list[str]:
     """State-changing tools this body calls, ignoring those it only forbids."""
-    units = instruction_units(body)
-    calling = set()
-    for tool in STATE_CHANGING_TOOLS:
-        for match in tool_pattern(tool).finditer(body):
-            unit = next(
-                ((s, e) for s, e in units if s <= match.start() < e), (0, len(body))
-            )
-            forbidding = PROHIBITION_PATTERN.search(body[unit[0] : unit[1]])
-            if not forbidding or names_a_call(body, match.start(), *unit):
-                calling.add(tool)
-    return sorted(calling)
+    spans = prohibition_spans(body)
+    return sorted(
+        {
+            tool
+            for tool in STATE_CHANGING_TOOLS
+            for match in tool_pattern(tool).finditer(body)
+            if not any(start <= match.start() < end for start, end in spans)
+        }
+    )
 
 
 def load_yaml(path: Path, findings: Findings) -> dict | None:
@@ -546,6 +591,43 @@ WRITE_GUARD_CASES = [
         ["archive_plant"],
     ),
     ("substring is not a match", "unarchive_plantx and archive_plants", []),
+    # The verb-independence cases. An earlier version asked whether the
+    # sentence carried a call verb, which made the guard a list of English
+    # words to keep guessing at; each of these slipped through it.
+    (
+        "call with no verb at all",
+        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
+        "Then `mcp__kamerplanter__create_site` with the plant_key.",
+        ["create_site"],
+    ),
+    (
+        "verb outside the guessed set",
+        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
+        "Trigger `mcp__kamerplanter__create_site`.",
+        ["create_site"],
+    ),
+    (
+        "table row carrying a call",
+        "| Forbidden | `mcp__kamerplanter__archive_plant` |\n"
+        "| Step 3 | call `mcp__kamerplanter__create_site` |",
+        ["create_site"],
+    ),
+    (
+        "numbered step carrying a call",
+        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
+        "1. Call `mcp__kamerplanter__create_site`.",
+        ["create_site"],
+    ),
+    # connectivity-check's real shape: the list wraps, ends in an em dash, and
+    # trails off into prose on the closing line.
+    (
+        "wrapped list ending in prose",
+        "- Call NO tool that changes state. Forbidden on Kamerplanter, by name:\n"
+        "    `confirm_care_task`, `archive_plant`, `set_plant_location`, "
+        "`create_site` —\n"
+        "    and anything else that writes.",
+        [],
+    ),
 ]
 
 
