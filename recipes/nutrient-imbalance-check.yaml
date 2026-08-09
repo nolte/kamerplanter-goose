@@ -57,13 +57,34 @@ prompt: |
   Load the skill `plant-context-collect` and follow it for plant
   "{{ plant_key }}". Carry its gaps list forward.
 
-  Step 2 — Assess.
-  Load the skill `nutrient-imbalance-assess` and follow it against that
-  context. Establish the evidence tier first, then the direction. If the
-  highest available tier is 3 or below, name the measurement that would resolve
-  the direction and propose no dosage.
+  Step 2 — Recorded measurements.
+  Tier 1 of the evidence ladder is a measured value from a diary entry, and
+  nothing else in this run fetches one. Without this step the assessment can
+  never rise above tier 3 and always refuses, even for a plant whose diary
+  holds a perfectly good reading.
 
-  Step 3 — Report.
+  Call `mcp__kamerplanter__list_diary_entries` with `plant_key` set to
+  "{{ plant_key }}" and `limit` 20. `entry_type` takes ONE value, not a list,
+  so make two calls: one with `measurement`, one with `problem`. When the
+  context step reported a `phase_started_at`, pass it as `created_from` so the
+  window matches the phase being judged; otherwise leave it unset and say so.
+
+  For each entry returned, call `mcp__kamerplanter__get_diary_entry` with its
+  `entry_key` and read the `measurements` object. Carry forward every value
+  with the date of its entry, and the count of entries whose `measurements`
+  was absent or empty.
+
+  Returning nothing is a legitimate outcome, not a failure: it means the
+  assessment proceeds at tier 3 or below, and the report says the diary was
+  read and held no measurement.
+
+  Step 3 — Assess.
+  Load the skill `nutrient-imbalance-assess` and follow it against that
+  context and those measurements. Establish the evidence tier first, then the
+  direction. If the highest available tier is 3 or below, name the measurement
+  that would resolve the direction and propose no dosage.
+
+  Step 4 — Report.
   Print this and nothing after it:
 
   ## Nutrient Assessment — {{ plant_key }}
@@ -74,6 +95,7 @@ prompt: |
   | Evidence tier | 1-5, and what the evidence was |
   | Plan | the plan phase and its target_ec_ms, or "none assigned" |
   | Substrate | the medium and the properties that mattered |
+  | Diary | entries read, measurements found, and the window searched |
 
   Then, in order: the reasoning in at most five sentences; each discarded
   measurement with why it was discarded; the recommended actions; and the time

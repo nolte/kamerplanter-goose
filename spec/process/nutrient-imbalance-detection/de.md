@@ -124,6 +124,8 @@ Eine vorgeschlagene Korrektur nennt das angestrebte Ziel, die Belegstufe dahinte
 - **MUSS [MUST]** gegen die Planphase vergleichen, die zum Datum des Eintrags gilt, aufgelöst über `phase_started_at` und `week_start` / `week_end` der Phase, nicht gegen den Plan als Ganzes
 - **MUSS [MUST]** benennen, dass kein Plan zugewiesen ist, und auf `nutrient_demand_level` und die Phasendefinition zurückfallen, wenn `get_plant_nutrient_plan` `plan: null` liefert, und **DARF NICHT [MUST NOT]** in diesem Fall einen `target_ec_ms` konstruieren
 - **MUSS [MUST]** eine bestätigte Düngung im Pflegeprotokoll als Beleg dafür behandeln, dass gedüngt wurde, und **DARF NICHT [MUST NOT]** als Dosis; wo die Dosis zählt und nicht erfasst ist, wird die Lücke gemeldet
+- **MUSS [MUST]** vor der Beurteilung die jüngsten Tagebucheinträge der Pflanze lesen — `list_diary_entries`, gefiltert nach `plant_key` und `entry_type`, danach `get_diary_entry` je Treffer —, denn Stufe 1 liegt in `measurements` und kein anderer Schritt holt sie. Ein Verfahren, das das überspringt, kommt nie über Stufe 3 hinaus und verweigert jedes Mal, auch bei einer Pflanze, deren Tagebuch den Wert enthält
+- **MUSS [MUST]** in der Ausgabe „das Tagebuch wurde gelesen und enthielt keine Messung" von „das Tagebuch wurde nicht gelesen" unterscheiden; nur Letzteres ist ein Fehler des Laufs
 - **MUSS [MUST]** `measurements`-Schlüssel vor der Verwendung normalisieren und **MUSS [MUST]** einen Wert verwerfen, dessen Einheit oder Herkunft mehrdeutig ist, statt eine Konvention anzunehmen, die das offene Schema nicht festlegt
 - **MUSS [MUST]** Nichtverfügbarkeit in Betracht ziehen, sobald Mangelsymptome mit einer Zufuhr auf oder über dem Phasenziel zusammenfallen, und **DARF NICHT [MUST NOT]** empfehlen, den betroffenen Nährstoff zu erhöhen, solange dieser Zustand nicht ausgeschlossen ist
 - **MUSS [MUST]** seine Annahme über das Ausgangswasser (`base_water_ec`, `alkalinity_ppm`) nennen, wann immer es `calculate_mixing_protocol` aufruft, da das Ergebnis eine EC-Netto-Rechnung ist
@@ -145,6 +147,7 @@ Eine vorgeschlagene Korrektur nennt das angestrebte Ziel, die Belegstufe dahinte
 - [ ] Kein Ergebnis empfiehlt, einen Nährstoff zu erhöhen, solange Nichtverfügbarkeit bei ausreichender Versorgung nicht ausgeschlossen ist
 - [ ] Substrateigenschaften erscheinen in der Begründung jeder Aussage über einen Überschuss
 - [ ] Zielvergleiche nennen die konkrete Planphase und ihr Wochenfenster, nicht den Plan als Ganzes
+- [ ] Jeder Lauf meldet, wie viele Tagebucheinträge er gelesen hat und über welchen Zeitraum
 - [ ] Ein `measurements`-Wert mit mehrdeutiger Einheit wird mit angegebener Begründung verworfen, nicht still gedeutet
 - [ ] Das nur lesende Rezept ruft kein zustandsänderndes Tool auf; die schreibende Variante trägt `-apply` und schreibt ausschließlich Tagebucheinträge
 - [ ] Kein Rezept unter dieser Spec ruft ein Home-Assistant-Aktuierungstool auf
@@ -152,7 +155,7 @@ Eine vorgeschlagene Korrektur nennt das angestrebte Ziel, die Belegstufe dahinte
 
 ## Offene Fragen
 
-- Welche `measurements`-Schlüssel in den Tagebucheinträgen der Instanz tatsächlich vorkommen. Das Schema deklariert keine, sodass die von dieser Spec geforderte Normalisierungstabelle noch nicht aus Daten geschrieben werden kann, sondern nur aus Konvention.
+- Welche `measurements`-Schlüssel in den Tagebucheinträgen der Instanz tatsächlich vorkommen. Das Schema deklariert keine, sodass die von dieser Spec geforderte Normalisierungstabelle weiterhin auf Konvention ruht — aber nun, da jeder Lauf die Einträge liest, sind die Läufe selbst der Stichprobenmechanismus, der die Frage beantworten wird.
 - Ob Ablauf-EC und Tank-EC in der Akte unterscheidbar sind. Die Unterscheidung entscheidet, ob ein Messwert beschreibt, was die Pflanze erhält, oder was im Medium zurückbleibt, und nichts im offenen Schema trennt beides.
 - Ob Home Assistant Sensoren für Bodenfeuchte oder Leitfähigkeit führt, die Belege der Stufe 1 je Pflanze liefern könnten, und wie ein Sensor an eine Pflanzeninstanz gebunden würde. `GetLiveContext` liefert Entity-Zustände, eine Zuordnung Pflanze-zu-Entity wurde nicht gefunden.
 - Ob die nennenswerten Antagonismen (welches Ion welches unterdrückt) in diese Spec gehören, in das über `search_glossary` erreichbare Glossar des Backends oder in die Wissensbasis. Sie hier zu kodieren, birgt dieselbe Drift, die dieses Repository bei Artdaten vermeidet.

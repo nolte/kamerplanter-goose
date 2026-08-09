@@ -124,6 +124,8 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 - **MUST** compare against the plan phase that applies at the entry's date, resolved through `phase_started_at` and the phase's `week_start` / `week_end`, not against the plan as a whole
 - **MUST** state that no plan is assigned and fall back to `nutrient_demand_level` and the phase definition when `get_plant_nutrient_plan` returns `plan: null`, and **MUST NOT** synthesise a `target_ec_ms` in that case
 - **MUST** treat a confirmed feeding in the care log as evidence that feeding happened and **MUST NOT** treat it as a dose; where dose matters and is unrecorded, the gap is reported
+- **MUST** read the plant's recent diary entries before assessing — `list_diary_entries` filtered by `plant_key` and by `entry_type`, then `get_diary_entry` per hit — since tier 1 lives in `measurements` and no other step fetches it. A process that skips this can never rise above tier 3 and refuses every time, including for a plant whose diary holds the reading
+- **MUST** distinguish "the diary was read and held no measurement" from "the diary was not read" in the output; only the second is a defect in the run
 - **MUST** normalise `measurements` keys before use and **MUST** discard a value whose unit or provenance is ambiguous rather than assume a convention the open schema does not define
 - **MUST** consider unavailability whenever deficiency symptoms coincide with supply at or above the phase target, and **MUST NOT** recommend increasing the affected nutrient while that state is unexcluded
 - **MUST** state its assumption about base water (`base_water_ec`, `alkalinity_ppm`) whenever it calls `calculate_mixing_protocol`, since the result is an EC-net calculation
@@ -145,6 +147,7 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 - [ ] No result recommends increasing a nutrient while unavailability at adequate supply is unexcluded
 - [ ] Substrate properties appear in the reasoning of any claim about excess
 - [ ] Target comparisons cite the specific plan phase and its week window, not the plan as a whole
+- [ ] Every run reports how many diary entries it read and over what window
 - [ ] A `measurements` value with an ambiguous unit is discarded with a stated reason, not silently interpreted
 - [ ] The read-only recipe calls no state-changing tool; the write variant carries `-apply` and writes only diary entries
 - [ ] No recipe under this spec calls a Home Assistant actuation tool
@@ -152,7 +155,7 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 
 ## Open Questions
 
-- Which `measurements` keys are actually in use across the instance's diary entries. The schema declares none, so the normalisation table this spec requires cannot yet be written from data — only from convention.
+- Which `measurements` keys are actually in use across the instance's diary entries. The schema declares none, so the normalisation table this spec requires still rests on convention — but now that every run reads the entries, the runs themselves are the sampling mechanism that will answer it.
 - Whether runoff EC and tank EC are distinguishable in the record. The distinction decides whether a reading describes what the plant receives or what remains in the medium, and nothing in the open schema separates them.
 - Whether Home Assistant carries soil moisture or conductivity sensors that could supply tier-1 evidence per plant, and how a sensor would be bound to a plant instance. `GetLiveContext` exposes entity state, but no plant-to-entity mapping was found.
 - Whether the antagonism cases worth naming (which ion suppresses which) belong in this spec, in the backend's glossary reachable via `search_glossary`, or in the knowledge base. Encoding them here risks the same drift this repository avoids for species data.

@@ -35,7 +35,13 @@ When it returns `{"plan": null}` — an ordinary and common state — say so, fa
 
 From `mcp__kamerplanter__get_plant_care_log`: feeding frequency, the most recent confirmation, and any `snoozed` entries.
 
-From the diary entry's `measurements`: any EC, pH, or runoff value. This field is an open object with no declared schema, so normalise the keys before use and **discard any value whose unit or provenance is ambiguous**, stating that you did. A number labelled `ec` may be millisiemens or microsiemens, from the tank or the runoff; guessing turns tier 1 evidence into a wrong answer with high confidence.
+From the diary entries' `measurements`: any EC, pH, or runoff value.
+
+**Somebody has to fetch those entries, and this skill does not.** They arrive from the caller, which reads them with `mcp__kamerplanter__list_diary_entries` — filtered by `plant_key` and by `entry_type` (`measurement`, then `problem`; the parameter takes one value, not a list) — and then `mcp__kamerplanter__get_diary_entry` per hit. `plant-context-collect` does **not** do this: it establishes what is normal for a plant, and a dated reading is evidence for one question. If no measurements were handed to you, say the diary was not read rather than concluding it was empty — the two lead to different next steps, and only one of them is the caller's bug.
+
+An empty result after a real read is ordinary. It puts the assessment at tier 3 or below, which is a legitimate outcome and not a failed run.
+
+`measurements` is an open object with no declared schema, so normalise the keys before use and **discard any value whose unit or provenance is ambiguous**, stating that you did. A number labelled `ec` may be millisiemens or microsiemens, from the tank or the runoff; guessing turns tier 1 evidence into a wrong answer with high confidence.
 
 ### 3. Read the substrate
 
