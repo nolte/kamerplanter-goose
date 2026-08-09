@@ -34,12 +34,27 @@ export GOOSE_ADDITIONAL_CONFIG_FILES="${GOOSE_ADDITIONAL_CONFIG_FILES:-$REPO_ROO
 mcp_call() {
   # $1 = JSON-RPC body. Opens its own session; the queue read is cheap enough
   # that reusing one across calls is not worth the extra state.
-  local sid
-  sid=$(curl -sS -m 15 -X POST "$KAMERPLANTER_URL/api/v1/mcp" \
+  local sid headers status
+  # Without capturing the status separately, a 401 from a revoked key makes the
+  # grep below find no session header, `set -e` kills the script mid-pipeline,
+  # and the operator is left with no code, no body, and nothing to act on.
+  headers=$(curl -sS -m 15 -X POST "$KAMERPLANTER_URL/api/v1/mcp" \
     -H "X-API-Key: $KAMERPLANTER_API_KEY" -H "Content-Type: application/json" \
     -H "Accept: application/json, text/event-stream" \
     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"analyse-queue","version":"1.0"}}}' \
-    -D - -o /dev/null | grep -i '^mcp-session-id:' | tr -d '\r' | cut -d' ' -f2)
+    -D - -o /dev/null -w '%{http_code}') || {
+      echo "!! could not reach $KAMERPLANTER_URL/api/v1/mcp" >&2
+      return 1
+    }
+  status=$(printf '%s' "$headers" | tail -n1)
+  sid=$(printf '%s' "$headers" | grep -i '^mcp-session-id:' | tr -d '\r' | cut -d' ' -f2)
+
+  if [ -z "$sid" ]; then
+    echo "!! no mcp-session-id in the initialize response (HTTP $status)." >&2
+    echo "   Check KAMERPLANTER_API_KEY and KAMERPLANTER_URL, or run:" >&2
+    echo "     goose run --recipe connectivity-check" >&2
+    return 1
+  fi
 
   curl -sS -m 30 -X POST "$KAMERPLANTER_URL/api/v1/mcp" \
     -H "X-API-Key: $KAMERPLANTER_API_KEY" -H "Content-Type: application/json" \
@@ -55,7 +70,13 @@ queue_json=$(mcp_call "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\
 
 # Entries with no photos are not candidates for an image analysis; filtering them
 # here keeps the per-entry runs from starting only to refuse.
-mapfile -t entries < <(printf '%s' "$queue_json" | python3 -c '
+#
+# Captured into a variable rather than piped straight into `mapfile`: process
+# substitution discards the exit status, `pipefail` does not cover it, and every
+# failure path below — unparseable JSON, a JSON-RPC error, an envelope that
+# changed shape — then produced an empty list, printed "Nothing pending" and
+# exited 0. A cron job saw a clean, empty run while the queue backed up.
+if ! entries_raw=$(printf '%s' "$queue_json" | python3 -c '
 import json, sys
 try:
     d = json.load(sys.stdin)
@@ -67,7 +88,15 @@ data = d.get("result", {}).get("structuredContent", {}).get("data", {})
 for e in data.get("entries", []):
     if e.get("photo_count", 0) > 0:
         print(e["entry_key"])
-')
+'); then
+  echo "!! could not read the analysis queue — see the message above." >&2
+  echo "   The queue was NOT empty-checked; nothing was processed." >&2
+  exit 1
+fi
+
+mapfile -t entries <<< "$entries_raw"
+# `<<<` on an empty string yields one empty element, not zero.
+[ "${#entries[@]}" -eq 1 ] && [ -z "${entries[0]}" ] && entries=()
 
 total=${#entries[@]}
 if [ "$total" -eq 0 ]; then
@@ -104,4 +133,7 @@ done
 echo "==============================="
 echo "RUN ID:    $RUN_ID"
 echo "PROCESSED: $completed ok, $failed failed"
-echo "REMAINING: $((total - n)) still pending with photos"
+# Subtract what actually completed, not what was attempted: a failed run's lease
+# expires and requeues the entry (see the failure branch above), so counting it
+# as processed understates the backlog.
+echo "REMAINING: $((total - completed)) still pending with photos"
