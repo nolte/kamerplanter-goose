@@ -47,8 +47,8 @@ instructions: |
 
 prompt: |
   Analyse one pending diary entry for garden "{{ tenant }}" and submit the
-  result. Use MCP tools only: do not shell out, do not fetch URLs, do not read
-  or write local files.
+  result. Use MCP tools only: do not shell out, do not fetch URLs, and read or
+  write no local file other than loading the named skills.
 
   Hard constraints for this entire run:
   - The ONLY state-changing tools you may call are

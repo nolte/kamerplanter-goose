@@ -22,7 +22,7 @@ Every recipe except the three diagnostics loads project skills, so it must be st
 | `nutrient-imbalance-check` | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
 | `pest-pressure-check` | no | Whether a pest or disease suspicion is biologically tenable |
 | `species-baseline-check` | no | Whether a species record is plausible, and what its lifecycle is |
-| `domain-review` | no | Reviews a recipe or spec as one grower persona |
+| `domain-review` | to `.audits/` only | Reviews a recipe or spec as one grower persona |
 | `diary-photo-analysis-apply` | **yes** | Analyses one queued diary entry and submits the result |
 | `diary-analysis-queue-apply` | **yes** | Works through the analysis queue, entry by entry |
 

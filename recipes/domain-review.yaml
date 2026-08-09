@@ -1,11 +1,13 @@
 version: "1.0.0"
 title: "Domain Review"
 description: >-
-  Read-only: reviews one recipe, process spec, or captured run output as one
-  grower persona — agronomy, indoor-grower, casual-owner, or outdoor-gardener —
-  and reports what that grower would do with it. Must run with the working
-  directory set to this repository checkout, because it loads project skills
-  from .claude/skills/ and reads the review target from this tree.
+  Reviews one recipe, process spec, or captured run output as one grower persona
+  — agronomy, indoor-grower, casual-owner, or outdoor-gardener — and reports what
+  that grower would do with it. Changes no server state and touches nothing a
+  garden depends on, but it WRITES its report to .audits/grower-persona-review/
+  in this checkout. Must run with the working directory set to this repository
+  checkout, because it loads project skills from .claude/skills/ and reads the
+  review target from this tree.
 
 # Declares no extensions on purpose. The review reads files in this checkout;
 # it never touches a garden. See extensions.yaml for why a recipe-local block

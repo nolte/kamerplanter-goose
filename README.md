@@ -130,7 +130,7 @@ recipes/                       one Goose recipe per file, flat — the shipped a
   nutrient-imbalance-check.yaml  read-only nutrient diagnosis for one plant
   pest-pressure-check.yaml     read-only: is a pest suspicion biologically tenable
   species-baseline-check.yaml  read-only: is the species record plausible, what is its cycle
-  domain-review.yaml           read-only: reviews a recipe or spec as one grower persona
+  domain-review.yaml           reviews a recipe or spec as one grower persona; writes to .audits/
   diary-photo-analysis-apply.yaml  WRITES: analyses one queued diary entry
   diary-analysis-queue-apply.yaml  WRITES: works through the queue, entry by entry
 extensions.yaml                the MCP servers, declared once for every recipe
@@ -154,7 +154,7 @@ AUDIENCES.md                   who this repository is for, per audience
 
 ## Status
 
-Early stage. Nine recipes ship: three diagnostics (`connectivity-check`, `provider-surface-check`, `provider-plugin-check`), four read-only plant-care recipes (`nutrient-imbalance-check`, `pest-pressure-check`, `species-baseline-check`, `domain-review`), and two that write (`diary-photo-analysis-apply`, `diary-analysis-queue-apply`). Everything but the diagnostics loads project-local skills from `.claude/skills/`, so they must run with this checkout as the working directory — skill discovery is relative to the Goose process's cwd, and a recipe started elsewhere loses the skill without an error.
+Early stage. Nine recipes ship: three diagnostics (`connectivity-check`, `provider-surface-check`, `provider-plugin-check`), three read-only plant-care recipes (`nutrient-imbalance-check`, `pest-pressure-check`, `species-baseline-check`), `domain-review` (touches no garden, writes its report to `.audits/`), and two that write (`diary-photo-analysis-apply`, `diary-analysis-queue-apply`). Everything but the diagnostics loads project-local skills from `.claude/skills/`, so they must run with this checkout as the working directory — skill discovery is relative to the Goose process's cwd, and a recipe started elsewhere loses the skill without an error.
 
 No release exists yet, and recipe names and parameters will change without notice until the first tagged release. CI validates every recipe against the house pattern (`tests/validate_recipes.py`) and builds the documentation on each pull request. Recipe syntax, the `env_keys` behaviour above, and the skill-loading path are verified against Goose 1.45.0 with the `claude-code` provider.
 

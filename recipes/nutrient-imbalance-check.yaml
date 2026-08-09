@@ -37,7 +37,8 @@ instructions: |
 prompt: |
   Assess the nutrient situation of plant "{{ plant_key }}" in garden
   "{{ tenant }}". Read-only run. Use MCP tools only: do not shell out, do not
-  fetch URLs, do not read or write local files.
+  fetch URLs, and read or write no local file other than loading the named
+  skills.
 
   Hard constraints for this entire run:
   - Call NO tool that changes state. Forbidden on Kamerplanter, by name:

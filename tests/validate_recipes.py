@@ -73,6 +73,41 @@ class Findings:
         self.notes.append(message)
 
 
+PROHIBITION_PATTERN = re.compile(
+    r"(?i)(forbidden|never call|do not call|must not call)"
+)
+
+
+def tool_pattern(tool: str) -> re.Pattern:
+    """Match a tool by its bare name or, as every recipe actually writes it, in
+    its `mcp__<server>__` form.
+
+    A plain `\\b<tool>\\b` does not match the prefixed form: the separator is
+    `__`, and `_` is a word character, so there is no boundary between
+    `kamerplanter__` and `archive_plant`. That silently emptied the match set
+    and left the write-guard below inert against every recipe in this
+    repository.
+    """
+    return re.compile(rf"(?<![A-Za-z0-9_])(?:mcp__[A-Za-z0-9_]+__)?{re.escape(tool)}\b")
+
+
+def prohibition_spans(body: str) -> list[tuple[int, int]]:
+    """Character ranges in which naming a state-changing tool forbids it rather
+    than calls it.
+
+    A prohibition reaches to the end of its own sentence and no further. The
+    house pattern spreads the forbidden tools over several lines after the
+    phrase — "Forbidden on Kamerplanter, by name:" then a list closing with a
+    period — so the sentence, not the line, is the right unit. Anything after
+    that period is an instruction again.
+    """
+    spans = []
+    for match in PROHIBITION_PATTERN.finditer(body):
+        end = body.find(".", match.end())
+        spans.append((match.start(), len(body) if end == -1 else end + 1))
+    return spans
+
+
 def load_yaml(path: Path, findings: Findings) -> dict | None:
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -136,24 +171,33 @@ def check_recipe(path: Path, findings: Findings) -> None:
         findings.error(where, "has an empty `description`.")
 
     # A write-capable recipe announces itself in its filename and description.
-    named_tools = {
-        tool
-        for tool in STATE_CHANGING_TOOLS
-        if re.search(rf"\b{re.escape(tool)}\b", body)
-    }
     is_apply = path.stem.endswith("-apply")
-    if named_tools and not is_apply:
-        # A recipe may name a state-changing tool purely to forbid it. Treat it
-        # as a writer only when the tool is not inside a prohibition.
-        forbidding = re.search(
-            r"(?i)(forbidden|never call|do not call|must not call)", body
+    if not is_apply:
+        # A recipe may name a state-changing tool purely to forbid it, and the
+        # house pattern requires naming every forbidden tool individually — so
+        # a prohibition list is present in almost every recipe here.
+        #
+        # Exempting the whole recipe as soon as any prohibition appears
+        # therefore disables this check entirely: a recipe that forbids one
+        # write tool and calls another passes. Exempt per *occurrence* instead,
+        # and only inside the prohibiting sentence itself.
+        prohibited = prohibition_spans(body)
+        calling = sorted(
+            {
+                tool
+                for tool in STATE_CHANGING_TOOLS
+                for match in tool_pattern(tool).finditer(body)
+                if not any(
+                    start <= match.start() < end for start, end in prohibited
+                )
+            }
         )
-        if not forbidding:
+        if calling:
             findings.error(
                 where,
                 "calls state-changing tools "
-                f"({', '.join(sorted(named_tools))}) without an `-apply` "
-                "filename suffix.",
+                f"({', '.join(calling)}) outside a prohibition and without an "
+                "`-apply` filename suffix.",
             )
     if is_apply and not re.match(r"(?i)\s*writes\b", description.strip()):
         findings.error(

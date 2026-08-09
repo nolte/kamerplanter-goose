@@ -22,7 +22,7 @@ Jedes Rezept außer den drei Diagnosen lädt Projekt-Skills und muss deshalb mit
 | `nutrient-imbalance-check` | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
 | `pest-pressure-check` | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
 | `species-baseline-check` | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
-| `domain-review` | nein | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
+| `domain-review` | nur nach `.audits/` | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
 | `diary-photo-analysis-apply` | **ja** | Analysiert einen wartenden Tagebucheintrag und übermittelt das Ergebnis |
 | `diary-analysis-queue-apply` | **ja** | Arbeitet die Analyse-Warteschlange Eintrag für Eintrag ab |
 

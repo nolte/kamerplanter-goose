@@ -32,9 +32,15 @@ repos:
     hooks:
       # The recipe contract is the deliverable here, so it is checked on every
       # commit rather than only in CI. Runs without a Goose provider call.
+      #
+      # The trigger set must cover everything the validator inspects, not just
+      # the recipes: it also checks skill frontmatter for
+      # `disable-model-invocation`, and that project agents sit where this
+      # provider can see them. A narrower pattern lets a skill or agent that
+      # breaks the contract commit clean and fail only in CI.
       - id: validate-recipes
         name: validate goose recipes against the house pattern
         entry: python3 tests/validate_recipes.py
         language: system
-        files: '^(recipes/|extensions\.yaml$)'
+        files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
         pass_filenames: false
