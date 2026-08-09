@@ -8,6 +8,14 @@ description: >-
 # one asks whether the plugin registry behind `Skill` and `Agent` is populated
 # when the agent runs under Goose rather than under Claude Code directly.
 #
+# Steps 5 to 7 ask the narrower question the plugin probe cannot answer: a
+# plugin agent being unreachable says nothing about an agent defined in the
+# checkout itself. Two probe agents exist for that measurement alone, identical
+# but for their location — `.claude/agents/probe-agent-reachable.md`, which the
+# provider's own agent layer reads, and `.agents/agents/probe-agents-dir.md`,
+# the directory Goose's documentation recommends for project agents. Which of
+# the two answers tells us which discovery layer is serving the dispatch.
+#
 # Declares no extensions — the question is about the provider, not about MCP.
 
 instructions: |
@@ -44,7 +52,28 @@ prompt: |
   That agent is read-only by definition. Report whether the dispatch succeeded
   and quote either its reply or the error.
 
-  Step 5 — Report.
+  Step 5 — Project-local agent registry.
+  Repeat step 3's listing and report whether `probe-agent-reachable` is among
+  the agent types you can pass to `Agent`. That name is defined in this
+  checkout at `.claude/agents/probe-agent-reachable.md`, not in a plugin. If
+  the name is absent, quote the list you do see, verbatim and complete.
+
+  Step 6 — Dispatch the project-local agent.
+  Call `Agent` with subagent_type `probe-agent-reachable` and the prompt
+  "Reply with the single word: reachable." Report whether the dispatch
+  succeeded and quote either its reply or the error. Attempt the call even
+  when step 5 did not list the name — a registry that does not advertise a
+  type and a registry that rejects it are different results.
+
+  Step 7 — The directory Goose recommends.
+  Call `Agent` with subagent_type `probe-agents-dir` and the prompt "Reply with
+  the single word: agents-dir." That agent is defined at
+  `.agents/agents/probe-agents-dir.md` and is identical to the one in step 6
+  except for its directory. Report whether the dispatch succeeded and quote
+  either its reply or the verbatim error. Do not fall back to any other agent
+  type if it fails.
+
+  Step 8 — Report.
   Print this table and nothing after it:
 
   | # | Probe | Result | Evidence |
@@ -53,7 +82,9 @@ prompt: |
   Result is exactly AVAILABLE, UNAVAILABLE, or ERROR. Evidence is one line:
   the observed names, the returned text, or the verbatim error.
 
-  Close with two lines:
+  Close with four lines:
 
   PLUGIN SKILLS: <available or unavailable>
   PLUGIN AGENTS: <available or unavailable>
+  PROJECT AGENTS (.claude/agents): <available or unavailable>
+  PROJECT AGENTS (.agents/agents): <available or unavailable>

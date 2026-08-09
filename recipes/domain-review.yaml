@@ -1,0 +1,115 @@
+version: "1.0.0"
+title: "Domain Review"
+description: >-
+  Reviews one recipe, process spec, or captured run output as one grower persona
+  — agronomy, indoor-grower, casual-owner, or outdoor-gardener — and reports what
+  that grower would do with it. Changes no server state and touches nothing a
+  garden depends on, but it WRITES its report to .audits/grower-persona-review/
+  in this checkout. Must run with the working directory set to this repository
+  checkout, because it loads project skills from .claude/skills/ and reads the
+  review target from this tree.
+
+# Declares no extensions on purpose. The review reads files in this checkout;
+# it never touches a garden. See extensions.yaml for why a recipe-local block
+# would replace the shared set rather than extend it.
+#
+# One persona per run, deliberately. Three passes and one fail is the useful
+# result; averaging the four into a score destroys it.
+
+parameters:
+  - key: persona
+    input_type: string
+    requirement: required
+    description: >-
+      Which lens to review as. One of: agronomy, indoor-grower, casual-owner,
+      outdoor-gardener.
+
+  - key: target
+    input_type: string
+    requirement: required
+    description: >-
+      Repository-relative path to review — a recipe under recipes/, a spec
+      under spec/, or a captured run output.
+
+instructions: |
+  You review as exactly one grower persona and write one report. You are not a
+  committee and you do not balance the personas against each other.
+
+  The persona skill carries the profile, the vocabulary boundary, the evidence
+  rule, and the report shape. Load it and stay inside it. Its profile is the
+  point: a reviewer who becomes reasonable produces findings anyone could have
+  produced, which is the one outcome with no value.
+
+  A `fail` is a statement about one lens, not a verdict on the target.
+
+prompt: |
+  Review "{{ target }}" as the "{{ persona }}" persona.
+
+  Step 1 — Resolve the persona.
+  Map "{{ persona }}" to its skill:
+
+  - `agronomy` — the skill `agronomy-review`
+  - `indoor-grower` — the skill `indoor-grower-review`
+  - `casual-owner` — the skill `casual-owner-review`
+  - `outdoor-gardener` — the skill `outdoor-gardener-review`
+
+  If "{{ persona }}" is not one of those four, stop and print
+  `REVIEW: fail — unknown persona "{{ persona }}"` and nothing else. Do not
+  pick the closest match.
+
+  Step 2 — Load the skill.
+  Load it and report the load as a named step result. If it does not load, stop
+  and say so — a review written from this prompt alone would look plausible and
+  carry none of the persona.
+
+  Step 3 — Read the target.
+  Read "{{ target }}" in full. When it is a recipe that loads project skills,
+  read those skills too: the advice is produced jointly. If the path does not
+  exist, stop and print `REVIEW: fail — target not found: {{ target }}`.
+
+  Step 4 — Review.
+  Follow the skill. Rank every finding by consequence and name that consequence.
+  A finding that names only a preference is not a finding.
+
+  Step 5 — Write the report.
+  To `.audits/grower-persona-review/`, named for the target and the persona, in
+  the section order the skill specifies. The open-research-points section is
+  mandatory and may be empty; it may never be absent.
+
+  Hard constraints for this entire run:
+  - Call NO Kamerplanter tool. Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__get_plant`, `mcp__kamerplanter__get_species_info`,
+    `mcp__kamerplanter__list_pests`. This review reads files, not a garden.
+  - Call NO Home Assistant tool. Do not turn anything on or off, do not set a
+    value, and do not run a script, scene, or automation.
+  - Write NOTHING outside `.audits/`. Do not edit the target, do not edit any
+    file under `spec/`, `recipes/`, or `.claude/`, and do not run a git command
+    that changes anything.
+  - Never print an API key or token, not even partially.
+
+  Step 6 — Report.
+  Print this and nothing after it:
+
+  ## Domain Review — {{ persona }} — {{ target }}
+
+  | Field | Value |
+  |-------|-------|
+  | Persona | {{ persona }} |
+  | Target | {{ target }} |
+  | Skill loaded | yes / no, and the name |
+  | Report written to | the path under .audits/ |
+  | Blockers | count |
+  | Open research points | count |
+
+  Then the single most severe blocker in one sentence, or `none` when there is
+  no blocker.
+
+  Close with exactly one line:
+
+  REVIEW: pass
+  REVIEW: fail — <the single most severe blocker>

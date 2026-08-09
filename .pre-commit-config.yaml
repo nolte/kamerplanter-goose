@@ -1,0 +1,46 @@
+# See https://pre-commit.com for usage and config reference.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents, --unsafe]
+      - id: check-json
+      - id: check-merge-conflict
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-added-large-files
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-d, relaxed]
+
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.11.0.1
+    hooks:
+      - id: shellcheck
+        # Scoped to the repository's own shell scripts. `.envrc` is a direnv
+        # file, not a standalone script: shellcheck cannot infer its shell and
+        # reports SC2148 on every run.
+        files: '^scripts/.*\.sh$'
+
+  - repo: local
+    hooks:
+      # The recipe contract is the deliverable here, so it is checked on every
+      # commit rather than only in CI. Runs without a Goose provider call.
+      #
+      # The trigger set must cover everything the validator inspects, not just
+      # the recipes: it also checks skill frontmatter for
+      # `disable-model-invocation`, and that project agents sit where this
+      # provider can see them. A narrower pattern lets a skill or agent that
+      # breaks the contract commit clean and fail only in CI.
+      - id: validate-recipes
+        name: validate goose recipes against the house pattern
+        entry: python3 tests/validate_recipes.py
+        language: system
+        files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
+        pass_filenames: false

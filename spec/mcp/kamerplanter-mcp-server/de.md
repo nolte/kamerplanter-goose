@@ -7,9 +7,9 @@ Portfolio-Scope: local
 
 Rezepte in diesem Repository erreichen Pflanzendaten über den MCP-Server, der im Kamerplanter-Backend mitläuft. Dieser Server ist kein generisches REST-Abbild: Er stellt eine kuratierte, semantisch hochstehende Werkzeugpalette bereit, bei der ein Tool einen ganzen Anwendungsfall kapselt und kompaktes JSON zurückgibt, statt dass das Modell mehrere REST-Aufrufe verketten muss.
 
-Zwei Eigenschaften machen eine Spezifikation lohnender als eine Entdeckung pro Rezept. Erstens ist der Werkzeugkatalog **fest und aufzählbar** — live gemessen bietet der Server exakt die 12 Tools, die die Upstream-Dokumentation führt, sodass die vollständige Oberfläche vorab bekannt ist. Das ist der scharfe Gegensatz zu [Home Assistant](../home-assistant-mcp-server/de.md), dessen Katalog zur Laufzeit zusammengesetzt wird und pro Instanz abweicht. Zweitens ist der Server **mandantenfähig mit einem Berechtigungsmodell pro Garten**, sodass derselbe Schlüssel in einem Garten schreiben darf und in einem anderen dieselbe Aktion verweigert bekommt. Ein Rezept, das dies ignoriert, erzeugt Fehler, die wie Bugs aussehen, aber korrekte Ablehnungen sind.
+Zwei Eigenschaften machen eine Spezifikation lohnender als eine Entdeckung pro Rezept. Erstens ist der Werkzeugkatalog **aufzählbar und vollständig schematisiert** — jedes Tool deklariert ein komplettes JSON Schema, sodass die gesamte Oberfläche durch eine einzige Abfrage vorab bekannt ist. Das ist der scharfe Gegensatz zu [Home Assistant](../home-assistant-mcp-server/de.md), dessen Katalog zur Laufzeit zusammengesetzt wird und pro Instanz abweicht. Aufzählbar heißt aber nicht fest: Zwischen zwei Messungen im Abstand von drei Tagen wuchs der Katalog von 12 auf 43 Tools — die Oberfläche ist also je Instanz und je Datum erkennbar, nicht ein für alle Mal. Zweitens ist der Server **mandantenfähig mit einem Berechtigungsmodell pro Garten**, sodass derselbe Schlüssel in einem Garten schreiben darf und in einem anderen dieselbe Aktion verweigert bekommt. Ein Rezept, das dies ignoriert, erzeugt Fehler, die wie Bugs aussehen, aber korrekte Ablehnungen sind.
 
-Alles unten als *gemessen* Gekennzeichnete wurde am 2026-08-04 von der Referenzinstanz gelesen, über `initialize`, `tools/list` und einen nur lesenden `list_tenants`-Aufruf. Die Upstream-Dokumentation kennzeichnet den Server als **teilweise verfügbar**: Die 12 Tools sind das Implementierte; spezifiziert sind insgesamt rund 30.
+Alles unten als *gemessen* Gekennzeichnete wurde von der Referenzinstanz über `initialize`, `tools/list` und nur lesende `tools/call`-Aufrufe gelesen — Transport, Authentifizierung und Mandantenfähigkeit am 2026-08-04, der Werkzeugkatalog und seine Feldstrukturen am 2026-08-07. Die Upstream-Dokumentation kennzeichnete den Server bei der ersten Messung als **teilweise verfügbar**, mit 12 von rund 30 spezifizierten Tools; die zweite Messung fand 43. Die Implementierung hat diesen Stand also überholt, und die Dokumentation ist für den Umfang nicht mehr maßgeblich.
 
 Rezept-Mechanik — wo eine Extension deklariert werden darf, wie sich die `env_keys`-Ersetzung verhält, was der Provider dem Agenten hinzufügt — ist einmal im [Goose-Rezept-Projektmuster](../../goose/recipe-project-pattern/de.md) spezifiziert und wird hier nicht wiederholt.
 
@@ -77,32 +77,55 @@ Das Konto der Referenzinstanz hält die Rolle `lead` mit allen drei Berechtigung
 
 Ein Aufruf ohne die Berechtigung wird mit `permission.denied` abgelehnt und als `status: "denied"` auditiert.
 
-## Werkzeugkatalog (gemessen, 12 Tools, 2026-08-04)
+## Werkzeugkatalog (gemessen, 43 Tools, 2026-08-07)
 
-Der laufende Katalog deckt sich exakt mit dem dokumentierten. Anders als bei Home Assistant trägt **jedes `inputSchema` ein vollständiges JSON Schema** — gemessene Schlüssel umfassen `required`, `properties`, `$defs`, `additionalProperties` und `title` —, sodass ein Client Pflicht- von Optionalargumenten unterscheiden kann, ohne dass man es ihm sagt.
+Anders als bei Home Assistant trägt **jedes `inputSchema` ein vollständiges JSON Schema** — gemessene Schlüssel umfassen `required`, `properties`, `$defs`, `additionalProperties` und `title` —, sodass ein Client Pflicht- von Optionalargumenten unterscheiden kann, ohne dass man es ihm sagt.
 
-### Lesetools (`mcp.read`)
+Der Katalog wächst zwischen zwei Messungen. Eine Inventur am 2026-08-04 ergab 12 Tools und deckte sich mit der damaligen Dokumentation; eine erneute Inventur am 2026-08-07 ergab **43**, die 31 zusätzlichen ausnahmslos Lesetools. **Jede Zahl hier ist eine Untergrenze, keine Zusicherung** — vor der Annahme, ein Tool fehle, ist `tools/list` erneut abzufragen.
 
-| Tool | Pflicht | Nimmt `tenant` | Zweck |
-|------|---------|:--------------:|-------|
-| `list_tenants` | — | nein | Gärten des Schlüssels, mit Rolle und `mcp_permissions` |
-| `list_species` | — | nein | Katalog der Pflanzenarten (`limit`, `offset`) |
-| `get_species_info` | `species_key` | nein | Stammdaten einer Art, inkl. Hinweisen zur Mischkultur |
-| `list_planting_runs` | — | ja | Anbauläufe (`status`, `limit`, `offset`) |
-| `list_tasks` | — | ja | Aufgaben (`status`, `limit`, `offset`) |
-| `get_due_care_tasks` | — | ja | Fällige und überfällige Pflegeerinnerungen (`urgency`) |
-| `get_harvest_readiness` | — | ja | Übersicht der Erntereife (`limit`) |
-| `get_mcp_activity` | — | nein | Die eigene MCP-Aufrufhistorie des Kontos (`limit`) |
+### Lesetools (`mcp.read`), 38 gemessen
 
-Drei Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind kontobezogen, `list_species` / `get_species_info` bedienen den gemeinsamen Artenkatalog.
+Gruppiert danach, wonach ein Rezept greift, nicht nach der Schichtung des Servers.
+
+| Gruppe | Tools |
+|--------|-------|
+| Konto und Mandant | `list_tenants`, `get_mcp_activity` |
+| Pflanzen | `list_plants`, `get_plant`, `list_plants_at_location`, `list_planting_runs` |
+| Arten und Sorten | `list_species`, `get_species_info`, `list_cultivars`, `get_cultivar` |
+| Phasen und Lebenszyklus | `list_phase_definitions`, `get_sowing_calendar`, `list_overwintering_profiles`, `list_hardiness_zones` |
+| Pflege und Aufgaben | `list_tasks`, `get_due_care_tasks`, `get_plant_care_log`, `get_harvest_readiness` |
+| Ernährung und Medium | `get_plant_nutrient_plan`, `list_nutrient_plans`, `get_nutrient_plan`, `list_fertilizers`, `list_substrates`, `calculate_mixing_protocol` |
+| Pflanzenschutz | `get_plant_inspections`, `list_pests`, `get_pest`, `list_diseases`, `get_disease`, `get_treatment` |
+| Tagebuch | `list_diary_entries`, `get_diary_entry`, `get_diary_entry_photos`, `list_pending_diary_analyses` |
+| Einstieg und Fachvokabular | `list_starter_kits`, `search_glossary` |
+
+Signaturen, die eigens zu nennen sind, weil ein Rezept sie sonst falsch bedient:
+
+| Tool | Pflicht | Nimmt `tenant` | Anmerkung |
+|------|---------|:--------------:|-----------|
+| `get_species_info` | `species_key` | nein | `include_cultivars` optional; bedient den gemeinsamen Katalog |
+| `get_pest` | `pest_key` | nein | Liefert verschachtelte `treatments[]` und `beneficials[]` in einem Aufruf |
+| `get_disease` | `disease_key` | nein | Trägt `environmental_triggers[]` und `incubation_period_days` |
+| `get_treatment` | `treatment_key` | nein | Trägt `safety_interval_days` — die Karenz vor der Ernte |
+| `get_plant_inspections` | `plant_key` | ja | IPM-Historie; gemessen leer bei einer nie inspizierten Pflanze |
+| `get_sowing_calendar` | — | ja | **Verweigert einen unspezifizierten Aufruf**: Ohne `query` antwortet er `validation.error` mit der Artenzahl und der `limit`-Obergrenze 25 |
+| `list_phase_definitions` | — | nein | 29 Definitionen gemessen; das Vokabular der Lebenszyklus-Engine |
+| `search_glossary` | — | nein | Die projekteigenen Definitionen von EC, VPD, Karenz |
+
+`calculate_mixing_protocol` rechnet und persistiert nichts — deshalb steht es trotz seines Namens bei den Lesetools.
+
+Vier Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind kontobezogen; die Kataloge für Arten, Schädlinge, Krankheiten, Behandlungen, Glossar und Winterhärtezonen sind gemeinsam.
 
 ### Schreibtools (`mcp.write`)
 
 | Tool | Pflicht | Zweck |
 |------|---------|-------|
+| `add_plant_diary_entry` | `plant_key`, `text` | Eine Beobachtung, ein Problem oder eine Messung festhalten |
 | `confirm_care_task` | `plant_key`, `reminder_type` | Eine Pflegeerinnerung für eine Pflanze bestätigen |
 | `archive_plant` | `plant_key` | Eine Pflanze als entsorgt / verschenkt / eingegangen markieren — nie ein hartes Löschen |
 | `set_plant_location` | `plant_key` | Eine Pflanze an einen anderen Standort, Ort oder Platz verschieben |
+| `claim_diary_analysis` | `entry_key`, `worker_id` | Einen Eintrag unter einer Lease zur Analyse beanspruchen |
+| `submit_diary_analysis` | `entry_key`, `lease_token`, `status` | Ein Ergebnis zurückschreiben und den Anspruch beenden |
 
 ### Setup-Tool (`mcp.setup`)
 
@@ -110,7 +133,14 @@ Drei Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind 
 |------|---------|-------|
 | `create_site` | `name` | Einen Standort-Wurzelknoten anlegen (Wohnung, Garten, Balkon, Gewächshaus, Fensterbank, Growbox) |
 
-Gemessen: Alle vier zustandsändernden Tools bieten `tenant`, `dry_run` und `idempotency_key` an.
+Gemessen: Jedes zustandsändernde Tool bietet `tenant`, `dry_run` und `idempotency_key` an. Kein Lesetool trägt eines davon — das ist der billigste Weg, die beiden Klassen in einer `tools/list`-Antwort zu unterscheiden.
+
+### Was der Katalog nicht trägt
+
+Zwei Lücken sind bedeutsam, weil ein Verfahren, das das Feld voraussetzt, eine selbstsichere Antwort ohne Grundlage erzeugt. Beide gemessen am 2026-08-07:
+
+- **`get_pest` hat keine Felder zu Luftfeuchte, Wirtspflanzen, Prävention oder Monitoring.** Gemessen an `Tetranychus urticae` besteht der Datensatz aus `pest_key`, `scientific_name`, `common_name`, `common_name_de`, `pest_type`, `damage_symptoms`, `lifecycle_days`, `optimal_temp_min`, `optimal_temp_max`, `description`, `detection_symptom_hint` sowie den verschachtelten `treatments[]` und `beneficials[]`. Es gibt kein `optimal_humidity_min/max`, keine `host_plants`, keine `prevention_tips`, keine `monitoring_hints`, keine `affected_plant_parts`, keine Einstufung von Schwere oder Erkennungsschwierigkeit und keinen GBIF-Schlüssel. `get_disease` **trägt** dagegen `environmental_triggers[]` (`low_humidity`, `high_humidity`, `poor_air_circulation`, …) — die Feuchteachse existiert also für Krankheiten und nicht für Schädlinge.
+- **`get_species_info` liefert nur die befüllten Felder**, und die Menge unterscheidet sich je Art. Gemessen lieferte `Allium porrum` 23 Felder samt vollständigem `seed_profile` (`germination_temp_min_c`/`max_c`, `sowing_depth_cm`, `days_to_germination`, `seed_viability_years`, `light_germination`, `pretreatment[]`, `thousand_seed_weight_g`, `sowing_density_per_m2`) und `growing_periods[]`; `Spathiphyllum wallisii` lieferte 18, mit `plant_category` und ganz ohne `seed_profile`. Keine der beiden trug `toxicity`, obwohl die Beschreibung des Tools es ausweist. Ein fehlender Schlüssel bedeutet „für diese Art nicht befüllt", nie „trifft nicht zu".
 
 ### Antwort-Hülle
 
@@ -161,5 +191,6 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 ## Quelle
 
 - Live-Messung der Referenzinstanz, 2026-08-04: `initialize` (Protokoll `2025-06-18`, `Mcp-Session-Id`, Fähigkeiten nur `tools`), `tools/list` (12 Tools mit vollständigem JSON Schema), `tools/call list_tenants` (Rolle `lead`, `mcp_permissions`, `structuredContent`-Hülle), `GET /mcp` → `405`, unauthentifiziertes `POST` → `401`
+- Live-Messung der Referenzinstanz, 2026-08-07: `tools/list` (43 Tools) sowie nur lesende `tools/call` für `list_tenants`, `list_pests`, `get_pest` (`Tetranychus urticae`), `list_diseases`, `list_species`, `get_species_info` (`Allium porrum`, `Spathiphyllum wallisii`), `list_plants`, `get_plant_inspections`, `list_phase_definitions`, `list_overwintering_profiles` und `get_sowing_calendar` (einmal unspezifiziert, was abgelehnt wurde, und einmal mit `query`). Kein Schreibtool wurde aufgerufen.
 - `nolte/kamerplanter` — `docs/en/api/mcp-server.md` (Transport, Authentifizierung, Mandantenfähigkeit, dokumentierte Berechtigungsklassen, Werkzeugzwecke, Audit-Trail), gelesen am 2026-08-04
 - `env_keys`-Verhalten von Goose gemessen gegen Goose 1.45.0 durch Mitschnitt der tatsächlich gesendeten Requests; siehe `README.md` §Notes

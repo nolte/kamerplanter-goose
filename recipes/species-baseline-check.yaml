@@ -1,0 +1,88 @@
+version: "1.0.0"
+title: "Species Baseline Check"
+description: >-
+  Read-only: checks whether the species record one plant depends on is
+  agronomically plausible, resolves its lifecycle where the record does not
+  state it, and proposes a correction only under the three-source rule. Must run
+  with the working directory set to this repository checkout, because it loads
+  project skills from .claude/skills/.
+
+parameters:
+  - key: species_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter species to verify."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug, used for the sowing calendar's frost dates.
+      Leave empty to let the run discover it from list_tenants.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You check a species baseline and resolve its lifecycle, then report. You never
+  change a record.
+
+  Two skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — in particular that the species record
+  returns only its populated fields, so an absent key means "not populated for
+  this species" and never "does not apply".
+
+  Finding many doubtful values and proposing no correction is the expected
+  outcome. Only three agreeing independent sources license a proposal.
+
+prompt: |
+  Verify the baseline for species "{{ species_key }}", using garden
+  "{{ tenant }}" for the instance's own frost dates. Read-only run. Use MCP
+  tools and web research only: do not shell out, and read or write no local file
+  other than loading the named skills and the files they instruct you to
+  read.
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Assert NO botanical value from memory. Read it from the record and label it,
+    or research it and cite it.
+  - Never print an API key or token, not even partially.
+
+  Step 1 — Verify the baseline.
+  Load the skill `species-baseline-verify` and follow it for
+  "{{ species_key }}". List which fields are present and which are absent before
+  checking anything, and keep checks that could not run separate from checks
+  that ran and passed.
+
+  Step 2 — Resolve the lifecycle.
+  Load the skill `plant-lifecycle-resolve` and follow it for the same species.
+  Stop at the first resolution step that settles the cycle. State the botanical
+  and the cultivated cycle separately where they differ.
+
+  Step 3 — Report.
+  Print this and nothing after it:
+
+  ## Species Baseline — {{ species_key }}
+
+  | Field | Value |
+  |-------|-------|
+  | Species | scientific name and common names |
+  | Fields present | count |
+  | Fields absent | the ones whose checks could not run, by name |
+  | Cycle | botanical, and cultivated where it differs |
+  | Frost anchors | last_frost_date, eisheilige_date, first_frost_date or "unanchored" |
+  | Findings | count by severity |
+
+  Then, in order: each finding with its confidence and sources; the checks that
+  could not run; and any proposed correction, directed at nolte/kamerplanter,
+  with its three sources.
+
+  Close with one line, `BASELINE: <plausible or findings:n>`, and a second line
+  naming the single most consequential finding when there is one.
