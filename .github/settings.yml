@@ -21,11 +21,40 @@ repository:
 # `Branch not protected` (404) for develop, and the `automerge` label the
 # workflow keys on did not exist either. Every CI job was advisory.
 #
-# Names are the job-level `name:` values from .github/workflows/ci.yml, which is
-# what GitHub reports as the check context — not the job ids.
+# BOTH branches are declared, not just develop. `_extends` merges this file
+# with the commons, and `branches:` is a list there carrying master and
+# develop. Whether Probot replaces the list or concatenates it is not stated
+# anywhere we can rely on, and the two answers differ sharply: a replace would
+# have dropped master's protection entirely while this file only meant to add
+# develop's contexts. Declaring both is correct under either semantics —
+# replace applies exactly these two, concatenate appends them after the
+# commons' pair so the later entry for each name wins.
+#
+# master mirrors the commons verbatim; only develop's `contexts` is new. Those
+# names are the job-level `name:` values from .github/workflows/ci.yml, which
+# is what GitHub reports as the check context — the job ids would silently
+# never match anything.
+#
+# `restrictions` is kept as the commons has it. This account is a User, not an
+# Organisation, and GitHub limits push restrictions to organisation-owned
+# repositories; the commons documents that the Settings App skips the field
+# silently for such repositories. Dropping it here would be an unforced change
+# to master's declared intent, and setting it to null would differ from the
+# portfolio default for no reason this repository has.
 branches:
+  - name: master
+    protection:
+      required_pull_request_reviews: null
+      required_status_checks: null
+      enforce_admins: true
+      restrictions:
+        users: []
+        teams: []
+        apps:
+          - nolte-portfolio-app
   - name: develop
     protection:
+      required_pull_request_reviews: null
       required_status_checks:
         strict: true
         contexts:
@@ -33,5 +62,8 @@ branches:
           - Docs build
           - Pre-commit
       enforce_admins: true
-      required_pull_request_reviews: null
-      restrictions: null
+      restrictions:
+        users: []
+        teams: []
+        apps:
+          - nolte-portfolio-app
