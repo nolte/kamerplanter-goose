@@ -34,14 +34,24 @@ prompt: |
   not shell out, do not fetch URLs.
 
   Hard constraints for this entire run:
-  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
-    `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site` —
-    and anything else that writes. Forbidden on Home Assistant: any tool that
-    turns something on or off, sets a value, or runs a script, scene, or
-    automation.
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`.
+    Anything else that writes is forbidden too.
+    Forbidden on Home Assistant: any tool that turns something on or off, sets
+    a value, or runs a script, scene, or automation. That side stays a category
+    because its catalog is assembled per instance and cannot be enumerated here.
   - Two Home Assistant tools have no classified effect and are also forbidden
     here, by name: `TimeTillErnte` and `time_till`. Their descriptions do not
     say whether they act, so a read-only run must not call them.
+  - Call NO GitHub tool at all. The shared configuration loads that server
+    too and `.envrc` gives it a live token, but no recipe here has business
+    with a repository: create or edit no issue, comment, pull request,
+    branch, file, or release, and read nothing either.
   - Never print the value of an API key or token, not even partially.
   - Do not stop at the first failure. If a step fails, record it and continue
     with the remaining steps.

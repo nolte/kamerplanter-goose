@@ -84,12 +84,17 @@ prompt: |
     `mcp__kamerplanter__claim_diary_analysis`,
     `mcp__kamerplanter__submit_diary_analysis`,
     `mcp__kamerplanter__get_plant`, `mcp__kamerplanter__get_species_info`,
-    `mcp__kamerplanter__list_pests`. This review reads files, not a garden.
+    `mcp__kamerplanter__list_pests`.
+    This review reads files, not a garden.
   - Call NO Home Assistant tool. Do not turn anything on or off, do not set a
     value, and do not run a script, scene, or automation.
   - Write NOTHING outside `.audits/`. Do not edit the target, do not edit any
     file under `spec/`, `recipes/`, or `.claude/`, and do not run a git command
     that changes anything.
+  - Call NO GitHub tool at all. The shared configuration loads that server
+    too and `.envrc` gives it a live token, but no recipe here has business
+    with a repository: create or edit no issue, comment, pull request,
+    branch, file, or release, and read nothing either.
   - Never print an API key or token, not even partially.
 
   Step 6 — Report.

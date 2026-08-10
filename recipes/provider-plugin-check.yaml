@@ -2,7 +2,11 @@ version: "1.0.0"
 title: "Provider Plugin Check"
 description: >-
   Diagnostic: determines whether Claude Code plugin skills and plugin agent
-  types are actually usable from inside a Goose session
+  types are actually usable from inside a Goose session. Must run with the
+  working directory set to this repository checkout, because steps 5 to 7
+  dispatch the probe agents in .claude/agents/ and .agents/agents/ — started
+  elsewhere it reports both as unreachable, which is a wrong measurement rather
+  than a failed run.
 
 # Companion to provider-surface-check. That one asks which tools exist; this
 # one asks whether the plugin registry behind `Skill` and `Agent` is populated
@@ -16,7 +20,10 @@ description: >-
 # the directory Goose's documentation recommends for project agents. Which of
 # the two answers tells us which discovery layer is serving the dispatch.
 #
-# Declares no extensions — the question is about the provider, not about MCP.
+# Declares no extensions of its own — the question is about the provider, not
+# about MCP. That is not the same as running without MCP: the shared
+# configuration still loads when GOOSE_ADDITIONAL_CONFIG_FILES is set, which is
+# why the prompt forbids calling any MCP tool at all.
 
 instructions: |
   You are running a capability probe. The point is to find out what fails, so a
@@ -30,6 +37,21 @@ prompt: |
   Determine whether Claude Code plugin skills and plugin agent types work from
   here. Read-only throughout: do not write or edit files, do not run git
   commands that change anything, do not push.
+
+  This recipe declares no `extensions:` block. Where the shared configuration is
+  loaded — the ordinary case, via `GOOSE_ADDITIONAL_CONFIG_FILES` — the run
+  holds all three servers, writes included.
+
+  Call NO tool on any configured MCP server.
+  Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
+  `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`,
+  `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`,
+  `mcp__kamerplanter__claim_diary_analysis`,
+  `mcp__kamerplanter__submit_diary_analysis`.
+  Every read tool on that server is forbidden here too.
+  Call NO home_assistant tool. Call NO github tool. This probe needs `Skill`
+  and `Agent`; the servers are loaded because the shared configuration loads
+  them, not because anything here uses them.
 
   Step 1 — Skill registry.
   Without calling anything, list the names of every skill you could load with

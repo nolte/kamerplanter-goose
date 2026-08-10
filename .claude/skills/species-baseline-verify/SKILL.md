@@ -100,7 +100,12 @@ Rank by consequence: a value that would cause a failed sowing, a dead plant, or 
 - **Never** judge an observation against the union of `growing_periods[]` when more than one exists.
 - **Never** call `mcp__kamerplanter__get_sowing_calendar` without `query`.
 - **Never** substitute a frost date for a `null` one.
-- **Never** call `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, or `mcp__kamerplanter__submit_diary_analysis`.
+- **Never** call a tool that changes state.
+  Forbidden by name:
+  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+  `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+  `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`,
+  `mcp__kamerplanter__submit_diary_analysis`.
 - Report an absent tool as an explicit step result naming the tool. Never substitute another.
 
 Governed by `spec/process/species-baseline-verification/en.md`.

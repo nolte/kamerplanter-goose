@@ -49,7 +49,8 @@ prompt: |
   than loading the named skills and the files they instruct you to read.
 
   Hard constraints for this entire run:
-  - Call NO tool that changes state. Forbidden on Kamerplanter, by name:
+  - Call NO tool that changes state.
+    Forbidden by name:
     `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
     `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
     `mcp__kamerplanter__add_plant_diary_entry`,
@@ -57,6 +58,10 @@ prompt: |
     `mcp__kamerplanter__submit_diary_analysis`.
   - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
     do not set a value, and do not run a script, scene, or automation.
+  - Call NO GitHub tool at all. The shared configuration loads that server
+    too and `.envrc` gives it a live token, but no recipe here has business
+    with a repository: create or edit no issue, comment, pull request,
+    branch, file, or release, and read nothing either.
   - Never print an API key or token, not even partially.
 
   Step 1 — Context.
