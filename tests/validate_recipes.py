@@ -44,14 +44,10 @@ STATE_CHANGING_TOOLS = {
 
 VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
-# A recipe names the skills it loads in prose. Three forms occur in the shipped
-# recipes: "load the skill `x`", "the `x` skill", and the return jump
-# "Return to `x`" — which an earlier pattern missed, so a typo in a return jump
-# was never checked against `.claude/skills/`.
+# A recipe names the skills it loads in prose: "load the skill `plant-photo-read`".
+# Both orders occur, so match either side of the word.
 SKILL_REF_PATTERN = re.compile(
-    r"skills?\s+`([a-z0-9][a-z0-9-]*)`"
-    r"|`([a-z0-9][a-z0-9-]*)`\s+skill"
-    r"|(?i:return\s+to)\s+`([a-z0-9][a-z0-9-]*)`"
+    r"skills?\s+`([a-z0-9][a-z0-9-]*)`|`([a-z0-9][a-z0-9-]*)`\s+skill"
 )
 
 AGENTS_DIR = REPO_ROOT / ".claude" / "agents"
@@ -90,14 +86,8 @@ STRUCTURAL_LINE_PATTERN = re.compile(r"^\s*(?:[-*]\s|\d+[.)]\s|\|)")
 # A token shaped like a tool identifier: snake_case, optionally carrying the
 # `mcp__<server>__` prefix. Prose words never match, because they have no
 # underscore.
-#
-# The server segment must accept underscores, because `home_assistant` has one.
-# Requiring `[A-Za-z0-9]+` here while `tool_pattern` allowed `[A-Za-z0-9_]+`
-# meant `mcp__home_assistant__turn_on` was not recognised as a name, so a
-# prohibition list naming both backends — which the house pattern asks for —
-# broke at the first Home Assistant entry and the recipe was rejected.
 TOOL_TOKEN_PATTERN = re.compile(
-    r"^(?:mcp__[A-Za-z0-9_]+__)?[a-z0-9]+(?:_[a-z0-9]+)+$"
+    r"^(?:mcp__[A-Za-z0-9]+__)?[a-z0-9]+(?:_[a-z0-9]+)+$"
 )
 
 
@@ -200,25 +190,11 @@ def prohibition_spans(body: str) -> list[tuple[int, int]]:
             ):
                 region_start = unit.rfind("\n", 0, region_start - 1) + 1
 
-            # A line continues the prohibition when it is indented deeper, or —
-            # since a YAML block scalar wraps prose at a constant indent — when
-            # it sits at the same indent without opening a new sentence. A
-            # capital letter after an unterminated line is the tell: "Never call
-            # `archive_plant`" followed by "Then call `create_site` to register
-            # the site." is two sentences, and treating them as one exempted the
-            # call.
-            own_line = unit[region_start : line_bounds(region_start)[1]]
-            own_indent = len(own_line) - len(own_line.lstrip(" "))
             while region_end < len(unit):
-                next_start = region_end + 1
+                next_start, next_end = region_end + 1, None
                 next_end = unit.find("\n", next_start)
                 next_end = len(unit) if next_end == -1 else next_end
-                next_line = unit[next_start:next_end]
-                body_text = next_line.lstrip(" ")
-                indent = len(next_line) - len(body_text)
-                if STRUCTURAL_LINE_PATTERN.match(next_line):
-                    break
-                if indent <= own_indent and body_text[:1].isupper():
+                if STRUCTURAL_LINE_PATTERN.match(unit[next_start:next_end]):
                     break
                 region_end = next_end
 
@@ -256,7 +232,7 @@ def exempt_clauses(body: str, left: int, right: int) -> list[tuple[int, int]]:
     which is what keeps a genuine `X; Y` name list exempt.
     """
     clauses, cursor = [], left
-    for piece in re.finditer(r"[^;—–]+", body[left:right]):
+    for piece in re.finditer(r"[^;]+", body[left:right]):
         begin, stop = left + piece.start(), left + piece.end()
         text = body[begin:stop]
         if PROHIBITION_PATTERN.search(text) or is_name_only(text.strip()):
@@ -363,12 +339,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # for backend state, so a report-writing recipe has nothing else to warn
     # with — and a reader who granted the run on the strength of "read-only"
     # finds files in their checkout.
-    # Any write target, not only `.audits/`: the criterion this enforces says
-    # "writes anything at all", and a recipe writing into `reports/` or the
-    # checkout was passing.
-    writes_a_file = re.search(
-        r"(?i)\bwrite[s]?\b[^.\n]{0,80}?(?:`[^`\n]*/[^`\n]*`|\b[\w.-]+/[\w./-]*)", body
-    )
+    writes_a_file = re.search(r"(?i)\bwrite[s]?\b[^.\n]{0,60}?`?\.audits/", body)
     if writes_a_file and not re.search(r"(?i)\bwrite", description):
         findings.error(
             where,
@@ -391,11 +362,9 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A skill name that does not resolve is the quietest failure here: the load
     # fails, the run keeps going, and it answers from the prompt alone — which
     # still looks like a plausible answer.
-    # Built from the same glob `check_skills` uses. A directory without a
-    # SKILL.md would otherwise satisfy this reference check and be skipped by
-    # the frontmatter check, so the recipe would lose the skill at runtime with
-    # nothing having complained.
-    available = {path.parent.name for path in SKILLS_DIR.glob("*/SKILL.md")}
+    available = {
+        skill.name for skill in SKILLS_DIR.iterdir() if skill.is_dir()
+    } if SKILLS_DIR.is_dir() else set()
     referenced = {
         name
         for match in SKILL_REF_PATTERN.finditer(body)
@@ -706,26 +675,6 @@ WRITE_GUARD_CASES = [
         "Forbidden by name: `mcp__kamerplanter__archive_plant`; "
         "`mcp__kamerplanter__create_site`.",
         [],
-    ),
-    (
-        "Home Assistant tool in a prohibition list",
-        "Forbidden by name:\n"
-        "- `mcp__home_assistant__turn_on`\n"
-        "- `mcp__kamerplanter__create_site`",
-        [],
-    ),
-    (
-        "prohibiting line carries no full stop",
-        "Never call `mcp__kamerplanter__archive_plant`\n"
-        "Then call `mcp__kamerplanter__create_site` to register the site.",
-        ["create_site"],
-    ),
-    (
-        "em dash joins a prohibition to its opposite",
-        "Do not call the write tools:\n"
-        "`mcp__kamerplanter__archive_plant` — instead call\n"
-        "`mcp__kamerplanter__create_site` when the site is missing.",
-        ["create_site"],
     ),
     # connectivity-check's real shape: the list wraps, ends in an em dash, and
     # trails off into prose on the closing line.

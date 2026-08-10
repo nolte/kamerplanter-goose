@@ -134,7 +134,7 @@ fi
 echo "$total entry/entries pending with photos; processing up to $MAX_ENTRIES."
 echo
 
-completed=0; failed=0; n=0
+completed=0; failed=0; skipped=0; n=0
 for entry in "${entries[@]}"; do
   [ "$n" -ge "$MAX_ENTRIES" ] && break
   n=$((n + 1))
@@ -142,12 +142,21 @@ for entry in "${entries[@]}"; do
 
   # One process per entry: a crash or context exhaustion here cannot reach the
   # next entry. The recipe still guarantees its own claim is submitted.
-  if goose run --no-session --max-turns 25 -q \
+  # The final line decides, not the exit code. diary-photo-analysis-apply ends
+  # normally with `NOT CLAIMED: <reason>` when another worker holds the lease —
+  # exit 0, entry untouched. Counting that as processed reported
+  # `PROCESSED: 3 ok / REMAINING: 0` for a queue that had not moved.
+  if run_output=$(goose run --no-session --max-turns 25 -q \
       --recipe diary-photo-analysis-apply \
       --params "entry_key=$entry" \
       --params "run_id=$RUN_ID-$entry" \
-      ${TENANT:+--params "tenant=$TENANT"}; then
-    completed=$((completed + 1))
+      ${TENANT:+--params "tenant=$TENANT"} 2>&1 | tee /dev/stderr); then
+    if printf '%s' "$run_output" | grep -q '^NOT CLAIMED:'; then
+      echo "!! $entry was not claimed; it stays in the queue"
+      skipped=$((skipped + 1))
+    else
+      completed=$((completed + 1))
+    fi
   else
     # A non-zero exit means the run itself died, so its claim may still be held.
     # The lease expires on its own; --include_stale picks the entry up next time.
@@ -159,8 +168,8 @@ done
 
 echo "==============================="
 echo "RUN ID:    $RUN_ID"
-echo "PROCESSED: $completed ok, $failed failed"
-# Subtract what actually completed, not what was attempted: a failed run's lease
-# expires and requeues the entry (see the failure branch above), so counting it
-# as processed understates the backlog.
+echo "PROCESSED: $completed ok, $failed failed, $skipped not claimed"
+# Subtract what actually completed, not what was attempted. A failed run's lease
+# expires and requeues the entry, and a `NOT CLAIMED` run never held it — both
+# are still pending, so counting either as processed understates the backlog.
 echo "REMAINING: $((total - completed)) still pending with photos"
