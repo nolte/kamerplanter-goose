@@ -86,12 +86,7 @@ Close with the resolved cycle — botanical and cultivated where they differ —
 - **Never** substitute a date for a `null` `first_frost_date`; report the autumn half as unanchored.
 - **Never** judge against the union of `growing_periods[]` when more than one exists.
 - **Never** collapse the botanical and cultivated cycle into one value where they differ.
-- **Never** call a tool that changes state.
-  Forbidden by name:
-  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
-  `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
-  `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`,
-  `mcp__kamerplanter__submit_diary_analysis`.
+- **Never** call `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, or `mcp__kamerplanter__submit_diary_analysis`.
 - Report an absent tool as an explicit step result naming the tool. Never substitute another.
 
 Governed by `spec/process/species-baseline-verification/en.md`.

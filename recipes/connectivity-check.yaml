@@ -48,10 +48,6 @@ prompt: |
   - Two Home Assistant tools have no classified effect and are also forbidden
     here, by name: `TimeTillErnte` and `time_till`. Their descriptions do not
     say whether they act, so a read-only run must not call them.
-  - Call NO GitHub tool at all. The shared configuration loads that server
-    too and `.envrc` gives it a live token, but no recipe here has business
-    with a repository: create or edit no issue, comment, pull request,
-    branch, file, or release, and read nothing either.
   - Never print the value of an API key or token, not even partially.
   - Do not stop at the first failure. If a step fails, record it and continue
     with the remaining steps.

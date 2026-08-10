@@ -54,10 +54,6 @@ prompt: |
     do not set a value, and do not run a script, scene, or automation.
   - Assert NO botanical value from memory. Read it from the record and label it,
     or research it and cite it.
-  - Call NO GitHub tool at all. The shared configuration loads that server
-    too and `.envrc` gives it a live token, but no recipe here has business
-    with a repository: create or edit no issue, comment, pull request,
-    branch, file, or release, and read nothing either.
   - Never print an API key or token, not even partially.
 
   Step 1 — Verify the baseline.

@@ -54,5 +54,5 @@ repos:
         # job and every local commit on the old wheel while Recipe contract
         # runs the new one. Both are required checks.
         additional_dependencies: ["PyYAML==6.0.3"]
-        files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|spec/mcp/kamerplanter-mcp-server/|tests/validate_recipes\.py$|extensions\.yaml$)'
+        files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
         pass_filenames: false

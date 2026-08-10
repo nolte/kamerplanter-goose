@@ -67,13 +67,7 @@ An analysis that found nothing wrong is `completed` with an empty `findings` lis
 - Never read an entry's photos before the claim succeeds.
 - Never end a run that holds a claim without calling `mcp__kamerplanter__submit_diary_analysis`. If the analysis collapsed, submit `failed` with the cause.
 - Never pass `lease_seconds` above 3600; the call fails validation. Never reach for the maximum as a default.
-- **Never** call a state-changing tool beyond the two this cycle is built on, and those only for the entry this run claimed.
-  Permitted by name:
-  `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`.
-  Forbidden by name:
-  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
-  `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
-  `mcp__kamerplanter__add_plant_diary_entry`.
+- Never call a state-changing tool other than `mcp__kamerplanter__claim_diary_analysis` and `mcp__kamerplanter__submit_diary_analysis` for the entry this run claimed. Specifically out of bounds: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, and `mcp__kamerplanter__add_plant_diary_entry`.
 - Never print an API key or token, not even partially, and not the `lease_token` either.
 
 ## Gotchas

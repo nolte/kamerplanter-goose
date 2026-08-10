@@ -82,10 +82,6 @@ prompt: |
     `mcp__kamerplanter__create_site`,
     `mcp__kamerplanter__add_plant_diary_entry`.
   - Call NO Home Assistant tool at all.
-  - Call NO GitHub tool at all. The shared configuration loads that server
-    too and `.envrc` gives it a live token, but no recipe here has business
-    with a repository: create or edit no issue, comment, pull request,
-    branch, file, or release, and read nothing either.
   - Never print an API key, a token, or a lease token.
   - Hold at most ONE claim at any moment. Submit the entry you hold before
     claiming another.

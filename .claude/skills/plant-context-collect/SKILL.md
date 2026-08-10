@@ -66,12 +66,7 @@ The gaps list is not a footnote. A missing field means the corresponding questio
 - Never infer the species from anything other than `species_key`. If a caller reports a photo that appears to show a different plant, that contradiction is the caller's finding to report, not a reason to re-anchor this context.
 - Never fill an absent field with a typical value, a genus-level guess, or a general assumption. Absent goes into the gaps list.
 - Judge all timing against the date of the observation being analysed — a diary entry's `created_at` — never against today, unless the caller states there is no observation date.
-- Call no tool that changes state. On this server that means these are out of bounds.
-  Forbidden by name:
-  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
-  `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
-  `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`,
-  `mcp__kamerplanter__submit_diary_analysis`.
+- Call no tool that changes state. On this server that means `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, and `mcp__kamerplanter__submit_diary_analysis` are all out of bounds here.
 - Report a tool error verbatim and continue with the remaining steps. A partial context with a named gap is useful; a context that hides a failed call is not.
 
 ## Gotchas

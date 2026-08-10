@@ -62,10 +62,6 @@ prompt: |
     `mcp__kamerplanter__add_plant_diary_entry`.
   - Call NO Home Assistant tool at all. Not for context, not for temperature,
     not for anything.
-  - Call NO GitHub tool at all. The shared configuration loads that server
-    too and `.envrc` gives it a live token, but no recipe here has business
-    with a repository: create or edit no issue, comment, pull request,
-    branch, file, or release, and read nothing either.
   - Never print an API key, a token, or the lease token.
   - Once you hold a claim, you MUST reach the submit step on every path,
     including tool failure and unusable photos.
