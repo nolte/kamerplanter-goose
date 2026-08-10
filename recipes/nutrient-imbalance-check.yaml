@@ -57,13 +57,46 @@ prompt: |
   Load the skill `plant-context-collect` and follow it for plant
   "{{ plant_key }}". Carry its gaps list forward.
 
-  Step 2 — Assess.
-  Load the skill `nutrient-imbalance-assess` and follow it against that
-  context. Establish the evidence tier first, then the direction. If the
-  highest available tier is 3 or below, name the measurement that would resolve
-  the direction and propose no dosage.
+  Step 2 — Recorded measurements.
+  Tier 1 of the evidence ladder is a measured value from a diary entry, and
+  nothing else in this run fetches one. Without this step the assessment can
+  never rise above tier 3 and always refuses, even for a plant whose diary
+  holds a perfectly good reading.
 
-  Step 3 — Report.
+  Call `mcp__kamerplanter__list_diary_entries` for plant "{{ plant_key }}" in
+  garden "{{ tenant }}", or in the garden step 1 resolved when that parameter
+  is empty. Pass the plant and the garden and nothing else.
+
+  Do NOT filter by entry type. `measurements` is an open field carried by any
+  entry regardless of its type, so an EC or pH value recorded against an
+  observation or a note is exactly the reading this step exists to find, and a
+  type filter would hide it.
+
+  Do NOT guess a limit, a date filter or a sort parameter. This recipe was
+  written without a measured signature for this tool, and a rejected argument
+  ends the step in a `validation.error` — which drops the run back to the
+  tier-3 refusal it is meant to remove. If the tool rejects the call or its
+  result is paged, report the error or the paging field verbatim as a step
+  result and continue; that report is how the signature gets measured.
+
+  Read the entries newest first. For at most the eight most recent, call
+  `mcp__kamerplanter__get_diary_entry` with the entry key and read the
+  `measurements` object. Stop early once a value carries an unambiguous unit
+  and a date inside the current phase — one such reading settles tier 1, and
+  the remaining calls would spend turns a headless run does not have.
+
+  Report, as its own line: how many entries were listed, how many were opened,
+  and how many carried no `measurements`. That line is what tells step 3 the
+  diary was read. An empty result after a real read is ordinary and puts the
+  assessment at tier 3 or below.
+
+  Step 3 — Assess.
+  Load the skill `nutrient-imbalance-assess` and follow it against that
+  context and those measurements. Establish the evidence tier first, then the
+  direction. If the highest available tier is 3 or below, name the measurement
+  that would resolve the direction and propose no dosage.
+
+  Step 4 — Report.
   Print this and nothing after it:
 
   ## Nutrient Assessment — {{ plant_key }}
@@ -74,6 +107,7 @@ prompt: |
   | Evidence tier | 1-5, and what the evidence was |
   | Plan | the plan phase and its target_ec_ms, or "none assigned" |
   | Substrate | the medium and the properties that mattered |
+  | Diary | entries read, measurements found, and the window searched |
 
   Then, in order: the reasoning in at most five sentences; each discarded
   measurement with why it was discarded; the recommended actions; and the time
