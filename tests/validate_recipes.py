@@ -78,9 +78,20 @@ def available_skills() -> set[str]:
 
 
 def skills_loaded_by(text: str, available: set[str]) -> set[str]:
-    return {
-        name for name in BACKTICK_TOKEN_PATTERN.findall(text) if name in available
-    }
+    """Skills the text names, backticked or bare.
+
+    The model reads prose, so `Load the skill plant-context-collect` loads it
+    just as surely as the backticked form. Matching only the backticked form
+    let a maintainer drop two characters and take that skill — and every write
+    in it — out of the guard's reach with no finding. Skill names are
+    kebab-case and at least two segments long, so a bare match is not a word
+    that turns up by accident.
+    """
+    found = {name for name in BACKTICK_TOKEN_PATTERN.findall(text) if name in available}
+    for name in available:
+        if "-" in name and re.search(rf"(?<![A-Za-z0-9_`-]){re.escape(name)}(?![A-Za-z0-9_`-])", text):
+            found.add(name)
+    return found
 
 
 def skill_texts(name: str) -> list[tuple[str, str]]:
@@ -164,6 +175,7 @@ POLICY_MARKERS = ("Forbidden by name:", "Permitted by name:")
 
 BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
 BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
+TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
 
 
 def is_name_line(text: str) -> bool:
@@ -203,13 +215,27 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
         if end == -1:
             spans.append((match.start(), len(prompt)))
             continue
-        if not is_name_line(prompt[match.end():end]):
+        head = prompt[match.end():end]
+        if not is_name_line(head):
             # Prose on the marker's own line: the block is the names it
             # carries and nothing more. check_policy_block_format reports it.
             spans.append((match.start(), end))
             continue
+        # A marker line that already carries names opens a list that continues
+        # only on continuation lines. A NEW bullet after it is a new element,
+        # not more of the list — otherwise `- Forbidden by name: \`a\`.` followed
+        # by `- \`b\`, \`c\`` silently reclassified b and c as forbidden, which is
+        # how a maintainer writes "call these".
+        #
+        # A marker line with no names of its own is the nested-bullet shape:
+        # there the following bullets ARE the list, so they continue it.
+        nested = not BACKTICK_SPAN_PATTERN.search(head)
         for line in prompt[end + 1:].split("\n"):
             if not line.strip() or not is_name_line(line):
+                break
+            if TABLE_ROW_PATTERN.match(line):
+                break  # `|---|---|` is punctuation only, never a name list
+            if BULLET_PREFIX_PATTERN.match(line) and not nested:
                 break
             end += 1 + len(line)
         spans.append((match.start(), end))
@@ -519,6 +545,10 @@ def check_policy_block_format(source: str, text: str, findings: Findings) -> Non
             # ... — ends the block cleanly and is not a run-on.
             after = text[end:].split("\n")
             offender = after[1] if len(after) > 1 else ""
+            # A new bullet is a new element, not a run-on. Reporting it named a
+            # well-formed line and told the author to fix something correct.
+            if BULLET_PREFIX_PATTERN.match(offender):
+                continue
             # A block that ends because the next bullet opens another block is
             # the shape both `-apply` recipes use, and three guard cases call
             # correct. Without this it reads as a run-on and the message points
@@ -587,6 +617,42 @@ UNUSED_SERVER_PROHIBITIONS = {
     # server to it when nothing in the repository references it.
     "github": re.compile(r"(?i)call\s+no\s+github\s+tool"),
 }
+
+
+def check_server_rules_cover_config(servers: set[str], findings: Findings) -> None:
+    """Every configured server is either used here or has a prohibition rule.
+
+    `UNUSED_SERVER_PROHIBITIONS` keys on a literal name, so renaming `github:`
+    in extensions.yaml disabled the rule for all nine recipes and reported
+    nothing. Anchoring it to the configuration turns that rename into a finding
+    instead: a server nothing references and no rule covers is a live tool
+    surface with a live credential that no recipe forbids.
+    """
+    for server in sorted(servers):
+        if server in UNUSED_SERVER_PROHIBITIONS:
+            continue
+        # The bare name, not the `mcp__<server>__` form. Home Assistant is
+        # called with bare tool names because its catalog is assembled per
+        # instance, so the prefixed form appears nowhere and the server would
+        # read as unused. This check asks the decidable question — does the
+        # repository know this name at all — rather than the undecidable one.
+        used = any(
+            server in path.read_text(encoding="utf-8")
+            for directory in (RECIPES_DIR, SKILLS_DIR)
+            if directory.is_dir()
+            for path in directory.rglob("*")
+            if path.is_file() and path.suffix in {".yaml", ".yml", ".md"}
+        )
+        if used:
+            continue
+        findings.error(
+            "extensions.yaml",
+            f"loads the `{server}` server, but nothing under recipes/ or "
+            ".claude/skills/ calls it and UNUSED_SERVER_PROHIBITIONS carries "
+            "no rule for it. Either drop the extension — which removes the "
+            "surface rather than forbidding it — or add a rule so every "
+            "recipe has to forbid it by name.",
+        )
 
 
 def check_unused_server_prohibition(
@@ -684,6 +750,16 @@ def check_skills(findings: Findings) -> None:
     to it. Goose's own `skills list` ignores the key and shows it anyway."""
     if not SKILLS_DIR.is_dir():
         return
+
+    # Every file `skill_texts` puts in reach, not only SKILL.md. A reference
+    # file's policy block is excised like any other, so a marker line running
+    # into prose there hid a call from every recipe that loads the skill.
+    for extra in sorted(SKILLS_DIR.glob("*/references/*.md")):
+        check_policy_block_format(
+            str(extra.relative_to(REPO_ROOT)),
+            extra.read_text(encoding="utf-8"),
+            findings,
+        )
 
     for skill_file in sorted(SKILLS_DIR.glob("*/SKILL.md")):
         text = skill_file.read_text(encoding="utf-8")
@@ -950,6 +1026,21 @@ WRITE_GUARD_CASES = [
         "        `mcp__kamerplanter__create_site`.",
         [],
     ),
+    # Round 13. A bullet whose body is only names was absorbed into the block
+    # above it, so "call these" written as a list read as "forbidden".
+    (
+        "a bullet of bare names after a complete marker line is a call",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  - `mcp__kamerplanter__create_site`, `mcp__kamerplanter__set_plant_location`",
+        ["create_site", "set_plant_location"],
+    ),
+    (
+        "a table separator does not hold the block open",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  |---|---|\n"
+        "  `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
     (
         "a nested block does not free the outer one",
         "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n"
@@ -1013,10 +1104,15 @@ POLICY_FORMAT_CASES = [
         "    This review reads files, not a garden.",
         False,
     ),
+    # Round 13. This case used `calculate_mixing_protocol`, which is not a
+    # state-changing tool, so `names_in(offender)` was empty whatever the line
+    # said and the case passed vacuously — in the one suite that exists because
+    # two others contradicted each other unnoticed. With a real tool it caught
+    # a false positive on a well-formed separate bullet.
     (
         "an unrelated bullet after the block",
         "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "  - `mcp__kamerplanter__calculate_mixing_protocol` is permitted.",
+        "  - `mcp__kamerplanter__create_site` is permitted only after step 2.",
         False,
     ),
     (
@@ -1274,6 +1370,7 @@ def main() -> int:
     for path in sorted(RECIPES_DIR.glob("*.yaml")):
         check_recipe(path, servers, findings)
     check_extensions(findings)
+    check_server_rules_cover_config(servers, findings)
     check_skills(findings)
     check_agents(findings)
     check_tool_list_matches_spec(findings)
