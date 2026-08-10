@@ -81,9 +81,9 @@ Ein Aufruf ohne die Berechtigung wird mit `permission.denied` abgelehnt und als 
 
 Anders als bei Home Assistant trägt **jedes `inputSchema` ein vollständiges JSON Schema** — gemessene Schlüssel umfassen `required`, `properties`, `$defs`, `additionalProperties` und `title` —, sodass ein Client Pflicht- von Optionalargumenten unterscheiden kann, ohne dass man es ihm sagt.
 
-Der Katalog wächst zwischen zwei Messungen. Eine Inventur am 2026-08-04 ergab 12 Tools und deckte sich mit der damaligen Dokumentation; eine erneute Inventur am 2026-08-07 ergab **43**, die 31 zusätzlichen ausnahmslos Lesetools. **Jede Zahl hier ist eine Untergrenze, keine Zusicherung** — vor der Annahme, ein Tool fehle, ist `tools/list` erneut abzufragen.
+Der Katalog wächst zwischen zwei Messungen. Eine Inventur am 2026-08-04 ergab 12 Tools und deckte sich mit der damaligen Dokumentation; eine erneute Inventur am 2026-08-07 ergab **43** — 31 mehr, davon 28 Lesetools und drei Schreibtools (`add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis`). **Jede Zahl hier ist eine Untergrenze, keine Zusicherung** — vor der Annahme, ein Tool fehle, ist `tools/list` erneut abzufragen.
 
-### Lesetools (`mcp.read`), 38 gemessen
+### Lesetools (`mcp.read`), 36 gemessen
 
 Gruppiert danach, wonach ein Rezept greift, nicht nach der Schichtung des Servers.
 
@@ -114,7 +114,7 @@ Signaturen, die eigens zu nennen sind, weil ein Rezept sie sonst falsch bedient:
 
 `calculate_mixing_protocol` rechnet und persistiert nichts — deshalb steht es trotz seines Namens bei den Lesetools.
 
-Vier Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind kontobezogen; die Kataloge für Arten, Schädlinge, Krankheiten, Behandlungen, Glossar und Winterhärtezonen sind gemeinsam.
+Fünfzehn Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind kontobezogen, und die Kataloge für Arten, Sorten, Schädlinge, Krankheiten, Behandlungen, Substrate, Glossar, Winterhärtezonen und Phasendefinitionen gelten gartenübergreifend. Die Aufteilung gilt je Tool und wurde aus dem jeweiligen `inputSchema` gelesen, nicht aus der Gruppe erschlossen, in der ein Tool steht: `list_substrates` nimmt kein `tenant`, `list_fertilizers` in derselben Gruppe schon. Für die übrigen, mandantengebundenen Tools gilt die Mandantenregel von oben — optional bei einem Schlüssel mit einer Mitgliedschaft, verpflichtend bei mehreren —, aus diesem Abschnitt lässt sich also nicht ableiten, dass das Weglassen je unbedenklich wäre.
 
 ### Schreibtools (`mcp.write`)
 
@@ -133,7 +133,7 @@ Vier Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` sind 
 |------|---------|-------|
 | `create_site` | `name` | Einen Standort-Wurzelknoten anlegen (Wohnung, Garten, Balkon, Gewächshaus, Fensterbank, Growbox) |
 
-Gemessen: Jedes zustandsändernde Tool bietet `tenant`, `dry_run` und `idempotency_key` an. Kein Lesetool trägt eines davon — das ist der billigste Weg, die beiden Klassen in einer `tools/list`-Antwort zu unterscheiden.
+Gemessen: Jedes zustandsändernde Tool bietet `dry_run` und `idempotency_key` an, und kein Lesetool trägt eines davon — das ist der billigste Weg, die beiden Klassen in einer `tools/list`-Antwort zu unterscheiden. `tenant` trennt sie **nicht**: Alle sieben Schreibtools nehmen es, und 21 der 36 Lesetools ebenfalls. Schreibtools sind wie alles andere mandantengebunden, die Mandantenregel von oben gilt für sie also vollständig: Bei einem Schlüssel über mehrere Gärten ist ein Schreibaufruf ohne `tenant` ein Fehler, kein Standardwert.
 
 ### Was der Katalog nicht trägt
 
@@ -156,7 +156,7 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - **MUSS [MUST]** `KAMERPLANTER_URL` und `KAMERPLANTER_API_KEY` in den `env_keys` dieser Extension aufführen, wo immer sie deklariert ist; ohne das sendet Goose die literale Zeichenkette `${...}` als Header-Wert
 - **MUSS [MUST]** die Zugangsdaten als Header `X-API-Key` übergeben, nie als URL-Parameter und nie eingebettet in einer Rezept- oder Konfigurationsdatei
 - **MUSS [MUST]** den Garten explizit auflösen: entweder einen `tenant`-Rezeptparameter annehmen oder zuerst `list_tenants` aufrufen; ein Rezept **DARF NICHT [MUST NOT]** annehmen, dass der Schlüssel genau einen Garten abdeckt
-- **MUSS [MUST]** jedes verbotene Schreibtool im `prompt` des Rezepts benennen, wenn das Rezept nur liest — `instructions` allein wird bei einem Headless-Lauf nicht durchgesetzt; zu benennen sind die vier: `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`
+- **MUSS [MUST]** jedes verbotene Schreibtool im `prompt` des Rezepts benennen, wenn das Rezept nur liest — `instructions` allein wird bei einem Headless-Lauf nicht durchgesetzt; zu benennen sind die sieben: `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`, `add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis`. Eine Teilmenge zu nennen ist genau der Fehler, den diese Regel abfangen soll, und eine Kategorie („und alles andere, was schreibt") ersetzt keines der sieben: Das Verbot darf nicht von der Klassifikation des Modells abhängen. Es gibt keine Ausnahme. Ein Pauschalverbot („Call NO tool while doing it") liest sich rezeptweit und ist regelmäßig auf einen Schritt gemünzt; drei Anläufe für eine Regel, die beides unterscheidet, scheiterten in beide Richtungen — blind für CamelCase-Werkzeugnamen, auslösend bei Argumentnamen. Jedes Rezept nennt die sieben, auch die Diagnosen, die keinen Server aufrufen
 - **MUSS [MUST]** das Suffix `-apply` im Dateinamen tragen und die Wirkung in `description` benennen, wenn ein Rezept ein `mcp.write`- oder `mcp.setup`-Tool aufruft
 - **DARF NICHT [MUST NOT]** aus dem Rollennamen eines Gartens ableiten, was es darf; das Array `mcp_permissions` aus `list_tenants` ist die einzig verlässliche Quelle, und es existieren undokumentierte Rollen
 - **DARF NICHT [MUST NOT]** `prompts` oder `resources` von diesem Server erwarten; er bietet ausschließlich die `tools`-Fähigkeit an
@@ -174,7 +174,7 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - [ ] `goose recipe validate` läuft für das Rezept durch
 - [ ] Ein Lauf gegen einen Server ohne gesetztes `MCP_SERVER_ENABLED` meldet die Opt-in-Variable, keinen URL-Fehler
 - [ ] Ein Lauf mit fehlendem oder widerrufenem Schlüssel meldet `401` als Authentifizierungsfehler, unterscheidbar von einem Berechtigungsfehler
-- [ ] Ein nur lesendes Rezept benennt alle vier zustandsändernden Tools als verboten innerhalb von `prompt`
+- [ ] Jedes Rezept nennt alle sieben zustandsändernden Tools einzeln in seinem `prompt` — nie eine Teilmenge, nie eine Kategorie anstelle eines Namens, und keine Ausnahme für ein Rezept, das keinen Server aufruft
 - [ ] Jedes Rezept, das ein Schreibtool aufruft, trägt einen `-apply`-Dateinamen und sagt dies in `description`
 - [ ] Ein Rezeptlauf mit einem Schlüssel über zwei Gärten nimmt entweder `tenant` als Parameter an oder ruft `list_tenants` vor jedem mandantenbezogenen Tool auf
 - [ ] Kein Rezept leitet Berechtigungen aus einem Rollennamen statt aus `mcp_permissions` ab
@@ -186,11 +186,12 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - Die Rolle `lead` ist auf der Referenzinstanz gemessen, taucht aber in keiner Upstream-Rollentabelle auf. Ob sie eine Umbenennung von `admin`, eine eigenständige vierte Rolle oder instanzlokale Konfiguration ist, ist ungeklärt — daher die Regel, `mcp_permissions` statt der Rolle zu lesen.
 - Ob die `Mcp-Session-Id` bei jedem Aufruf zurückgespiegelt werden muss oder nur innerhalb eines Sitzungsfensters; die Referenzprüfung hat sie durchgehend mitgesendet und den Fall ohne sie nicht getestet.
 - Ob `get_mcp_activity` als Selbstprüfungsschritt am Ende eines `-apply`-Rezepts nützt oder nur Rauschen erzeugt.
-- Der Upstream-Katalog ist als auf rund 30 Tools wachsend dokumentiert. Diese Spec hat noch keinen Mechanismus, um zu erkennen, dass der laufende Server Tools anbietet, die dieses Dokument nicht führt; heute stimmen beide exakt überein.
+- Diese Spec hat keinen Mechanismus, um zu erkennen, dass der laufende Server Tools anbietet, die sie nicht führt. Zum Stand der Nachinventur vom 2026-08-07 stimmen beide überein — alle 43 sind hier aufgeführt —, aber nichts hält sie in Übereinstimmung, und die Drift, die diesen Abschnitt falsch machte, fiel von Hand auf, drei Tage nachdem sie entstanden war. Davon unabhängig: Upstream dokumentiert den Katalog weiterhin als auf rund 30 wachsend, was die Implementierung überholt hat.
 
 ## Quelle
 
 - Live-Messung der Referenzinstanz, 2026-08-04: `initialize` (Protokoll `2025-06-18`, `Mcp-Session-Id`, Fähigkeiten nur `tools`), `tools/list` (12 Tools mit vollständigem JSON Schema), `tools/call list_tenants` (Rolle `lead`, `mcp_permissions`, `structuredContent`-Hülle), `GET /mcp` → `405`, unauthentifiziertes `POST` → `401`
+- Zuordnung von `tenant`, `dry_run` und `idempotency_key` je Tool, abgeleitet aus der `tools/list`-Antwort vom 2026-08-07 durch Prüfung von `inputSchema.properties` auf diese Schlüssel — nicht aus der Gruppierung in diesem Dokument und nicht aus Aufrufen: Kein Schreibtool wurde aufgerufen, die Aussage betrifft also das deklarierte Schema, nicht beobachtetes Verhalten
 - Live-Messung der Referenzinstanz, 2026-08-07: `tools/list` (43 Tools) sowie nur lesende `tools/call` für `list_tenants`, `list_pests`, `get_pest` (`Tetranychus urticae`), `list_diseases`, `list_species`, `get_species_info` (`Allium porrum`, `Spathiphyllum wallisii`), `list_plants`, `get_plant_inspections`, `list_phase_definitions`, `list_overwintering_profiles` und `get_sowing_calendar` (einmal unspezifiziert, was abgelehnt wurde, und einmal mit `query`). Kein Schreibtool wurde aufgerufen.
 - `nolte/kamerplanter` — `docs/en/api/mcp-server.md` (Transport, Authentifizierung, Mandantenfähigkeit, dokumentierte Berechtigungsklassen, Werkzeugzwecke, Audit-Trail), gelesen am 2026-08-04
 - `env_keys`-Verhalten von Goose gemessen gegen Goose 1.45.0 durch Mitschnitt der tatsächlich gesendeten Requests; siehe `README.md` §Notes
