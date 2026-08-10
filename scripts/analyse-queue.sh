@@ -146,11 +146,19 @@ for entry in "${entries[@]}"; do
   # normally with `NOT CLAIMED: <reason>` when another worker holds the lease —
   # exit 0, entry untouched. Counting that as processed reported
   # `PROCESSED: 3 ok / REMAINING: 0` for a queue that had not moved.
-  if run_output=$(goose run --no-session --max-turns 25 -q \
+  # Captured, then echoed, rather than teed to /dev/stderr: teeing moved the
+  # whole run's output onto stderr, changing what any caller redirecting the
+  # streams sees, and its ordering was not reproducible here. The cost is that
+  # a run's output appears when it ends instead of live.
+  run_status=0
+  run_output=$(goose run --no-session --max-turns 25 -q \
       --recipe diary-photo-analysis-apply \
       --params "entry_key=$entry" \
       --params "run_id=$RUN_ID-$entry" \
-      ${TENANT:+--params "tenant=$TENANT"} 2>&1 | tee /dev/stderr); then
+      ${TENANT:+--params "tenant=$TENANT"} 2>&1) || run_status=$?
+  printf '%s\n' "$run_output"
+
+  if [ "$run_status" -eq 0 ]; then
     if printf '%s' "$run_output" | grep -q '^NOT CLAIMED:'; then
       echo "!! $entry was not claimed; it stays in the queue"
       skipped=$((skipped + 1))
