@@ -133,7 +133,7 @@ Fifteen read tools take no `tenant`: `list_tenants` and `get_mcp_activity` are a
 |------|----------|---------|
 | `create_site` | `name` | Create a site root (apartment, garden, balcony, greenhouse, windowsill, grow tent) |
 
-Measured: every state-changing tool exposes `dry_run` and `idempotency_key`, and no read tool carries either — which is the cheapest way to tell the two classes apart in a `tools/list` response. `tenant` does **not** separate them: all seven writes take it, and so do 21 of the 36 reads. Writes are tenant-scoped like everything else, so the tenancy rule above applies to them in full: on a key covering several gardens, omitting `tenant` on a write is an error, not a default.
+Measured: every state-changing tool exposes `dry_run` and `idempotency_key`, and no read tool carries either — which is the cheapest way to tell the two classes apart in a `tools/list` response. `tenant` does **not** separate them: all seven state-changing tools take it — the six `mcp.write` tools and the one `mcp.setup` tool — and so do 21 of the 36 reads. Writes are tenant-scoped like everything else, so the tenancy rule above applies to them in full: on a key covering several gardens, omitting `tenant` on a write is an error, not a default.
 
 ### What the catalog does not carry
 
@@ -156,7 +156,7 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 - **MUST** list `KAMERPLANTER_URL` and `KAMERPLANTER_API_KEY` in that extension's `env_keys`, wherever it is declared; without it Goose sends the literal `${...}` string as the header value
 - **MUST** pass the credential as the `X-API-Key` header, never as a URL parameter and never inline in a recipe or config file
 - **MUST** resolve the garden explicitly: either accept a `tenant` recipe parameter or call `list_tenants` first; a recipe **MUST NOT** assume the key covers exactly one garden
-- **MUST** name every forbidden write tool in the recipe's `prompt` when the recipe is read-only — `instructions` alone is not enforced on a headless run; the seven to name are `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`, `add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis`. Naming a subset is the failure this rule exists to catch, and a category ("and anything else that writes") does not substitute for any of the seven: the prohibition must not depend on the model's classification. There is no exemption. A blanket ("Call NO tool while doing it") reads as recipe-wide and is routinely scoped to one step, and three attempts at a rule that could tell the two apart failed in both directions — blind to CamelCase tool names, tripping on argument names. Every recipe names the seven, including the diagnostics that call no server at all
+- **MUST** name every forbidden state-changing tool individually in the recipe's `prompt` when the recipe is read-only — `instructions` alone is not enforced on a headless run. The catalog measurement raised that list from four to seven: `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`, `add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis` (six `mcp.write` plus the one `mcp.setup`). Naming a subset is the failure this rule exists to catch, and a category ("and anything else that writes") does not substitute for any of the seven: the prohibition must not depend on the model's classification. A write-capable `-apply` recipe is the exception the word *forbidden* already carries — the tools it exists to call are declared, not prohibited
 - **MUST** carry the `-apply` suffix in its filename and state the effect in its `description` when a recipe calls any `mcp.write` or `mcp.setup` tool
 - **MUST NOT** infer what it may do from a garden's role name; the `mcp_permissions` array from `list_tenants` is the only reliable source, and undocumented roles exist
 - **MUST NOT** expect `prompts` or `resources` from this server; it advertises the `tools` capability only
@@ -174,7 +174,8 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 - [ ] `goose recipe validate` passes on the recipe
 - [ ] A run against a server with `MCP_SERVER_ENABLED` unset reports the opt-in variable, not a URL error
 - [ ] A run with a missing or revoked key reports `401` as an authentication failure, distinct from a permission failure
-- [ ] Every recipe names all seven state-changing tools in its `prompt`, individually — never a subset, never a category standing in for a name, and no exemption for a recipe that calls no server
+- [ ] Every read-only recipe names all seven state-changing tools in its `prompt`, individually — never a subset, never a category standing in for a name
+- [ ] A machine check enforces the criterion above; a rule stated only in prose has drifted from the recipes twice
 - [ ] Every recipe calling a write tool has an `-apply` filename and says so in `description`
 - [ ] A recipe run against a key covering two gardens either takes `tenant` as a parameter or calls `list_tenants` before any tenant-scoped tool
 - [ ] No recipe derives permission from a role name rather than from `mcp_permissions`
@@ -182,6 +183,8 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 - [ ] No recipe issues `prompts/list` or `resources/list` against this server
 
 ## Open Questions
+
+- Three shipped recipes do not satisfy the criterion above: `connectivity-check` names four of seven, and `provider-surface-check` and `provider-plugin-check` name none, relying on a blanket instead. The conforming prompts and the validator check that enforces them are on `refactor/recipe-validator-guard`; until that lands, the criterion is a statement of intent and not a measured property of this repository.
 
 - The role `lead` is measured on the reference instance but appears in no upstream role table. Whether it is a rename of `admin`, a distinct fourth role, or instance-local configuration is unresolved — hence the rule to read `mcp_permissions` rather than the role.
 - Whether the `Mcp-Session-Id` must be echoed on every call or only within a session window; the reference probe echoed it throughout and was not tested without it.

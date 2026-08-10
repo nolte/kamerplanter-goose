@@ -133,7 +133,7 @@ Fünfzehn Lesetools nehmen kein `tenant`: `list_tenants` und `get_mcp_activity` 
 |------|---------|-------|
 | `create_site` | `name` | Einen Standort-Wurzelknoten anlegen (Wohnung, Garten, Balkon, Gewächshaus, Fensterbank, Growbox) |
 
-Gemessen: Jedes zustandsändernde Tool bietet `dry_run` und `idempotency_key` an, und kein Lesetool trägt eines davon — das ist der billigste Weg, die beiden Klassen in einer `tools/list`-Antwort zu unterscheiden. `tenant` trennt sie **nicht**: Alle sieben Schreibtools nehmen es, und 21 der 36 Lesetools ebenfalls. Schreibtools sind wie alles andere mandantengebunden, die Mandantenregel von oben gilt für sie also vollständig: Bei einem Schlüssel über mehrere Gärten ist ein Schreibaufruf ohne `tenant` ein Fehler, kein Standardwert.
+Gemessen: Jedes zustandsändernde Tool bietet `dry_run` und `idempotency_key` an, und kein Lesetool trägt eines davon — das ist der billigste Weg, die beiden Klassen in einer `tools/list`-Antwort zu unterscheiden. `tenant` trennt sie **nicht**: Alle sieben zustandsändernden Tools nehmen es — die sechs `mcp.write`-Tools und das eine `mcp.setup`-Tool — und 21 der 36 Lesetools ebenfalls. Schreibtools sind wie alles andere mandantengebunden, die Mandantenregel von oben gilt für sie also vollständig: Bei einem Schlüssel über mehrere Gärten ist ein Schreibaufruf ohne `tenant` ein Fehler, kein Standardwert.
 
 ### Was der Katalog nicht trägt
 
@@ -156,7 +156,7 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - **MUSS [MUST]** `KAMERPLANTER_URL` und `KAMERPLANTER_API_KEY` in den `env_keys` dieser Extension aufführen, wo immer sie deklariert ist; ohne das sendet Goose die literale Zeichenkette `${...}` als Header-Wert
 - **MUSS [MUST]** die Zugangsdaten als Header `X-API-Key` übergeben, nie als URL-Parameter und nie eingebettet in einer Rezept- oder Konfigurationsdatei
 - **MUSS [MUST]** den Garten explizit auflösen: entweder einen `tenant`-Rezeptparameter annehmen oder zuerst `list_tenants` aufrufen; ein Rezept **DARF NICHT [MUST NOT]** annehmen, dass der Schlüssel genau einen Garten abdeckt
-- **MUSS [MUST]** jedes verbotene Schreibtool im `prompt` des Rezepts benennen, wenn das Rezept nur liest — `instructions` allein wird bei einem Headless-Lauf nicht durchgesetzt; zu benennen sind die sieben: `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`, `add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis`. Eine Teilmenge zu nennen ist genau der Fehler, den diese Regel abfangen soll, und eine Kategorie („und alles andere, was schreibt") ersetzt keines der sieben: Das Verbot darf nicht von der Klassifikation des Modells abhängen. Es gibt keine Ausnahme. Ein Pauschalverbot („Call NO tool while doing it") liest sich rezeptweit und ist regelmäßig auf einen Schritt gemünzt; drei Anläufe für eine Regel, die beides unterscheidet, scheiterten in beide Richtungen — blind für CamelCase-Werkzeugnamen, auslösend bei Argumentnamen. Jedes Rezept nennt die sieben, auch die Diagnosen, die keinen Server aufrufen
+- **MUSS [MUST]** jedes verbotene zustandsändernde Tool im `prompt` des Rezepts einzeln benennen, wenn das Rezept nur liest — `instructions` allein wird in einem Headless-Lauf nicht durchgesetzt. Die Katalogmessung hat diese Liste von vier auf sieben gehoben: `confirm_care_task`, `archive_plant`, `set_plant_location`, `create_site`, `add_plant_diary_entry`, `claim_diary_analysis`, `submit_diary_analysis` (sechs `mcp.write` plus das eine `mcp.setup`). Eine Teilmenge zu nennen ist der Fehler, für den diese Regel existiert, und eine Kategorie („und alles andere, was schreibt") ersetzt keinen der sieben Namen: Das Verbot darf nicht von der Klassifikation des Modells abhängen. Ein schreibfähiges `-apply`-Rezept ist die Ausnahme, die das Wort *verboten* bereits enthält — die Werkzeuge, für die es existiert, werden deklariert, nicht verboten
 - **MUSS [MUST]** das Suffix `-apply` im Dateinamen tragen und die Wirkung in `description` benennen, wenn ein Rezept ein `mcp.write`- oder `mcp.setup`-Tool aufruft
 - **DARF NICHT [MUST NOT]** aus dem Rollennamen eines Gartens ableiten, was es darf; das Array `mcp_permissions` aus `list_tenants` ist die einzig verlässliche Quelle, und es existieren undokumentierte Rollen
 - **DARF NICHT [MUST NOT]** `prompts` oder `resources` von diesem Server erwarten; er bietet ausschließlich die `tools`-Fähigkeit an
@@ -174,7 +174,8 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - [ ] `goose recipe validate` läuft für das Rezept durch
 - [ ] Ein Lauf gegen einen Server ohne gesetztes `MCP_SERVER_ENABLED` meldet die Opt-in-Variable, keinen URL-Fehler
 - [ ] Ein Lauf mit fehlendem oder widerrufenem Schlüssel meldet `401` als Authentifizierungsfehler, unterscheidbar von einem Berechtigungsfehler
-- [ ] Jedes Rezept nennt alle sieben zustandsändernden Tools einzeln in seinem `prompt` — nie eine Teilmenge, nie eine Kategorie anstelle eines Namens, und keine Ausnahme für ein Rezept, das keinen Server aufruft
+- [ ] Jedes nur lesende Rezept nennt alle sieben zustandsändernden Tools einzeln in seinem `prompt` — nie eine Teilmenge, nie eine Kategorie anstelle eines Namens
+- [ ] Eine maschinelle Prüfung setzt das obige Kriterium durch; eine nur in Prosa formulierte Regel ist zweimal von den Rezepten abgedriftet
 - [ ] Jedes Rezept, das ein Schreibtool aufruft, trägt einen `-apply`-Dateinamen und sagt dies in `description`
 - [ ] Ein Rezeptlauf mit einem Schlüssel über zwei Gärten nimmt entweder `tenant` als Parameter an oder ruft `list_tenants` vor jedem mandantenbezogenen Tool auf
 - [ ] Kein Rezept leitet Berechtigungen aus einem Rollennamen statt aus `mcp_permissions` ab
@@ -182,6 +183,8 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - [ ] Kein Rezept setzt `prompts/list` oder `resources/list` gegen diesen Server ab
 
 ## Offene Fragen
+
+- Drei ausgelieferte Rezepte erfüllen das obige Kriterium nicht: `connectivity-check` nennt vier von sieben, `provider-surface-check` und `provider-plugin-check` nennen keines und verlassen sich auf ein Pauschalverbot. Die konformen Prompts und die Validator-Prüfung, die sie durchsetzt, liegen auf `refactor/recipe-validator-guard`; bis das landet, ist das Kriterium eine Absichtserklärung und keine gemessene Eigenschaft dieses Repositories.
 
 - Die Rolle `lead` ist auf der Referenzinstanz gemessen, taucht aber in keiner Upstream-Rollentabelle auf. Ob sie eine Umbenennung von `admin`, eine eigenständige vierte Rolle oder instanzlokale Konfiguration ist, ist ungeklärt — daher die Regel, `mcp_permissions` statt der Rolle zu lesen.
 - Ob die `Mcp-Session-Id` bei jedem Aufruf zurückgespiegelt werden muss oder nur innerhalb eines Sitzungsfensters; die Referenzprüfung hat sie durchgehend mitgesendet und den Fall ohne sie nicht getestet.
