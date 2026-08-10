@@ -61,8 +61,19 @@ tasks:
       - "{{.PIP}} install -r requirements-dev.txt"
       - "{{.PIP}} install -r docs/requirements.txt"
       - "{{.VENV}}/bin/pre-commit install"
-    status:
-      - test -x {{.PY}}
+      - "touch {{.VENV}}/.install-stamp"
+    # Keyed on the manifests, not on the venv's existence. `test -x .venv/bin/python`
+    # marked setup up to date the moment the venv existed, so a Renovate bump in
+    # docs/requirements.txt was never installed locally: `task docs` built green
+    # against the old wheel and CI — which installs fresh — failed on the new one.
+    # The two disagreed exactly when a pin moved, which is when they must agree.
+    sources:
+      - requirements.txt
+      - requirements-dev.txt
+      - docs/requirements.txt
+      - .pre-commit-config.yaml
+    generates:
+      - "{{.VENV}}/.install-stamp"
 
   test:
     desc: Validate every recipe against the house pattern
