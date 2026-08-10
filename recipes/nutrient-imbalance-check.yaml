@@ -63,20 +63,32 @@ prompt: |
   never rise above tier 3 and always refuses, even for a plant whose diary
   holds a perfectly good reading.
 
-  Call `mcp__kamerplanter__list_diary_entries` with `plant_key` set to
-  "{{ plant_key }}" and `limit` 20. `entry_type` takes ONE value, not a list,
-  so make two calls: one with `measurement`, one with `problem`. When the
-  context step reported a `phase_started_at`, pass it as `created_from` so the
-  window matches the phase being judged; otherwise leave it unset and say so.
+  Call `mcp__kamerplanter__list_diary_entries` for plant "{{ plant_key }}" in
+  garden "{{ tenant }}", or in the garden step 1 resolved when that parameter
+  is empty. Pass the plant and the garden and nothing else.
 
-  For each entry returned, call `mcp__kamerplanter__get_diary_entry` with its
-  `entry_key` and read the `measurements` object. Carry forward every value
-  with the date of its entry, and the count of entries whose `measurements`
-  was absent or empty.
+  Do NOT filter by entry type. `measurements` is an open field carried by any
+  entry regardless of its type, so an EC or pH value recorded against an
+  observation or a note is exactly the reading this step exists to find, and a
+  type filter would hide it.
 
-  Returning nothing is a legitimate outcome, not a failure: it means the
-  assessment proceeds at tier 3 or below, and the report says the diary was
-  read and held no measurement.
+  Do NOT guess a limit, a date filter or a sort parameter. This recipe was
+  written without a measured signature for this tool, and a rejected argument
+  ends the step in a `validation.error` — which drops the run back to the
+  tier-3 refusal it is meant to remove. If the tool rejects the call or its
+  result is paged, report the error or the paging field verbatim as a step
+  result and continue; that report is how the signature gets measured.
+
+  Read the entries newest first. For at most the eight most recent, call
+  `mcp__kamerplanter__get_diary_entry` with the entry key and read the
+  `measurements` object. Stop early once a value carries an unambiguous unit
+  and a date inside the current phase — one such reading settles tier 1, and
+  the remaining calls would spend turns a headless run does not have.
+
+  Report, as its own line: how many entries were listed, how many were opened,
+  and how many carried no `measurements`. That line is what tells step 3 the
+  diary was read. An empty result after a real read is ordinary and puts the
+  assessment at tier 3 or below.
 
   Step 3 — Assess.
   Load the skill `nutrient-imbalance-assess` and follow it against that

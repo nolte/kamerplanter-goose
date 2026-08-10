@@ -37,7 +37,9 @@ From `mcp__kamerplanter__get_plant_care_log`: feeding frequency, the most recent
 
 From the diary entries' `measurements`: any EC, pH, or runoff value.
 
-**Somebody has to fetch those entries, and this skill does not.** They arrive from the caller, which reads them with `mcp__kamerplanter__list_diary_entries` — filtered by `plant_key` and by `entry_type` (`measurement`, then `problem`; the parameter takes one value, not a list) — and then `mcp__kamerplanter__get_diary_entry` per hit. `plant-context-collect` does **not** do this: it establishes what is normal for a plant, and a dated reading is evidence for one question. If no measurements were handed to you, say the diary was not read rather than concluding it was empty — the two lead to different next steps, and only one of them is the caller's bug.
+**Somebody has to fetch those entries, and this skill does not.** They arrive from the caller, which lists them with `mcp__kamerplanter__list_diary_entries` for the plant and reads each with `mcp__kamerplanter__get_diary_entry`. `plant-context-collect` does **not** do this: it establishes what is normal for a plant, and a dated reading is evidence for one question.
+
+Decide *read but empty* against *not read* on the caller's read report — how many entries were listed, opened, and carried no `measurements` — never on an empty measurement list. An empty diary is the common case, and reading emptiness as a caller bug turns the ordinary run into a reported defect. Where no read report arrived, say the diary was not read and name that as the gap.
 
 An empty result after a real read is ordinary. It puts the assessment at tier 3 or below, which is a legitimate outcome and not a failed run.
 
