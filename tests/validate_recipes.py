@@ -31,7 +31,7 @@ EXTENSIONS_FILE = REPO_ROOT / "extensions.yaml"
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
-# outside a prohibition list has to carry the -apply suffix.
+# outside a policy block has to carry the -apply suffix.
 STATE_CHANGING_TOOLS = {
     "add_plant_diary_entry",
     "archive_plant",
@@ -107,6 +107,17 @@ def is_name_line(text: str) -> bool:
     return not re.search(r"[A-Za-z0-9]", rest)
 
 
+def continues_block(text: str) -> bool:
+    """A continuation line is a name line that actually carries a name.
+
+    Without the second half a punctuation-only line — a Markdown rule `---`,
+    an ellipsis, an empty bullet — held the block open and absorbed the name
+    below it, because stripping the backtick spans from nothing also leaves
+    nothing.
+    """
+    return is_name_line(text) and bool(BACKTICK_SPAN_PATTERN.search(text))
+
+
 def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
     """Character spans of every block introduced by `marker`.
 
@@ -115,34 +126,56 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
     """
     spans = []
     for match in re.finditer(re.escape(marker), prompt):
-        end = prompt.find("\n", match.end())
-        if end == -1:
-            spans.append((match.start(), len(prompt)))
-            continue
+        # A marker on the prompt's last line has no newline after it. Treating
+        # that as "the block runs to the end" handed the whole remainder to
+        # policy, prose and calls included.
+        newline = prompt.find("\n", match.end())
+        end = len(prompt) if newline == -1 else newline
         head = prompt[match.end():end]
         if not is_name_line(head):
-            # Prose on the marker's own line. Take the line and stop: the names
-            # on it are policy, and anything after is not a name list.
-            spans.append((match.start(), end))
+            # Prose on the marker's own line. The policy reaches its last name
+            # and no further — taking the whole line exempted everything after
+            # it, so `Forbidden by name: \`a\`; call \`b\` instead.` read as if
+            # nothing were called.
+            # The contiguous run of names directly after the marker, and no
+            # further. Taking the last name on the line instead would have
+            # swallowed the call in `Forbidden by name: \`a\`; call \`b\`
+            # instead.` — where the call IS the last name.
+            stop, cursor = match.end(), match.end()
+            for span in BACKTICK_SPAN_PATTERN.finditer(head):
+                between = head[cursor - match.end():span.start()]
+                if re.search(r"[A-Za-z0-9]", between):
+                    break
+                cursor = match.end() + span.end()
+                stop = cursor
+            spans.append((match.start(), stop))
             continue
         # A marker line that already carries names continues onto continuation
         # lines only — a new bullet is a new element. A marker line with no
         # names of its own is the nested-bullet shape, where the bullets are
         # the list.
         nested = not BACKTICK_SPAN_PATTERN.search(head)
+        line_start = prompt.rfind("\n", 0, match.start()) + 1
+        marker_indent = len(prompt[line_start:]) - len(prompt[line_start:].lstrip())
         for line in prompt[end + 1:].split("\n"):
-            if not line.strip() or not is_name_line(line):
+            if not line.strip() or not continues_block(line):
                 break
             if TABLE_ROW_PATTERN.match(line):
                 break
-            if BULLET_PREFIX_PATTERN.match(line) and not nested:
-                break
+            bullet = BULLET_PREFIX_PATTERN.match(line)
+            if bullet:
+                # A deeper bullet is the nested list itself; a sibling or
+                # shallower one is the next element, whichever shape the
+                # marker line used.
+                indent = len(line) - len(line.lstrip())
+                if not nested or indent <= marker_indent:
+                    break
             end += 1 + len(line)
         spans.append((match.start(), end))
     return spans
 
 
-def outside_policy(prompt: str) -> str:
+def outside_policy(prompt: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
     """The prompt with every policy block cut out.
 
     Excision, not name-set subtraction: subtracting the names declared in a
@@ -150,7 +183,7 @@ def outside_policy(prompt: str) -> str:
     whenever a recipe declares them all.
     """
     spans = sorted(
-        span for marker in POLICY_MARKERS for span in policy_spans(prompt, marker)
+        span for marker in markers for span in policy_spans(prompt, marker)
     )
     kept, cursor = [], 0
     for start, end in spans:
@@ -163,9 +196,17 @@ def outside_policy(prompt: str) -> str:
     return "\n".join(kept)
 
 
-def calls_state_changing_tools(body: str) -> list[str]:
-    """State-changing tools named outside every policy block — i.e. called."""
-    remainder = outside_policy(body)
+def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
+    """State-changing tools named outside every policy block — i.e. called.
+
+    `Permitted by name:` counts as policy only where the filename says the
+    recipe writes. Excising it unconditionally let any recipe declare a write
+    permitted and drop out of the guard: renaming
+    `diary-photo-analysis-apply.yaml` to drop the suffix left a recipe that
+    claims and submits diary analyses passing clean.
+    """
+    markers = POLICY_MARKERS if is_apply else ("Forbidden by name:",)
+    remainder = outside_policy(body, markers)
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(remainder)
     )
@@ -236,21 +277,26 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
     if not is_apply:
-        # A recipe may name a state-changing tool purely to forbid it, and the
-        # house pattern requires naming every forbidden tool individually — so
-        # a prohibition list is present in almost every recipe here.
-        #
-        # Exempting the whole recipe as soon as any prohibition appears
-        # therefore disables this check entirely: a recipe that forbids one
-        # write tool and calls another passes. Exempt per *occurrence* instead,
-        # and only inside the prohibiting sentence itself.
-        calling = calls_state_changing_tools(body)
+    # A recipe may name a state-changing tool purely to forbid it, so the
+    # policy blocks are cut out before the remainder is read.
+        calling = calls_state_changing_tools(body, is_apply=False)
+        permitted = policy_spans(body, "Permitted by name:")
+        if permitted:
+            findings.error(
+                where,
+                "declares a `Permitted by name:` block without an `-apply` "
+                "filename suffix. That marker says which writes a recipe is "
+                "for, so a recipe that has one is a writer and has to say so "
+                "in its name and its `description`.",
+            )
         if calling:
             findings.error(
                 where,
-                "calls state-changing tools "
-                f"({', '.join(calling)}) outside a prohibition and without an "
-                "`-apply` filename suffix.",
+                f"calls state-changing tools ({', '.join(calling)}) outside a "
+                "`Forbidden by name:` block and without an `-apply` filename "
+                "suffix. Move the name into that block if the recipe forbids "
+                "the tool; rename the file and say so in `description` if it "
+                "calls it.",
             )
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
     # for backend state, so a report-writing recipe has nothing else to warn
@@ -575,6 +621,33 @@ WRITE_GUARD_CASES = [
         "bare and prefixed forms both count",
         "  - Forbidden by name: `archive_plant`, `mcp__kamerplanter__create_site`.",
         [],
+    ),
+    (
+        "a call after the names on the marker line",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`; call "
+        "`mcp__kamerplanter__add_plant_diary_entry` instead.",
+        ["add_plant_diary_entry"],
+    ),
+    (
+        "prose then a call, still on the marker line",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`, "
+        "`mcp__kamerplanter__create_site` — and anything else. Then call "
+        "`mcp__kamerplanter__set_plant_location`.",
+        ["set_plant_location"],
+    ),
+    (
+        "a sibling bullet ends a nested list too",
+        "- Forbidden by name:\n"
+        "  - `mcp__kamerplanter__archive_plant`\n"
+        "- `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "a punctuation-only line does not hold the block open",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "---\n"
+        "`mcp__kamerplanter__create_site`",
+        ["create_site"],
     ),
     (
         "substring is not a match",
