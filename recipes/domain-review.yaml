@@ -84,7 +84,8 @@ prompt: |
     `mcp__kamerplanter__claim_diary_analysis`,
     `mcp__kamerplanter__submit_diary_analysis`,
     `mcp__kamerplanter__get_plant`, `mcp__kamerplanter__get_species_info`,
-    `mcp__kamerplanter__list_pests`. This review reads files, not a garden.
+    `mcp__kamerplanter__list_pests`.
+    This review reads files, not a garden.
   - Call NO Home Assistant tool. Do not turn anything on or off, do not set a
     value, and do not run a script, scene, or automation.
   - Write NOTHING outside `.audits/`. Do not edit the target, do not edit any

@@ -179,6 +179,7 @@ spec/                          diese Ebene plus eine Spec je Backend
 - **DARF NICHT [MUST NOT]** `disable-model-invocation: true` in einem Projekt-Skill tragen, den ein Rezept laden soll, da der Schlüssel den Skill für jeden nicht-interaktiven Lauf unsichtbar macht
 - **MUSS [MUST]** einen Projekt-Agent unter `.claude/agents/` ablegen statt unter dem von Gooses eigener Dokumentation empfohlenen `.agents/agents/`, da nur Ersteres in der Registry steht, die ein Lauf unter diesem Provider sieht
 - **MUSS [MUST]** das erforderliche Arbeitsverzeichnis in der `description` eines Rezepts benennen, das einen projektlokalen Agent dispatcht — aus demselben Grund wie bei einem Skill: `.claude/agents/` löst gegen das Arbeitsverzeichnis des Goose-Prozesses auf, und es gibt keinen Frontmatter-Schlüssel, der einen Agent gezielt unsichtbar machen würde, wenn es das nicht tut
+- **MUSS [MUST]** seine Werkzeugpolitik im `prompt` unter zwei wörtlichen Markern führen — `Forbidden by name:` und, bei einem `-apply`-Rezept, `Permitted by name:` —, die jeweils einen Block eröffnen, dessen Rumpf aus in Backticks gesetzten Werkzeugnamen und Satzzeichen besteht. Ein Name innerhalb eines solchen Blocks ist Politik, ein Name außerhalb aller Blöcke ein Aufruf. Das über eine Konvention statt über das Lesen der umgebenden Prosa zu entscheiden, macht es überhaupt prüfbar: Zwölf Review-Runden flossen in einen Parser, der es aus Satz- und Listenstruktur erschloss, und er las es durchgehend in beide Richtungen falsch
 - **DARF NICHT [MUST NOT]** einen von einem Plugin bereitgestellten Agent-Typ aus einem Rezept dispatchen; in der Registry, die ein Lauf sieht, stehen nur die eingebauten Typen und die aus `.claude/agents/` des Arbeitsverzeichnisses
 - **SOLLTE [SHOULD]** ein Konnektivitätsrezept ausliefern, das jeden deklarierten Server nur lesend prüft und je Server PASS/FAIL meldet, und **SOLLTE [SHOULD]** es ausführen, bevor einem anderen Rezept in einer neuen Umgebung vertraut wird
 - **SOLLTE [SHOULD]** ein Provider-Oberflächen-Rezept ausliefern, das die Werkzeuge des Agenten inventarisiert, damit die Ausführungsoberfläche eine Messung statt einer Annahme ist
@@ -207,6 +208,7 @@ spec/                          diese Ebene plus eine Spec je Backend
 - [ ] Kein von einem Rezept geladener Skill trägt `disable-model-invocation: true`
 - [ ] Kein Rezept dispatcht einen von einem Plugin bereitgestellten Agent-Typ
 - [ ] Jeder Projekt-Agent liegt unter `.claude/agents/`, nicht unter `.agents/agents/`
+- [ ] Jedes zustandsändernde Tool, das ein Rezept außerhalb eines `Forbidden by name:`- oder `Permitted by name:`-Blocks nennt, gehört zu einem `-apply`-Rezept
 - [ ] `goose recipe validate` läuft für jede Datei in `recipes/` durch
 
 ## Offene Fragen

@@ -52,10 +52,11 @@ prompt: |
   instruct you to read.
 
   Hard constraints for this entire run:
-  - The ONLY state-changing tools you may call are
-    `mcp__kamerplanter__claim_diary_analysis` and
-    `mcp__kamerplanter__submit_diary_analysis`, and only for the entry this run
-    claims. Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
+  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`.
+    These are the only state-changing tools this run may call, and only for
+    the entry it claims.
+  - Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
     `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`,
     `mcp__kamerplanter__create_site`,
     `mcp__kamerplanter__add_plant_diary_entry`.

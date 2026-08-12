@@ -31,7 +31,7 @@ EXTENSIONS_FILE = REPO_ROOT / "extensions.yaml"
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
-# outside a prohibition list has to carry the -apply suffix.
+# outside a policy block has to carry the -apply suffix.
 STATE_CHANGING_TOOLS = {
     "add_plant_diary_entry",
     "archive_plant",
@@ -73,184 +73,142 @@ class Findings:
         self.notes.append(message)
 
 
-PROHIBITION_PATTERN = re.compile(
-    r"(?i)(forbidden|never call|do not call|must not call|must not be called)"
-)
+# A recipe declares its tool policy under two literal markers, each opening a
+# block whose body is backticked tool names and punctuation. A name inside a
+# block is policy; a name outside every block is a call.
+#
+# That convention replaces the prose analysis this file used to carry —
+# sentence spans, list continuations, clause splitting, name-only-line
+# detection. Twelve review rounds went into making that infer intent from
+# English, and it misread in both directions throughout. Deciding it by
+# convention is what makes it checkable at all.
+POLICY_MARKERS = ("Forbidden by name:", "Permitted by name:")
 
-BULLET_PATTERN = re.compile(r"^(\s*)[-*]\s")
-
-# A line that opens a new structural element rather than continuing the
-# previous one: a bullet, a numbered step, a table row.
-STRUCTURAL_LINE_PATTERN = re.compile(r"^\s*(?:[-*]\s|\d+[.)]\s|\|)")
-
-# A token shaped like a tool identifier: snake_case, optionally carrying the
-# `mcp__<server>__` prefix. Prose words never match, because they have no
-# underscore.
-TOOL_TOKEN_PATTERN = re.compile(
-    r"^(?:mcp__[A-Za-z0-9]+__)?[a-z0-9]+(?:_[a-z0-9]+)+$"
-)
+BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
+BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
+TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
 
 
 def tool_pattern(tool: str) -> re.Pattern:
-    """Match a tool by its bare name or, as every recipe actually writes it, in
-    its `mcp__<server>__` form.
+    """Match a tool by its bare name or in its `mcp__<server>__` form.
 
     A plain `\\b<tool>\\b` does not match the prefixed form: the separator is
-    `__`, and `_` is a word character, so there is no boundary between
-    `kamerplanter__` and `archive_plant`. That silently emptied the match set
-    and left the write-guard below inert against every recipe in this
-    repository.
+    `__` and `_` is a word character, so there is no boundary between
+    `kamerplanter__` and `archive_plant`. That emptied the match set and left
+    this guard inert against every recipe in this repository.
     """
     return re.compile(rf"(?<![A-Za-z0-9_])(?:mcp__[A-Za-z0-9_]+__)?{re.escape(tool)}\b")
 
 
-def instruction_units(body: str) -> list[tuple[int, int]]:
-    """Split the body into the smallest self-contained instruction units:
-    blank-line-separated paragraphs, and inside a paragraph, each top-level
-    list item with its continuation lines.
+def is_name_line(text: str) -> bool:
+    """True when `text` carries backticked names and punctuation, nothing else."""
+    rest = BULLET_PREFIX_PATTERN.sub("", text)
+    rest = BACKTICK_SPAN_PATTERN.sub("", rest)
+    return not re.search(r"[A-Za-z0-9]", rest)
 
-    The unit — not the sentence — is what a prohibition governs. The house
-    pattern writes a forbidden-tool list as a bullet whose items wrap over
-    several lines, sometimes as nested bullets, and any sentence-based rule
-    either stops inside that list (rejecting a correct recipe) or runs past
-    the blank line into the steps below it (exempting a real call).
+
+def continues_block(text: str) -> bool:
+    """A continuation line is a name line that actually carries a name.
+
+    Without the second half a punctuation-only line — a Markdown rule `---`,
+    an ellipsis, an empty bullet — held the block open and absorbed the name
+    below it, because stripping the backtick spans from nothing also leaves
+    nothing.
     """
-    units = []
-    for paragraph in re.finditer(r"[^\n]+(?:\n[^\n]+)*", body):
-        lines = paragraph.group(0).split("\n")
-        indents = [
-            len(match.group(1))
-            for line in lines
-            if (match := BULLET_PATTERN.match(line))
-        ]
-        top_level = min(indents) if indents else None
-
-        start, offset = paragraph.start(), paragraph.start()
-        for line in lines:
-            match = BULLET_PATTERN.match(line)
-            is_sibling = match is not None and len(match.group(1)) == top_level
-            if is_sibling and offset > start:
-                units.append((start, offset))
-                start = offset
-            offset += len(line) + 1
-        units.append((start, paragraph.end()))
-    return units
+    return is_name_line(text) and bool(BACKTICK_SPAN_PATTERN.search(text))
 
 
-def is_name_only(line: str) -> bool:
-    """Whether a line carries nothing but tool names and punctuation — the
-    continuation of a forbidden-tool list, rather than an instruction."""
-    stripped = BULLET_PATTERN.sub("", line)
-    tokens = [token for token in re.split(r"[\s`,;:.|]+", stripped) if token]
-    return bool(tokens) and all(TOOL_TOKEN_PATTERN.match(t) for t in tokens)
+def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
+    """Character spans of every block introduced by `marker`.
 
-
-SENTENCE_END_PATTERN = re.compile(r"\.(?=\s|$)")
-
-
-def prohibition_spans(body: str) -> list[tuple[int, int]]:
-    """Character ranges in which naming a state-changing tool forbids it.
-
-    A prohibition covers **its own sentence, plus any following lines that
-    consist only of tool names**, clipped to its instruction unit.
-
-    Every part of that was learned from a shape that defeated an earlier
-    version, and `--self-test` holds one case per lesson:
-
-    - *Its own sentence*, not from the phrase forward, so "X and Y are
-      forbidden" covers tools named before the phrase.
-    - The sentence may *wrap over continuation lines*, because a real
-      forbidden-tool list does — sometimes trailing off into prose on the
-      closing line — but never over a line that opens a new structural element,
-      which is what stops a table row or a numbered step carrying a real call
-      from being swallowed.
-    - *Name-only continuation lines* extend it further, covering a list written
-      as nested bullets. Testing for names rather than for an English call verb
-      is what makes this language-independent: "Then `create_site` with the
-      plant_key" is not a list continuation whichever verb it uses, or none.
-    - *Clipped to the unit*, so a prohibition never reaches past a blank line
-      or a sibling bullet into the steps below it.
+    Spans, not strings: excision by `str.replace` is position-blind and left an
+    outer block standing whenever another sat inside it.
     """
     spans = []
-    for start, end in instruction_units(body):
-        unit = body[start:end]
-
-        def line_bounds(position: int) -> tuple[int, int]:
-            begin = unit.rfind("\n", 0, position) + 1
-            stop = unit.find("\n", position)
-            return begin, len(unit) if stop == -1 else stop
-
-        for match in PROHIBITION_PATTERN.finditer(unit):
-            region_start, region_end = line_bounds(match.start())
-
-            # Walk back over continuation lines so a sentence that began on an
-            # earlier line is covered whole.
-            while region_start > 0 and not STRUCTURAL_LINE_PATTERN.match(
-                unit[region_start : line_bounds(region_start)[1]]
-            ):
-                region_start = unit.rfind("\n", 0, region_start - 1) + 1
-
-            while region_end < len(unit):
-                next_start, next_end = region_end + 1, None
-                next_end = unit.find("\n", next_start)
-                next_end = len(unit) if next_end == -1 else next_end
-                if STRUCTURAL_LINE_PATTERN.match(unit[next_start:next_end]):
+    for match in re.finditer(re.escape(marker), prompt):
+        # A marker on the prompt's last line has no newline after it. Treating
+        # that as "the block runs to the end" handed the whole remainder to
+        # policy, prose and calls included.
+        newline = prompt.find("\n", match.end())
+        end = len(prompt) if newline == -1 else newline
+        head = prompt[match.end():end]
+        if not is_name_line(head):
+            # Prose on the marker's own line. The policy reaches its last name
+            # and no further — taking the whole line exempted everything after
+            # it, so `Forbidden by name: \`a\`; call \`b\` instead.` read as if
+            # nothing were called.
+            # The contiguous run of names directly after the marker, and no
+            # further. Taking the last name on the line instead would have
+            # swallowed the call in `Forbidden by name: \`a\`; call \`b\`
+            # instead.` — where the call IS the last name.
+            stop, cursor = match.end(), match.end()
+            for span in BACKTICK_SPAN_PATTERN.finditer(head):
+                between = head[cursor - match.end():span.start()]
+                if re.search(r"[A-Za-z0-9]", between):
                     break
-                region_end = next_end
-
-            before = [m.end() for m in SENTENCE_END_PATTERN.finditer(unit, region_start, match.start())]
-            left = before[-1] if before else region_start
-            after = SENTENCE_END_PATTERN.search(unit, match.end(), region_end)
-            right = after.end() if after else region_end + 1
-
-            absolute_right = start + min(right, len(unit))
-
-            # Then over any following lines that carry nothing but tool names.
-            # This crosses unit boundaries on purpose: a forbidden-tool list
-            # written as top-level bullets puts every entry in its own unit, and
-            # a line that is only tool names cannot be an instruction wherever
-            # it sits.
-            while absolute_right < len(body):
-                stop = body.find("\n", absolute_right)
-                stop = len(body) if stop == -1 else stop
-                if not is_name_only(body[absolute_right:stop]):
+                cursor = match.end() + span.end()
+                stop = cursor
+            spans.append((match.start(), stop))
+            continue
+        # A marker line that already carries names continues onto continuation
+        # lines only — a new bullet is a new element. A marker line with no
+        # names of its own is the nested-bullet shape, where the bullets are
+        # the list.
+        nested = not BACKTICK_SPAN_PATTERN.search(head)
+        line_start = prompt.rfind("\n", 0, match.start()) + 1
+        marker_indent = len(prompt[line_start:]) - len(prompt[line_start:].lstrip())
+        for line in prompt[end + 1:].split("\n"):
+            if not line.strip() or not continues_block(line):
+                break
+            if TABLE_ROW_PATTERN.match(line):
+                break
+            bullet = BULLET_PREFIX_PATTERN.match(line)
+            if bullet:
+                # A deeper bullet is the nested list itself; a sibling or
+                # shallower one is the next element, whichever shape the
+                # marker line used.
+                indent = len(line) - len(line.lstrip())
+                if not nested or indent <= marker_indent:
                     break
-                absolute_right = stop + 1
-
-            spans.extend(exempt_clauses(body, start + left, absolute_right))
+            end += 1 + len(line)
+        spans.append((match.start(), end))
     return spans
 
 
-def exempt_clauses(body: str, left: int, right: int) -> list[tuple[int, int]]:
-    """Split a prohibition span at semicolons and keep only the clauses that
-    actually forbid something.
+def outside_policy(prompt: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
+    """The prompt with every policy block cut out.
 
-    A semicolon joins a prohibition to its opposite often enough to matter —
-    "Do not call `archive_plant`; call `add_plant_diary_entry` instead" is one
-    sentence, and treating it whole exempts the call. A clause survives only if
-    it carries a prohibition phrase of its own or is nothing but tool names,
-    which is what keeps a genuine `X; Y` name list exempt.
+    Excision, not name-set subtraction: subtracting the names declared in a
+    block from the names found in the whole prompt is empty by construction
+    whenever a recipe declares them all.
     """
-    clauses, cursor = [], left
-    for piece in re.finditer(r"[^;]+", body[left:right]):
-        begin, stop = left + piece.start(), left + piece.end()
-        text = body[begin:stop]
-        if PROHIBITION_PATTERN.search(text) or is_name_only(text.strip()):
-            clauses.append((begin, stop))
-        cursor = stop
-    return clauses
+    spans = sorted(
+        span for marker in markers for span in policy_spans(prompt, marker)
+    )
+    kept, cursor = [], 0
+    for start, end in spans:
+        if start >= cursor:
+            kept.append(prompt[cursor:start])
+            cursor = end
+        else:
+            cursor = max(cursor, end)
+    kept.append(prompt[cursor:])
+    return "\n".join(kept)
 
 
-def calls_state_changing_tools(body: str) -> list[str]:
-    """State-changing tools this body calls, ignoring those it only forbids."""
-    spans = prohibition_spans(body)
+def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
+    """State-changing tools named outside every policy block — i.e. called.
+
+    `Permitted by name:` counts as policy only where the filename says the
+    recipe writes. Excising it unconditionally let any recipe declare a write
+    permitted and drop out of the guard: renaming
+    `diary-photo-analysis-apply.yaml` to drop the suffix left a recipe that
+    claims and submits diary analyses passing clean.
+    """
+    markers = POLICY_MARKERS if is_apply else ("Forbidden by name:",)
+    remainder = outside_policy(body, markers)
     return sorted(
-        {
-            tool
-            for tool in STATE_CHANGING_TOOLS
-            for match in tool_pattern(tool).finditer(body)
-            if not any(start <= match.start() < end for start, end in spans)
-        }
+        tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(remainder)
     )
 
 
@@ -319,21 +277,26 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
     if not is_apply:
-        # A recipe may name a state-changing tool purely to forbid it, and the
-        # house pattern requires naming every forbidden tool individually — so
-        # a prohibition list is present in almost every recipe here.
-        #
-        # Exempting the whole recipe as soon as any prohibition appears
-        # therefore disables this check entirely: a recipe that forbids one
-        # write tool and calls another passes. Exempt per *occurrence* instead,
-        # and only inside the prohibiting sentence itself.
-        calling = calls_state_changing_tools(body)
+    # A recipe may name a state-changing tool purely to forbid it, so the
+    # policy blocks are cut out before the remainder is read.
+        calling = calls_state_changing_tools(body, is_apply=False)
+        permitted = policy_spans(body, "Permitted by name:")
+        if permitted:
+            findings.error(
+                where,
+                "declares a `Permitted by name:` block without an `-apply` "
+                "filename suffix. That marker says which writes a recipe is "
+                "for, so a recipe that has one is a writer and has to say so "
+                "in its name and its `description`.",
+            )
         if calling:
             findings.error(
                 where,
-                "calls state-changing tools "
-                f"({', '.join(calling)}) outside a prohibition and without an "
-                "`-apply` filename suffix.",
+                f"calls state-changing tools ({', '.join(calling)}) outside a "
+                "`Forbidden by name:` block and without an `-apply` filename "
+                "suffix. Move the name into that block if the recipe forbids "
+                "the tool; rename the file and say so in `description` if it "
+                "calls it.",
             )
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
     # for backend state, so a report-writing recipe has nothing else to warn
@@ -571,119 +534,124 @@ def run_goose_validate(findings: Findings) -> None:
 # twice unnoticed: once because `\b<tool>\b` cannot match `mcp__server__<tool>`,
 # once because any prohibition anywhere exempted the whole recipe. Add the shape
 # before changing the heuristic.
+# One case per shape a review round actually turned up. They pin the
+# convention, not a parser: every entry is a policy block or a call, and none
+# of them depends on how the surrounding English reads.
 WRITE_GUARD_CASES = [
-    ("bare call, no prohibition", "Call confirm_care_task now.", ["confirm_care_task"]),
     (
-        "prefixed call, no prohibition",
-        "Then call `mcp__kamerplanter__archive_plant`.",
-        ["archive_plant"],
-    ),
-    (
-        "house-pattern prohibition list",
-        "- Call NO tool that changes state. Forbidden on Kamerplanter, by name:\n"
-        "  `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,\n"
-        "  `mcp__kamerplanter__submit_diary_analysis`.",
+        "names inside the block are policy",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`,\n"
+        "    `mcp__kamerplanter__create_site`.",
         [],
     ),
     (
-        "nested bullet list, real call after a blank line",
-        "- Call NO tool that changes state. Forbidden by name:\n"
-        "  - `mcp__kamerplanter__confirm_care_task`\n"
-        "  - `mcp__kamerplanter__archive_plant`\n"
+        "a name after the block is a call",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  - Then call `mcp__kamerplanter__create_site`.",
+        ["create_site"],
+    ),
+    (
+        "a complete forbidden list does not license a call",
+        "  - Call NO tool that changes state.\n"
+        "    Forbidden by name:\n"
+        "    " + ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS)) + ".\n"
         "\n"
-        "Step 1 - Collect context, then call\n"
-        "`mcp__kamerplanter__submit_diary_analysis` with the result.",
-        ["submit_diary_analysis"],
-    ),
-    (
-        "forbids one tool, calls another in the same paragraph",
-        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
-        "Now call mcp__kamerplanter__submit_diary_analysis to persist the result.",
-        ["submit_diary_analysis"],
-    ),
-    (
-        "sibling bullet ends the prohibition",
-        "- Forbidden: `mcp__kamerplanter__archive_plant`.\n"
-        "- Then call `mcp__kamerplanter__create_site`.",
-        ["create_site"],
-    ),
-    (
-        "period inside the prohibiting sentence",
-        "Forbidden by name (see spec/mcp/kamerplanter-mcp-server/en.md): "
-        "`mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__create_site`.",
-        [],
-    ),
-    (
-        "tools named before the phrase",
-        "`mcp__kamerplanter__archive_plant` and `mcp__kamerplanter__create_site` "
-        "are forbidden.",
-        [],
-    ),
-    (
-        "passive prohibition",
-        "`mcp__kamerplanter__create_site` must not be called.",
-        [],
-    ),
-    (
-        "prohibition after the call does not excuse it",
-        "Call archive_plant.\n\nForbidden: create_site.",
+        "  Step 3 - call `mcp__kamerplanter__archive_plant`.",
         ["archive_plant"],
     ),
-    ("substring is not a match", "unarchive_plantx and archive_plants", []),
-    # The verb-independence cases. An earlier version asked whether the
-    # sentence carried a call verb, which made the guard a list of English
-    # words to keep guessing at; each of these slipped through it.
     (
-        "call with no verb at all",
-        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
-        "Then `mcp__kamerplanter__create_site` with the plant_key.",
+        "prose ends the block, and a name after it is a call",
+        "  - Forbidden by name:\n"
+        "    `mcp__kamerplanter__archive_plant`.\n"
+        "    The servers are loaded anyway. Then call "
+        "`mcp__kamerplanter__create_site`.",
         ["create_site"],
     ),
     (
-        "verb outside the guessed set",
-        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
-        "Trigger `mcp__kamerplanter__create_site`.",
+        "a bullet of bare names after a complete marker line is a call",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  - `mcp__kamerplanter__create_site`, `mcp__kamerplanter__set_plant_location`",
+        ["create_site", "set_plant_location"],
+    ),
+    (
+        "a table separator does not hold the block open",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  |---|---|\n"
+        "  `mcp__kamerplanter__create_site`",
         ["create_site"],
     ),
     (
-        "table row carrying a call",
-        "| Forbidden | `mcp__kamerplanter__archive_plant` |\n"
-        "| Step 3 | call `mcp__kamerplanter__create_site` |",
-        ["create_site"],
-    ),
-    (
-        "numbered step carrying a call",
-        "Forbidden: `mcp__kamerplanter__archive_plant`.\n"
-        "1. Call `mcp__kamerplanter__create_site`.",
-        ["create_site"],
-    ),
-    (
-        "forbidden list as top-level bullets",
-        "Forbidden on Kamerplanter, by name:\n"
-        "- `mcp__kamerplanter__archive_plant`\n"
-        "- `mcp__kamerplanter__create_site`",
+        "a nested name list stays inside the block",
+        "  - Forbidden by name:\n"
+        "    - `mcp__kamerplanter__archive_plant`\n"
+        "    - `mcp__kamerplanter__create_site`",
         [],
     ),
     (
-        "semicolon joins a prohibition to its opposite",
-        "- Do not call `mcp__kamerplanter__archive_plant`; call "
+        "a wrapped list stays inside the block",
+        "  - Forbidden by name: `mcp__kamerplanter__confirm_care_task`,\n"
+        "    `mcp__kamerplanter__archive_plant`,\n"
+        "    `mcp__kamerplanter__submit_diary_analysis`.",
+        [],
+    ),
+    (
+        "a second block of the same marker is policy too",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "  - Forbidden by name: `mcp__kamerplanter__create_site`.",
+        [],
+    ),
+    (
+        "the permitted block is policy too",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n"
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        [],
+    ),
+    (
+        "a nested block does not free the outer one",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n"
+        "    Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        [],
+    ),
+    (
+        "no marker means every name is a call",
+        "Call `mcp__kamerplanter__archive_plant` and `create_site`.",
+        ["archive_plant", "create_site"],
+    ),
+    (
+        "bare and prefixed forms both count",
+        "  - Forbidden by name: `archive_plant`, `mcp__kamerplanter__create_site`.",
+        [],
+    ),
+    (
+        "a call after the names on the marker line",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`; call "
         "`mcp__kamerplanter__add_plant_diary_entry` instead.",
         ["add_plant_diary_entry"],
     ),
     (
-        "semicolon inside a genuine name list",
-        "Forbidden by name: `mcp__kamerplanter__archive_plant`; "
-        "`mcp__kamerplanter__create_site`.",
-        [],
+        "prose then a call, still on the marker line",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`, "
+        "`mcp__kamerplanter__create_site` — and anything else. Then call "
+        "`mcp__kamerplanter__set_plant_location`.",
+        ["set_plant_location"],
     ),
-    # connectivity-check's real shape: the list wraps, ends in an em dash, and
-    # trails off into prose on the closing line.
     (
-        "wrapped list ending in prose",
-        "- Call NO tool that changes state. Forbidden on Kamerplanter, by name:\n"
-        "    `confirm_care_task`, `archive_plant`, `set_plant_location`, "
-        "`create_site` —\n"
-        "    and anything else that writes.",
+        "a sibling bullet ends a nested list too",
+        "- Forbidden by name:\n"
+        "  - `mcp__kamerplanter__archive_plant`\n"
+        "- `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "a punctuation-only line does not hold the block open",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "---\n"
+        "`mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "substring is not a match",
+        "unarchive_plantx and archive_plants",
         [],
     ),
 ]
