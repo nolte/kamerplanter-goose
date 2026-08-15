@@ -54,7 +54,7 @@ export GOOSE_RECIPE_PATH="$PWD/recipes"
 export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
 ```
 
-`extensions.yaml` also lists a third system, GitHub, which the recipes here do not use. Leave `GITHUB_MCP_PAT` unset and it is quietly skipped. Set it — as the maintainer's `.envrc` does, from `gh auth token` — and your GitHub token is sent to a Copilot endpoint. Worth knowing before you copy that line.
+`extensions.yaml` also lists a third system, GitHub. No recipe here uses it yet; it is kept for work on the knowledge documents this repository draws on. Leave `GITHUB_MCP_PAT` unset and it is quietly skipped, which is the right setting for everyone not doing that work. Set it — as the maintainer's `.envrc` does, from `gh auth token` — and your GitHub token is sent to a Copilot endpoint. Worth knowing before you copy that line.
 
 **Do not run `direnv allow` on the `.envrc` that ships here.** It is checked into git and filled with the maintainer's own addresses and password-manager paths. On your machine those lookups fail, both systems drop out **without any warning**, and the run reports that no systems are configured at all — which looks like a Goose problem and is not one. Put your own lines in, keeping the two `TASK_*` variables the file already sets, or the `task` commands below stop before they start.
 
