@@ -15,7 +15,14 @@ concurrency:
 
 jobs:
   recipes:
-    name: Recipe contract
+    # Job names are the status-check contexts `.github/settings.yml` declares
+    # under `branches[develop].required_status_checks`. Kept free of spaces:
+    # measured 2026-08-15, a contexts list carrying spaces was the last
+    # remaining difference between this repository, whose branch-protection
+    # block never applied, and every portfolio repository whose block does.
+    # Renaming a job renames its context and silently drops it from the
+    # required set — change both files together.
+    name: recipe-contract
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -34,7 +41,7 @@ jobs:
         run: python tests/validate_recipes.py
 
   docs:
-    name: Docs build
+    name: docs-build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -51,7 +58,7 @@ jobs:
         run: mkdocs build --strict
 
   lint:
-    name: Pre-commit
+    name: pre-commit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

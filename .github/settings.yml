@@ -21,9 +21,19 @@ repository:
   #
   # Measured 2026-08-15: NOTHING in this file had ever reached the platform —
   # not the inherited keys and not the repo-own ones. `homepage` and `topics`
-  # were empty, `description` differed verbatim from the value below, neither
-  # `develop` nor `main` was protected (404), and the merge buttons sat at
-  # GitHub's new-repository defaults. Six merged feature branches had piled up.
+  # were empty, `description` differed verbatim from the value below, the
+  # `branches:` block below had produced no classic protection on either branch
+  # (404), and the merge buttons sat at GitHub's new-repository defaults. Six
+  # merged feature branches had piled up.
+  #
+  # That 404 does NOT mean the branches are unprotected, and an earlier revision
+  # of this comment wrongly said so. A repository RULESET named
+  # `default-branch-protection`, created 2026-08-06 and active on `develop` and
+  # `main`, requires a pull request and blocks deletion, force-pushes and
+  # non-linear history. What it carries no rule for is status checks — which is
+  # why every check in this repository is advisory until the block below applies.
+  # `gh api repos/<owner>/<repo>/branches/<b>` reports `protected: true` from the
+  # ruleset while `.../protection` 404s; the two answer different questions.
   #
   # The cause is the Settings App's trigger, not its installation, and not this
   # file. The App syncs on a push to the DEFAULT branch that touches
@@ -49,13 +59,28 @@ repository:
   # `#CC0000` in the commons and lands as `CC0000`; both missing labels carry
   # short descriptions, so the 100-character trap does not apply).
   #
-  # This revision is a deliberate second trigger with the `branches:` block left
-  # byte-identical, so the outcome separates a transient partial application from
-  # a structural problem in that block. If the protection is live after this
-  # merge, the lesson is to re-measure after every settings change. If it is
-  # still 404, the next suspect is `required_pull_request_reviews: null` below —
-  # nolte/claude-shared, the one repository whose protection applies, declares an
-  # object there rather than null.
+  # The second trigger (#18) settled that split. Labels converged to exactly the
+  # commons set — they were merely incremental. `topics` and the `branches:`
+  # block did not move, so both are structural rather than transient.
+  #
+  # Refuted for that remainder, by comparison across three repositories:
+  #   - ruleset coexistence — nolte/kamerplanter-ha carries BOTH a
+  #     `default-branch-protection` ruleset and correctly applied classic
+  #     protection, so one does not block the other
+  #   - `required_pull_request_reviews: null` — the commons declare exactly that
+  #     and it applies on nolte/kamerplanter-ha
+  #   - the commons' `master` entry, `restrictions: null`, and the extra `main`
+  #     entry — nolte/claude-shared has no `master` branch, sets
+  #     `restrictions: null`, declares a `main` entry, and applies
+  #
+  # One structural difference then remained: this repository declared status
+  # contexts containing SPACES (`Recipe contract`), while every repository whose
+  # block applies declares single tokens (`lint`, `test`, `docs`) or an empty
+  # list. This revision renames the three CI jobs to space-free names and
+  # follows them here. If the protection is live after this merge, that was the
+  # cause. If it is still 404, the contexts are exonerated and `topics` — which
+  # has never applied either, and touches no branch API — becomes the better
+  # place to look for a single shared root cause.
   #
   # Ruled out by controlled comparison, so nobody re-investigates them:
   #   - the short `_extends` form — nolte/kamerplanter-ha uses it and is applied,
@@ -111,7 +136,8 @@ repository:
 #     --jq '.required_status_checks.contexts'
 #
 # Context names are the job-level `name:` values from .github/workflows/ci.yml,
-# which is what GitHub reports; the job ids would silently never match.
+# which is what GitHub reports; the job ids would silently never match. They
+# carry no spaces on purpose — see the note on that file's first job.
 branches:
   - name: develop
     protection:
@@ -119,9 +145,9 @@ branches:
       required_status_checks:
         strict: true
         contexts:
-          - Recipe contract
-          - Docs build
-          - Pre-commit
+          - recipe-contract
+          - docs-build
+          - pre-commit
       enforce_admins: true
       restrictions: null
 
