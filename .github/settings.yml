@@ -176,3 +176,41 @@ branches:
       enforce_admins: true
       required_linear_history: true
       restrictions: null
+
+# A repository RULESET runs alongside everything above, and is kept on purpose.
+# Both mechanisms are evaluated together and the more restrictive one wins.
+#
+#   name:        default-branch-protection      (created 2026-08-06)
+#   target:      branch, active
+#   applies to:  refs/heads/develop, refs/heads/main
+#   rules:       deletion, required_linear_history, pull_request, non_fast_forward
+#
+# It is not redundant. `required_pull_request_reviews` is null above, so the
+# obligation to go through a pull request on `develop` comes from the ruleset
+# alone; the block above contributes the required status checks the ruleset has
+# no rule for. Neither covers both.
+#
+# It is deliberately NOT declared as a `rulesets:` section here, although
+# probot/settings supports one. Two reasons, both read out of the app's source:
+#
+#   1. `Rulesets extends Diffable`, and Diffable removes every existing record
+#      the config does not list — so a `rulesets:` block that is inexact or
+#      incomplete DELETES rulesets rather than leaving them alone. Absent the
+#      key the plugin never runs at all, which is why the ruleset is safe today.
+#   2. The plugin sits in the same `Promise.all` as `repository` and `labels`,
+#      and `branches` is gated behind that promise resolving. A throw here would
+#      silently take branch protection down again — the exact failure this file
+#      spent #17 through #20 diagnosing.
+#
+# The trade is reproducibility: the ruleset would not come back on its own if
+# this repository were recreated. Recreate it with
+#
+#   gh api --method POST repos/nolte/kamerplanter-goose/rulesets --input - <<'JSON'
+#   {"name":"default-branch-protection","target":"branch","enforcement":"active",
+#    "conditions":{"ref_name":{"include":["refs/heads/develop","refs/heads/main"],"exclude":[]}},
+#    "rules":[{"type":"deletion"},{"type":"required_linear_history"},
+#             {"type":"pull_request"},{"type":"non_fast_forward"}]}
+#   JSON
+#
+# Re-read the live state with:
+#   gh api repos/nolte/kamerplanter-goose/rulesets --jq '.[] | "\(.name) \(.enforcement)"'
