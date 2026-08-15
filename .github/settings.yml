@@ -33,6 +33,30 @@ repository:
   # since the default moved to `develop` has touched it. Merging the commit that
   # introduced this comment is itself the first qualifying event.
   #
+  # CONFIRMED by that merge (#17, 2026-08-15): the sync fired within seconds and
+  # applied `description`, `homepage`, and all three merge-button keys below —
+  # precisely the values that had been wrong. Labels went from 14 to 27.
+  #
+  # It did NOT apply everything. Left behind in the same run: `topics` (still
+  # empty), the labels `automerge` and `skills`, and the entire `branches:` block
+  # (both branches still 404). Partial application is not unique to this
+  # repository: nolte/claude-shared declares four required contexts and has three
+  # live, and `skills` is missing there too.
+  #
+  # Ruled out for that remainder: the commons' `master` entry is not aborting the
+  # branches plugin (nolte/claude-shared has no `master` branch either and its
+  # protection applies), and label colour format is not the cause (`bug` is
+  # `#CC0000` in the commons and lands as `CC0000`; both missing labels carry
+  # short descriptions, so the 100-character trap does not apply).
+  #
+  # This revision is a deliberate second trigger with the `branches:` block left
+  # byte-identical, so the outcome separates a transient partial application from
+  # a structural problem in that block. If the protection is live after this
+  # merge, the lesson is to re-measure after every settings change. If it is
+  # still 404, the next suspect is `required_pull_request_reviews: null` below —
+  # nolte/claude-shared, the one repository whose protection applies, declares an
+  # object there rather than null.
+  #
   # Ruled out by controlled comparison, so nobody re-investigates them:
   #   - the short `_extends` form — nolte/kamerplanter-ha uses it and is applied,
   #     and `.github/boring-cyborg.yml` in THIS repository uses it and works
