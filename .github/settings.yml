@@ -6,14 +6,11 @@ repository:
   name: kamerplanter-goose
   description: Shareable Goose recipes for Kamerplanter and Home Assistant
   homepage: https://nolte.github.io/kamerplanter-goose
-  topics:
-    - goose
-    - mcp
-    - model-context-protocol
-    - kamerplanter
-    - home-assistant
-    - plant-care
-    - ai-agents
+  # A COMMA-SEPARATED STRING, not a YAML list. probot/settings does
+  # `this.topics.split(/\s*,\s*/)` in lib/plugins/repository.js, so a list
+  # raises `TypeError: this.topics.split is not a function`. That throw is why
+  # nothing below ever applied — see the root-cause note in the next block.
+  topics: goose, mcp, model-context-protocol, kamerplanter, home-assistant, plant-care, ai-agents
 
   # Declared explicitly although the commons already carry all four, so the merge
   # policy is readable at the repository that lives under it and survives a
@@ -73,14 +70,31 @@ repository:
   #     entry — nolte/claude-shared has no `master` branch, sets
   #     `restrictions: null`, declares a `main` entry, and applies
   #
-  # One structural difference then remained: this repository declared status
-  # contexts containing SPACES (`Recipe contract`), while every repository whose
-  # block applies declares single tokens (`lint`, `test`, `docs`) or an empty
-  # list. This revision renames the three CI jobs to space-free names and
-  # follows them here. If the protection is live after this merge, that was the
-  # cause. If it is still 404, the contexts are exonerated and `topics` — which
-  # has never applied either, and touches no branch API — becomes the better
-  # place to look for a single shared root cause.
+  # The space-free contexts in #19 changed nothing either, which exonerated them
+  # and left `topics` as the only remaining lead. Reading the app's source
+  # settled it — ROOT CAUSE, one fault explaining both symptoms:
+  #
+  #   probot/settings lib/settings.js:
+  #     const { branches, ...rest } = this.config
+  #     return Promise.all(Object.entries(rest).map(...))
+  #       .then(() => { if (branches) return this.processSection('branches', branches) })
+  #
+  #   probot/settings lib/plugins/repository.js:
+  #     names: this.topics.split(/\s*,\s*/)
+  #
+  # `branches` is deliberately deferred until every other section resolves.
+  # `topics` declared as a YAML list makes the repository plugin call `.split()`
+  # on an Array, which throws — after its PATCH has already succeeded. The throw
+  # rejects the Promise.all, so the `.then()` carrying `branches` never runs.
+  #
+  # That is the whole observed pattern: description, homepage and the merge keys
+  # applied (they ride the PATCH), topics never applied (the throwing call),
+  # labels applied and converged over two runs (a sibling promise, unaffected),
+  # branch protection never applied (gated behind the rejected Promise.all).
+  #
+  # So `topics` above is a comma-separated STRING. Any repository declaring it
+  # as a list silently loses its entire `branches:` block — reported upstream to
+  # nolte/gh-plumbing, since the commons' consumers all use the list form.
   #
   # Ruled out by controlled comparison, so nobody re-investigates them:
   #   - the short `_extends` form — nolte/kamerplanter-ha uses it and is applied,
