@@ -5,158 +5,140 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-early%20stage-orange.svg)](#status)
 
-Shareable [Goose](https://github.com/block/goose) recipes for anyone running [Kamerplanter](https://github.com/nolte/kamerplanter) and [Home Assistant](https://www.home-assistant.io/). Each one wires those [Model Context Protocol](https://modelcontextprotocol.io/) servers into a repeatable plant-care run you invoke by name.
+Ask questions about your plants and get answers grounded in what you actually recorded about them — not in generic advice from the internet. Ready-made [Goose](https://github.com/block/goose) recipes you run by name.
 
 ## Purpose
 
-Plant care data lives in more than one system. Kamerplanter knows the plants, growth phases, nutrient plans, and due care tasks. Home Assistant knows the soil moisture, temperature, and the pump on the balcony. Both speak MCP, but connecting them into a useful agent means writing the same prompt, the same extension block, and the same guardrails over and over.
+What a plant needs is written down in two places.
 
-This repository publishes that glue once, as versioned Goose recipes:
+[Kamerplanter](https://github.com/nolte/kamerplanter) knows the plants: which species, how old, when it was last fed, what the plan for its current growth phase says. [Home Assistant](https://www.home-assistant.io/) knows what the sensors see: soil moisture, temperature, the pump on the balcony.
 
-- **For plant owners who already run Goose:** a catalog of ready recipes — "what needs watering today", "reconcile the nutrient plan with tank readings" — invoked by name, parameterized by garden.
-- **For self-hosters running Kamerplanter and Home Assistant:** one documented set of environment variables that every recipe here consumes, so a recipe added next month needs no new wiring.
-- **For recipe authors:** a shared shape for plant-care agents — naming, parameters, extension configuration, and read-only versus write boundaries — instead of per-recipe improvisation.
+Answering something as ordinary as *does this one need water today* means reading both, and knowing what normal looks like for that particular plant at that particular stage. Do it by hand and you are the one holding it all together. Do it with an AI assistant and you write the same setup and the same warnings over and over.
 
-The recipes stay portable: they declare the MCP servers they need and nothing about where those servers run.
+This repository writes that down once, so a run is a name and a garden rather than a prompt you compose again each time.
+
+What you get depends on who you are:
+
+- **You keep plants and already use Goose.** A catalog of ready recipes. Ask what is wrong with a plant, whether it is over- or underfed, or whether a pest suspicion holds up — one command each.
+- **You host Kamerplanter and Home Assistant yourself.** One documented set of settings that every recipe here uses. A recipe added next month needs no new wiring from you.
+- **You want to write your own recipes.** A worked-out shape to copy: how to name things, how to pass in a garden, and where the boundary between reading and writing runs.
+
+The recipes say which systems they need and nothing about where those run, so they work against your setup as readily as against anyone else's.
 
 ## Usage
 
-### Prerequisites
+### What you need
 
-- Goose 1.45.0 or later, with a configured provider
-- A Kamerplanter backend with `MCP_SERVER_ENABLED=true` and an API key (`kp_...`)
+- [Goose](https://github.com/block/goose) 1.45 or later, with an AI provider configured
+- A Kamerplanter garden with its MCP server switched on, and an API key
 - A Home Assistant instance with the [MCP Server integration](https://www.home-assistant.io/integrations/mcp_server/) and a long-lived access token
 
-Recipes read their endpoints and credentials from the environment, so no secret is ever written into a recipe file:
+### Getting started
 
-```sh
-export KAMERPLANTER_URL="http://localhost:3000"
-export HA_URL="https://ha.example.com"
-
-# keep the credentials out of your shell history — for example via pass
-export KAMERPLANTER_API_KEY=$(pass path/to/kamerplanter/token-mcp)
-export HA_MCP_TOKEN=$(pass path/to/homeassistant/token-mcp)
-
-# the shared MCP extension definitions every recipe here relies on
-export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
-```
-
-With [direnv](https://direnv.net/), put those lines in a `.envrc` and they load per directory.
-
-
-### Use the recipes
-
-Clone the repository. The recipes here declare no MCP servers of their own — those live in `extensions.yaml`, so a checkout is what makes them runnable:
+Clone the repository and tell Goose where your two systems live. Passwords and keys are read from your environment, so none of them is ever written into a file here:
 
 ```sh
 git clone https://github.com/nolte/kamerplanter-goose.git
 cd kamerplanter-goose
 
+export KAMERPLANTER_URL="https://kamerplanter.example.com"
+export HA_URL="https://ha.example.com"
+export KAMERPLANTER_API_KEY="kp_..."
+export HA_MCP_TOKEN="..."
+
 export GOOSE_RECIPE_PATH="$PWD/recipes"
 export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
+```
 
-goose recipe list -v
+With [direnv](https://direnv.net/) those lines go into a `.envrc` and load whenever you enter the folder — and a password manager can fill in the two secrets, so they never sit in your shell history.
+
+Then check that both systems answer:
+
+```sh
 goose run --recipe connectivity-check --params tenant=my-garden
 ```
 
-Start with `connectivity-check`. It is the walking skeleton of this repository: a read-only probe that calls both MCP servers and prints a PASS/FAIL table per step, so a broken URL, a revoked key, or a disabled MCP server is named before any real recipe runs.
+Run this one first, always. It only reads, and it prints one line per step — so a mistyped address or an expired key is named as exactly that, instead of surfacing later as a recipe that seems to think your plants are fine.
 
-`GOOSE_RECIPE_PATH` takes several directories separated by `:`, so a private recipe folder can sit next to this one.
-
-### Consume the recipes from GitHub
-
-Goose can also pull recipes straight from this repository by name:
+### What the recipes can do
 
 ```sh
-export GOOSE_RECIPE_GITHUB_REPO="nolte/kamerplanter-goose"
-goose run --recipe connectivity-check
+goose recipe list -v                       # everything available, with its options
+goose run --recipe <name> --explain        # what a recipe needs, before it costs anything
 ```
 
-This fetches the recipe but **not** `extensions.yaml`, and a recipe without extensions has no MCP servers to talk to. Point `GOOSE_ADDITIONAL_CONFIG_FILES` at a copy of that file — from a checkout, or your own equivalent — or the run starts with no tools.
+| Recipe | Changes anything? | What it answers |
+|---|---|---|
+| `connectivity-check` | no | Can I reach both systems, and is my key still good? |
+| `nutrient-imbalance-check` | no | Is this plant underfed, overfed, or unable to take up what it already has? |
+| `pest-pressure-check` | no | Does this pest or disease suspicion actually hold up? |
+| `species-baseline-check` | no | Is what we know about this species plausible in the first place? |
+| `domain-review` | writes a report file | How does a recipe read to an experienced grower? |
+| `diary-photo-analysis-apply` | **yes** | Looks at the photos in one diary entry and writes back what it found |
+| `diary-analysis-queue-apply` | **yes** | The same, for every entry waiting in the queue |
 
-### Inspect before you run
+Recipes ending in `-apply` change something in Kamerplanter. Everything else only reads. Two more, `provider-surface-check` and `provider-plugin-check`, exist to check what an AI assistant can actually do here — useful after an upgrade, uninteresting otherwise.
 
-Every recipe declares its parameters. Read them, and the extensions it will connect to, without spending a model call:
+**Run recipes from inside the folder you cloned.** Most of them load their know-how from files in this repository, and Goose looks for those relative to wherever you started it. Start somewhere else and the recipe still answers — just without that knowledge, and without telling you.
 
-```sh
-goose run --recipe connectivity-check --explain
-```
+### About your API key
 
-### Write a recipe
+A Kamerplanter key carries everything its account may do, in every garden that account belongs to. Make a separate one for Goose, so you can withdraw it on its own if you ever need to.
 
-A recipe is a single YAML file under `recipes/`. The house pattern declares **no** `extensions:` block — the MCP servers come from `extensions.yaml` — an explicit read-only instruction, and one parameter per garden:
+### Writing your own recipe
+
+A recipe is one YAML file in `recipes/`: a title, the options it takes, and the task in plain words.
 
 ```yaml
 version: "1.0.0"
 title: "Daily Plant Check"
-description: "Reconcile due care tasks with live sensor readings"
+description: "Compare today's care tasks against what the sensors report"
 
 parameters:
   - key: tenant
     input_type: string
     requirement: required
-    description: "Kamerplanter garden slug the run applies to"
-
-instructions: |
-  Read-only run. Never actuate a device and never write to Kamerplanter.
+    description: "Which garden this applies to"
 
 prompt: |
-  For garden {{ tenant }}, list the care tasks due today, cross-check each one
-  against the matching Home Assistant sensor, and report which are truly needed.
+  For garden {{ tenant }}, list the care tasks due today, check each one
+  against the matching Home Assistant sensor, and report which are really needed.
 ```
 
-To add a server, edit `extensions.yaml` rather than the recipe. Note the shape differs: there `extensions` is a map keyed by name with `enabled: true` per entry, while inside a recipe it would be a list.
-
-Validate it before committing:
+Check it before committing:
 
 ```sh
-goose recipe validate recipes/connectivity-check.yaml
+goose recipe validate recipes/my-recipe.yaml
+task test        # checks every recipe against the conventions used here
 ```
 
-#### Notes
-
-- **A recipe's own `extensions:` block replaces the shared ones, it does not extend them.** Declare one entry in a recipe and `extensions.yaml` is ignored entirely for that run — including the servers you did not redeclare. Goose applies the shared set only to recipes that declare none. Measured against Goose 1.45.0.
-- **`${VAR}` without `env_keys` is silently not expanded.** Goose substitutes an environment variable in an extension entry only when the variable is listed in that entry's `env_keys`. Omit it and the literal string `${KAMERPLANTER_API_KEY}` goes over the wire as the header value — the recipe validates, starts, and fails with a `401` that looks like a bad key. Verified against Goose 1.45.0 by capturing what it actually sent.
-- **`prompt` is not optional in practice.** A recipe with only `instructions` loads fine but fails a headless run with `no text provided for prompt`. Constraints that must hold belong in `prompt`, not only in `instructions`.
-- **Recipe discovery is flat.** Goose lists `*.yaml` directly under each configured directory; nested folders are not walked. Keep `recipes/` flat and encode grouping in the filename.
-- **The Kamerplanter API key carries your full permissions.** It grants exactly the gardens its account is an active member of. Issue a separate key for Goose so it can be revoked on its own.
-- **A recipe that writes says so.** Recipes that confirm care tasks or actuate devices are named with a `-apply` suffix and state the effect in their `description`.
+Goose behaves in a few ways that are not obvious and cost a debugging session each — a setting that fails silently rather than loudly, a rule that is ignored where you would expect it to hold. They are all written up, with how each one was measured, in [the recipe project pattern](spec/goose/recipe-project-pattern/en.md). Read it before adding a recipe.
 
 ## Structure
 
 ```
-recipes/                       one Goose recipe per file, flat — the shipped artifact
-  connectivity-check.yaml      read-only probe for both MCP servers
-  nutrient-imbalance-check.yaml  read-only nutrient diagnosis for one plant
-  pest-pressure-check.yaml     read-only: is a pest suspicion biologically tenable
-  species-baseline-check.yaml  read-only: is the species record plausible, what is its cycle
-  domain-review.yaml           reviews a recipe or spec as one grower persona; writes to .audits/
-  diary-photo-analysis-apply.yaml  WRITES: analyses one queued diary entry
-  diary-analysis-queue-apply.yaml  WRITES: works through the queue, entry by entry
-extensions.yaml                the MCP servers, declared once for every recipe
-.claude/skills/                project-local skills the recipes load by name
-.claude/agents/                measurement probes only — see spec/goose/
-scripts/analyse-queue.sh       the queue loop as one Goose process per entry
-tests/validate_recipes.py      the house pattern as an executable check
-spec/goose/                    how a recipe project is built
-spec/mcp/                      what each MCP backend offers, EN canonical + DE
-spec/process/                  what a recipe does with them
-docs/                          the MkDocs site, one tree per language
-AUDIENCES.md                   who this repository is for, per audience
-.envrc                         direnv: endpoints, pass-backed credentials, config path
+recipes/            one recipe per file — what this repository ships
+extensions.yaml     where your two systems live, written down once
+.claude/skills/     the know-how recipes draw on: how to read a photo,
+                    how to judge a feeding question, how to check a pest
+scripts/            a queue runner that handles one diary entry per run
+tests/              the conventions above, as a check that can fail
+spec/               how it all works, in English and German
+docs/               the documentation site
+AUDIENCES.md        who this is for
 ```
 
 ## Related repositories
 
-- [nolte/kamerplanter](https://github.com/nolte/kamerplanter) — the plant lifecycle management system; its MCP server is the primary data source for these recipes
-- [nolte/kamerplanter-ha](https://github.com/nolte/kamerplanter-ha) — Home Assistant custom integration for Kamerplanter; the entity-level counterpart to the agent-level automation here
-- [nolte/home-assistant-config](https://github.com/nolte/home-assistant-config) — the Home Assistant instance these recipes are developed against
+- [nolte/kamerplanter](https://github.com/nolte/kamerplanter) — the plant management system these recipes read from
+- [nolte/kamerplanter-ha](https://github.com/nolte/kamerplanter-ha) — brings Kamerplanter into Home Assistant as ordinary entities, if you would rather build dashboards than ask questions
+- [nolte/home-assistant-config](https://github.com/nolte/home-assistant-config) — the Home Assistant setup these recipes are developed against
 
 ## Status
 
-Early stage. Nine recipes ship: three diagnostics (`connectivity-check`, `provider-surface-check`, `provider-plugin-check`), three read-only plant-care recipes (`nutrient-imbalance-check`, `pest-pressure-check`, `species-baseline-check`), `domain-review` (touches no garden, writes its report to `.audits/`), and two that write (`diary-photo-analysis-apply`, `diary-analysis-queue-apply`). Everything but the diagnostics loads project-local skills from `.claude/skills/`, so they must run with this checkout as the working directory — skill discovery is relative to the Goose process's cwd, and a recipe started elsewhere loses the skill without an error.
+Early stage, and honest about it. Nine recipes work and are used against a real garden, but there is no released version yet, so names and options can change without warning. Every change is checked automatically before it lands.
 
-No release exists yet, and recipe names and parameters will change without notice until the first tagged release. CI validates every recipe against the house pattern (`tests/validate_recipes.py`) and builds the documentation on each pull request. Recipe syntax, the `env_keys` behaviour above, and the skill-loading path are verified against Goose 1.45.0 with the `claude-code` provider.
+Everything here was tried against Goose 1.45.0 with the `claude-code` provider. Another provider may behave differently in ways that are hard to spot — the recipes would still run and still answer.
 
 ## License
 
