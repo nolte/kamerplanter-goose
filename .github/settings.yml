@@ -15,11 +15,53 @@ repository:
     - plant-care
     - ai-agents
 
+  # Declared explicitly although the commons already carry all four, so the merge
+  # policy is readable at the repository that lives under it and survives a
+  # commons revision that reorders these keys.
+  #
+  # Measured 2026-08-15: NOTHING in this file had ever reached the platform —
+  # not the inherited keys and not the repo-own ones. `homepage` and `topics`
+  # were empty, `description` differed verbatim from the value below, neither
+  # `develop` nor `main` was protected (404), and the merge buttons sat at
+  # GitHub's new-repository defaults. Six merged feature branches had piled up.
+  #
+  # The cause is the Settings App's trigger, not its installation, and not this
+  # file. The App syncs on a push to the DEFAULT branch that touches
+  # `.github/settings.yml`. That has never happened here: the file exists only on
+  # `develop` (`main` still carries no `.github/` at all), its only two revisions
+  # landed on 2026-08-09 while `main` was still the default branch, and no push
+  # since the default moved to `develop` has touched it. Merging the commit that
+  # introduced this comment is itself the first qualifying event.
+  #
+  # Ruled out by controlled comparison, so nobody re-investigates them:
+  #   - the short `_extends` form — nolte/kamerplanter-ha uses it and is applied,
+  #     and `.github/boring-cyborg.yml` in THIS repository uses it and works
+  #   - the personal-account owner type — same account, two working repositories
+  #   - Probot access to this repository — Renovate opened #12/#13/#15/#16 and
+  #     boring-cyborg labelled #9 and #17 while this file did nothing
+  #
+  # Verify after any change to this block:
+  #   gh api repos/nolte/kamerplanter-goose \
+  #     --jq '{description, homepage, topics, allow_squash_merge, allow_merge_commit, allow_rebase_merge, delete_branch_on_merge}'
+  #   gh api repos/nolte/kamerplanter-goose/branches/develop/protection \
+  #     --jq '.required_status_checks.contexts'
+  allow_squash_merge: true
+  allow_merge_commit: false
+  allow_rebase_merge: false
+  delete_branch_on_merge: true
+
 # The inherited commons ships `required_status_checks.contexts: []` for develop
 # and tells consumers to declare their own — so without this block the branch
 # has no protection at all. Measured 2026-08-09: the API answered `Branch not
 # protected` (404) for develop, and the `automerge` label the automerge
 # workflow keys on did not exist either. Every CI job was advisory.
+#
+# Re-measured 2026-08-15, six days after this block landed: STILL 404, for
+# `main` too, and the `automerge` label still absent. Declaring the protection
+# never protected anything, because no sync had run — see the trigger analysis
+# in the `repository:` block above. Treat the branch as unprotected, and every
+# green check on a pull request as advisory, until the verify command above
+# returns the three contexts.
 #
 # Probot merges `branches:` entries from `_extends` BY NAME
 # (probot/settings passes `arrayMerge: mergeArrayByName`), so only the keys
