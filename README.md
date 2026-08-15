@@ -83,6 +83,7 @@ goose run --recipe <name> --explain        # what this one needs, before it cost
 | `nutrient-imbalance-check` | no | Is this plant underfed, overfed, or unable to take up what it already has? |
 | `pest-pressure-check` | no | Does this pest or disease suspicion actually hold up? |
 | `species-baseline-check` | no | Is what we know about this species plausible in the first place? |
+| `plant-master-data-check` | no | Which plants are missing the records an answer would need? |
 | `domain-review` | writes a report file | How does a recipe read to an experienced grower? |
 | `diary-photo-analysis-apply` | **yes** | Looks at the photos in one diary entry and writes back what it found |
 | `diary-analysis-queue-apply` | **yes** | The same, for every entry waiting in the queue |
@@ -166,7 +167,7 @@ AUDIENCES.md        who this is for
 
 ## Status
 
-Early stage, and honest about it. Nine recipes work and are used against a real garden, but there is no released version yet, so names and options can change without warning. Every change is checked automatically before it lands.
+Early stage, and honest about it. Ten recipes work and are used against a real garden, but there is no released version yet, so names and options can change without warning. Every change is checked automatically before it lands.
 
 Everything here was tried against Goose 1.45.0 with the `claude-code` provider. Another provider may behave differently in ways that are hard to spot — the recipes would still run and still answer.
 
