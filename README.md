@@ -30,12 +30,12 @@ The recipes say which systems they need and nothing about where those run, so th
 ### What you need
 
 - [Goose](https://github.com/block/goose) 1.45 or later, with an AI provider configured
-- A Kamerplanter garden with its MCP server switched on, and an API key
+- A Kamerplanter garden with its MCP server switched on (`MCP_SERVER_ENABLED=true`) and an API key
 - A Home Assistant instance with the [MCP Server integration](https://www.home-assistant.io/integrations/mcp_server/) and a long-lived access token
 
 ### Getting started
 
-Clone the repository and tell Goose where your two systems live. Passwords and keys are read from your environment, so none of them is ever written into a file here:
+Clone the repository and tell Goose where your two systems live. Your key and token are looked up when the shell starts, never typed in as text — so they stay out of your shell history and out of every file here:
 
 ```sh
 git clone https://github.com/nolte/kamerplanter-goose.git
@@ -43,14 +43,16 @@ cd kamerplanter-goose
 
 export KAMERPLANTER_URL="https://kamerplanter.example.com"
 export HA_URL="https://ha.example.com"
-export KAMERPLANTER_API_KEY="kp_..."
-export HA_MCP_TOKEN="..."
+
+# fetched from a password manager, so the value itself is never written down
+export KAMERPLANTER_API_KEY=$(pass path/to/kamerplanter/token-mcp)
+export HA_MCP_TOKEN=$(pass path/to/homeassistant/token-mcp)
 
 export GOOSE_RECIPE_PATH="$PWD/recipes"
 export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
 ```
 
-With [direnv](https://direnv.net/) those lines go into a `.envrc` and load whenever you enter the folder — and a password manager can fill in the two secrets, so they never sit in your shell history.
+With [direnv](https://direnv.net/) those lines go into a `.envrc` and load whenever you enter the folder. **Keep the lookups as lookups.** This repository's own `.envrc` is checked into git, so pasting a key in place of the `$(pass …)` call would publish it the next time you commit.
 
 Then check that both systems answer:
 
@@ -77,7 +79,18 @@ goose run --recipe <name> --explain        # what a recipe needs, before it cost
 | `diary-photo-analysis-apply` | **yes** | Looks at the photos in one diary entry and writes back what it found |
 | `diary-analysis-queue-apply` | **yes** | The same, for every entry waiting in the queue |
 
-Recipes ending in `-apply` change something in Kamerplanter. Everything else only reads. Two more, `provider-surface-check` and `provider-plugin-check`, exist to check what an AI assistant can actually do here — useful after an upgrade, uninteresting otherwise.
+Recipes ending in `-apply` change something in Kamerplanter, and say so in their description. `domain-review` is the one exception to the naming: it touches no garden, but it does write its report into `.audits/` in your checkout. Everything else only reads. Two more, `provider-surface-check` and `provider-plugin-check`, exist to check what an AI assistant can actually do here — useful after an upgrade, uninteresting otherwise.
+
+### Using the recipes without cloning
+
+Goose can fetch recipes from this repository by name:
+
+```sh
+export GOOSE_RECIPE_GITHUB_REPO="nolte/kamerplanter-goose"
+goose run --recipe connectivity-check
+```
+
+That gets you the recipe but **not** `extensions.yaml`, and a recipe with no systems attached has nothing to talk to. Point `GOOSE_ADDITIONAL_CONFIG_FILES` at a copy of that file — from a clone, or your own equivalent — or the run starts with no access to anything. The same goes for the recipes that load know-how from `.claude/skills/`: those need the clone.
 
 **Run recipes from inside the folder you cloned.** Most of them load their know-how from files in this repository, and Goose looks for those relative to wherever you started it. Start somewhere else and the recipe still answers — just without that knowledge, and without telling you.
 
@@ -87,7 +100,7 @@ A Kamerplanter key carries everything its account may do, in every garden that a
 
 ### Writing your own recipe
 
-A recipe is one YAML file in `recipes/`: a title, the options it takes, and the task in plain words.
+A recipe is one YAML file in `recipes/`: a title, the options it takes, and the task in plain words. A recipe that only reads has to say so — and has to name the tools it must not call, one by one, because "don't change anything" is left to the assistant's judgement while a named tool is not:
 
 ```yaml
 version: "1.0.0"
@@ -100,17 +113,26 @@ parameters:
     requirement: required
     description: "Which garden this applies to"
 
+instructions: |
+  You report on plant care. You never act on a plant.
+
 prompt: |
   For garden {{ tenant }}, list the care tasks due today, check each one
   against the matching Home Assistant sensor, and report which are really needed.
+
+  Read-only run. Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
+  `mcp__kamerplanter__add_plant_diary_entry`,
+  `mcp__kamerplanter__set_plant_location`.
 ```
 
 Check it before committing:
 
 ```sh
-goose recipe validate recipes/my-recipe.yaml
-task test        # checks every recipe against the conventions used here
+goose recipe validate recipes/my-recipe.yaml   # is the file well-formed
+task test                                      # does it follow the conventions used here
 ```
+
+`task` reads its own settings from `.envrc`, so run it with direnv active — without that it stops before any target runs, with an error that looks like a network problem and is not one.
 
 Goose behaves in a few ways that are not obvious and cost a debugging session each — a setting that fails silently rather than loudly, a rule that is ignored where you would expect it to hold. They are all written up, with how each one was measured, in [the recipe project pattern](spec/goose/recipe-project-pattern/en.md). Read it before adding a recipe.
 
@@ -122,7 +144,7 @@ extensions.yaml     where your two systems live, written down once
 .claude/skills/     the know-how recipes draw on: how to read a photo,
                     how to judge a feeding question, how to check a pest
 scripts/            a queue runner that handles one diary entry per run
-tests/              the conventions above, as a check that can fail
+tests/              the recipe conventions, as a check that can fail
 spec/               how it all works, in English and German
 docs/               the documentation site
 AUDIENCES.md        who this is for
