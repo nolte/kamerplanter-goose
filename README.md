@@ -23,7 +23,7 @@ What you get depends on who you are:
 - **You host Kamerplanter and Home Assistant yourself.** One documented set of settings that every recipe here uses. A recipe added next month needs no new wiring from you.
 - **You want to write your own recipes.** A worked-out shape to copy: how to name things, how to pass in a garden, and where the boundary between reading and writing runs.
 
-The recipes say which systems they need and nothing about where those run, so they work against your setup as readily as against anyone else's.
+Where your systems live is written down once, in `extensions.yaml`, and never inside a recipe — so the same recipe works against your setup as readily as against anyone else's.
 
 ## Usage
 
@@ -35,12 +35,14 @@ The recipes say which systems they need and nothing about where those run, so th
 
 ### Getting started
 
-Clone the repository and tell Goose where your two systems live. Your key and token are looked up when the shell starts, never typed in as text — so they stay out of your shell history and out of every file here:
+Clone the repository and tell Goose where your systems live. Your key and token are looked up when the shell starts, never typed in as text — so they stay out of your shell history and out of every file here:
 
 ```sh
 git clone https://github.com/nolte/kamerplanter-goose.git
 cd kamerplanter-goose
 
+# no trailing slash — the addresses get `/api/...` appended, and a double
+# slash comes back as a server error rather than as the typo it is
 export KAMERPLANTER_URL="https://kamerplanter.example.com"
 export HA_URL="https://ha.example.com"
 
@@ -52,9 +54,11 @@ export GOOSE_RECIPE_PATH="$PWD/recipes"
 export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
 ```
 
-With [direnv](https://direnv.net/) those lines go into a `.envrc` and load whenever you enter the folder. **Keep the lookups as lookups.** This repository's own `.envrc` is checked into git, so pasting a key in place of the `$(pass …)` call would publish it the next time you commit.
+`extensions.yaml` also lists a third system, GitHub, which the recipes here do not use. Leave `GITHUB_MCP_PAT` unset and it is quietly skipped. Set it — as the maintainer's `.envrc` does, from `gh auth token` — and your GitHub token is sent to a Copilot endpoint. Worth knowing before you copy that line.
 
-Then check that both systems answer:
+**Do not run `direnv allow` on the `.envrc` that ships here.** It is checked into git and filled with the maintainer's own addresses and password-manager paths. On your machine those lookups fail, both systems drop out **without any warning**, and the run reports that no systems are configured at all — which looks like a Goose problem and is not one. Put your own lines in, keeping the two `TASK_*` variables the file already sets, or the `task` commands below stop before they start.
+
+Then check that your systems answer:
 
 ```sh
 goose run --recipe connectivity-check --params tenant=my-garden
@@ -62,11 +66,15 @@ goose run --recipe connectivity-check --params tenant=my-garden
 
 Run this one first, always. It only reads, and it prints one line per step — so a mistyped address or an expired key is named as exactly that, instead of surfacing later as a recipe that seems to think your plants are fine.
 
+**Run recipes from inside the folder you cloned.** Most of them load their know-how from files in this repository, and Goose looks for those relative to wherever you started it. Start somewhere else and the recipe still answers — just without that knowledge, and without telling you.
+
 ### What the recipes can do
+
+Most recipes need more than a garden name — a plant, a species, a discriminator for the run. Ask before you run; it costs nothing:
 
 ```sh
 goose recipe list -v                       # everything available, with its options
-goose run --recipe <name> --explain        # what a recipe needs, before it costs anything
+goose run --recipe <name> --explain        # what this one needs, before it costs anything
 ```
 
 | Recipe | Changes anything? | What it answers |
@@ -92,7 +100,7 @@ goose run --recipe connectivity-check
 
 That gets you the recipe but **not** `extensions.yaml`, and a recipe with no systems attached has nothing to talk to. Point `GOOSE_ADDITIONAL_CONFIG_FILES` at a copy of that file — from a clone, or your own equivalent — or the run starts with no access to anything. The same goes for the recipes that load know-how from `.claude/skills/`: those need the clone.
 
-**Run recipes from inside the folder you cloned.** Most of them load their know-how from files in this repository, and Goose looks for those relative to wherever you started it. Start somewhere else and the recipe still answers — just without that knowledge, and without telling you.
+If you write that file yourself, list every `${VARIABLE}` you use under that entry's `env_keys`. Leave one out and Goose sends the text `${YOUR_KEY}` as the key itself; the server answers with a plain authentication error, and it reads exactly like a wrong key rather than a missing line.
 
 ### About your API key
 
@@ -140,7 +148,7 @@ Goose behaves in a few ways that are not obvious and cost a debugging session ea
 
 ```
 recipes/            one recipe per file — what this repository ships
-extensions.yaml     where your two systems live, written down once
+extensions.yaml     where your systems live, written down once for every recipe
 .claude/skills/     the know-how recipes draw on: how to read a photo,
                     how to judge a feeding question, how to check a pest
 scripts/            a queue runner that handles one diary entry per run
