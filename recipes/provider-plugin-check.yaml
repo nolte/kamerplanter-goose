@@ -47,7 +47,12 @@ prompt: |
   `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`,
   `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`,
   `mcp__kamerplanter__claim_diary_analysis`,
-  `mcp__kamerplanter__submit_diary_analysis`.
+  `mcp__kamerplanter__submit_diary_analysis`,
+  `mcp__kamerplanter__transition_plant_phase`,
+  `mcp__kamerplanter__record_feeding_event`,
+  `mcp__kamerplanter__create_inspection`,
+  `mcp__kamerplanter__assign_nutrient_plan`,
+  `mcp__kamerplanter__assign_species_phase_sequence`.
   Every read tool on that server is forbidden here too.
   Call NO home_assistant tool. Call NO github tool. This probe needs `Skill`
   and `Agent`; the servers are loaded because the shared configuration loads

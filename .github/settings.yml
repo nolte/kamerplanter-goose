@@ -96,6 +96,12 @@ repository:
   # as a list silently loses its entire `branches:` block — reported upstream to
   # nolte/gh-plumbing, since the commons' consumers all use the list form.
   #
+  # CONFIRMED 2026-08-16: with the string form in place, `topics` applied (seven
+  # topics live) and the `branches:` block applied with it, on both branches.
+  # That is the diagnosis above verified end to end — one throwing `.split()`
+  # had been withholding every deferred section. See the branch-protection
+  # block below for the measured contexts.
+  #
   # Ruled out by controlled comparison, so nobody re-investigates them:
   #   - the short `_extends` form — nolte/kamerplanter-ha uses it and is applied,
   #     and `.github/boring-cyborg.yml` in THIS repository uses it and works
@@ -122,9 +128,29 @@ repository:
 # Re-measured 2026-08-15, six days after this block landed: STILL 404, for
 # `main` too, and the `automerge` label still absent. Declaring the protection
 # never protected anything, because no sync had run — see the trigger analysis
-# in the `repository:` block above. Treat the branch as unprotected, and every
-# green check on a pull request as advisory, until the verify command above
-# returns the three contexts.
+# in the `repository:` block above.
+#
+# RESOLVED, measured 2026-08-16. The `topics`-as-string fix diagnosed above is
+# the whole cause and the whole cure: with the repository plugin no longer
+# throwing, the `Promise.all` resolves, the deferred `branches` section runs,
+# and both entries applied. Measured on that date:
+#
+#   develop  contexts ["recipe-contract","docs-build","pre-commit"],
+#            strict: true, enforce_admins: true
+#   main     required_status_checks: null, enforce_admins: true,
+#            required_linear_history: true
+#   labels   `automerge` and `skills` both present — the two the earlier runs
+#            left behind, so labels converged as well
+#
+# So the advisory caveat is LIFTED: a green required check on a pull request
+# against `develop` now carries branch protection behind it. The three contexts
+# are the ones declared below, matched by job `name:`, and PR #23 was the first
+# merge to land under them.
+#
+# `develop` reports `required_linear_history: false` on this endpoint while the
+# ruleset below does require it. That is not a conflict — the endpoint answers
+# for classic protection only, and the two mechanisms are evaluated together.
+# Do not "fix" it by declaring it here; see the ruleset note further down.
 #
 # Probot merges `branches:` entries from `_extends` BY NAME
 # (probot/settings passes `arrayMerge: mergeArrayByName`), so only the keys
