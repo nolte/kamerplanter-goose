@@ -3,7 +3,7 @@ title: Referenzen
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-08-07
+last_updated: 2026-08-16
 ---
 
 # Referenzen
@@ -14,18 +14,20 @@ Nachschlagematerial: die mitgelieferten Rezepte mit ihren Parametern, die gemein
 
 Ein Rezept, das Projekt-Skills lädt, muss mit diesem Repository-Checkout als Arbeitsverzeichnis gestartet werden, weil die Skill-Auffindung relativ zum Arbeitsverzeichnis des Goose-Prozesses erfolgt. Die drei Diagnosen und `plant-master-data-check` laden keines und laufen daher von überall — genau das macht sie über `GOOSE_RECIPE_GITHUB_REPO` nutzbar.
 
+Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
+
 | Rezept | Schreibt | Zweck |
 |--------|:--------:|-------|
-| `connectivity-check` | nein | Prüft beide MCP-Server nur lesend und druckt PASS/FAIL je Schritt |
-| `provider-surface-check` | nein | Inventarisiert die Werkzeuge, die der Agent unter dem aktuellen Provider tatsächlich hält |
-| `provider-plugin-check` | nein | Ob Plugin-Skills, Plugin-Agents und Projekt-Agents aus einem Lauf erreichbar sind |
-| `nutrient-imbalance-check` | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
-| `pest-pressure-check` | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
-| `species-baseline-check` | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
-| `plant-master-data-check` | nein | Welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht |
-| `domain-review` | nur nach `.audits/` | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
-| `diary-photo-analysis-apply` | **ja** | Analysiert einen wartenden Tagebucheintrag und übermittelt das Ergebnis |
-| `diary-analysis-queue-apply` | **ja** | Arbeitet die Analyse-Warteschlange Eintrag für Eintrag ab |
+| [`connectivity-check`](../guides/connectivity-check.md) | nein | Prüft beide MCP-Server nur lesend und druckt PASS/FAIL je Schritt |
+| [`provider-surface-check`](../guides/provider-surface-check.md) | nein | Inventarisiert die Werkzeuge, die der Agent unter dem aktuellen Provider tatsächlich hält |
+| [`provider-plugin-check`](../guides/provider-plugin-check.md) | nein | Ob Plugin-Skills, Plugin-Agents und Projekt-Agents aus einem Lauf erreichbar sind |
+| [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
+| [`pest-pressure-check`](../guides/pest-pressure-check.md) | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
+| [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
+| [`plant-master-data-check`](../guides/plant-master-data-check.md) | nein | Welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht |
+| [`domain-review`](../guides/domain-review.md) | nur nach `.audits/` | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
+| [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **ja** | Analysiert einen wartenden Tagebucheintrag und übermittelt das Ergebnis |
+| [`diary-analysis-queue-apply`](../guides/diary-analysis-queue.md) | **ja** | Arbeitet die Analyse-Warteschlange Eintrag für Eintrag ab |
 
 ## Projekt-Skills
 
