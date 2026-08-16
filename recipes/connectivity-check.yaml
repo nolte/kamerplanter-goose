@@ -40,7 +40,12 @@ prompt: |
     `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
     `mcp__kamerplanter__add_plant_diary_entry`,
     `mcp__kamerplanter__claim_diary_analysis`,
-    `mcp__kamerplanter__submit_diary_analysis`.
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
     Anything else that writes is forbidden too.
     Forbidden on Home Assistant: any tool that turns something on or off, sets
     a value, or runs a script, scene, or automation. That side stays a category
