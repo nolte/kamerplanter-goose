@@ -77,7 +77,7 @@ Das Konto der Referenzinstanz hält die Rolle `lead` mit allen drei Berechtigung
 
 Ein Aufruf ohne die Berechtigung wird mit `permission.denied` abgelehnt und als `status: "denied"` auditiert.
 
-## Werkzeugkatalog (gemessen, 43 Tools, 2026-08-07)
+## Werkzeugkatalog (gemessen, 56 Tools, 2026-08-16)
 
 Anders als bei Home Assistant trägt **jedes `inputSchema` ein vollständiges JSON Schema** — gemessene Schlüssel umfassen `required`, `properties`, `$defs`, `additionalProperties` und `title` —, sodass ein Client Pflicht- von Optionalargumenten unterscheiden kann, ohne dass man es ihm sagt.
 
@@ -202,7 +202,13 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 
 ## Offene Fragen
 
-- Das Kriterium zu den verbotenen Tools wurde nun zweimal durch denselben Mechanismus verfehlt. Die Messung vom 2026-08-07 hob die Liste auf sieben, und drei Rezepte wurden darauf gebracht. Die Messung vom 2026-08-16 hob sie auf zwölf, und dieselben drei — `connectivity-check`, `provider-surface-check`, `provider-plugin-check` — nannten gemessen sieben, waren also still wieder zu Teilmengen geworden. Sie wurden mit derselben Änderung wie diese Neumessung korrigiert. Die wiederkehrende Lücke: `tests/validate_recipes.py` setzt die *`-apply`-Suffix*-Regel durch (ein Rezept, das ein Schreibtool außerhalb eines Policy-Blocks nennt, muss den Suffix tragen), nicht aber die *Vollständigkeits*-Regel (ein nur lesendes Rezept muss jedes einzelne nennen). Nur eine Validator-Prüfung für die zweite Regel hätte einen der beiden Rückfälle gefangen; ohne sie bleibt das Kriterium eine Absichtserklärung, die nur bis zum nächsten Katalogwachstum trägt.
+- Das Kriterium zu den verbotenen Tools wurde nun dreimal durch denselben Mechanismus verfehlt, und das dritte Mal geschah innerhalb der Änderung, die das zweite behob. Die Messung vom 2026-08-07 hob die Liste auf sieben, und die Rezepte wurden darauf gebracht. Die Messung vom 2026-08-16 hob sie auf zwölf, und **neun der zehn ausgelieferten Rezepte nannten gemessen sieben** — jedes gegen den älteren Stand geschriebene war still zu einer Teilmenge geworden. Der erste Korrekturlauf in derselben Änderung behob nur drei, weil er die Rezeptliste aus einer früheren Fassung *dieses Absatzes* übernahm, statt die Rezepte zu messen; ein Review fand die übrigen sechs. Alle zehn nennen jetzt zwölf.
+
+  Daraus folgt zweierlei. Erstens ist eine Prosa-Liste betroffener Artefakte in einer Spec selbst ein Risiko für veraltete Zahlen — der Absatz, den Sie gerade lesen, war die Quelle der unvollständigen Korrektur. Deshalb nennt er jetzt die Messmethode statt einer Namensliste.
+
+  Zweitens die haltbare Lücke: `tests/validate_recipes.py` setzt die *`-apply`-Suffix*-Regel durch (ein Rezept, das ein Schreibtool außerhalb eines Policy-Blocks nennt, muss den Suffix tragen), nicht aber die *Vollständigkeits*-Regel (ein nur lesendes Rezept muss jedes zustandsändernde Tool nennen). Nur eine Validator-Prüfung für die zweite Regel hätte einen der drei Rückfälle gefangen, und sie sollte ihre Liste aus derselben Stelle beziehen, die auch die Katalogmessung pflegt. Bis es sie gibt, bleibt das Kriterium eine Absichtserklärung, die bis zum nächsten Katalogwachstum trägt.
+
+  Die beiden `-apply`-Rezepte fallen nicht unter das Kriterium, das nur nur lesende Rezepte bindet — sie führen aber eine ausdrückliche Aufteilung in `Permitted by name:` und `Forbidden by name:`, und die fünf neuen Tools standen in keiner von beiden. Sie wurden der Verbotsseite hinzugefügt: Ein schreibfähiges Rezept hat einen *höheren* Bedarf an einer vollständigen Grenze, keinen geringeren.
 
 - Die Rolle `lead` ist auf der Referenzinstanz gemessen, taucht aber in keiner Upstream-Rollentabelle auf. Ob sie eine Umbenennung von `admin`, eine eigenständige vierte Rolle oder instanzlokale Konfiguration ist, ist ungeklärt — daher die Regel, `mcp_permissions` statt der Rolle zu lesen.
 - Ob die `Mcp-Session-Id` bei jedem Aufruf zurückgespiegelt werden muss oder nur innerhalb eines Sitzungsfensters; die Referenzprüfung hat sie durchgehend mitgesendet und den Fall ohne sie nicht getestet.

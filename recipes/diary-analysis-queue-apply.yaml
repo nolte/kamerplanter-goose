@@ -80,7 +80,12 @@ prompt: |
   - Forbidden by name: `mcp__kamerplanter__confirm_care_task`,
     `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`,
     `mcp__kamerplanter__create_site`,
-    `mcp__kamerplanter__add_plant_diary_entry`.
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
   - Call NO Home Assistant tool at all.
   - Never print an API key, a token, or a lease token.
   - Hold at most ONE claim at any moment. Submit the entry you hold before

@@ -83,6 +83,11 @@ prompt: |
     `mcp__kamerplanter__add_plant_diary_entry`,
     `mcp__kamerplanter__claim_diary_analysis`,
     `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`,
     `mcp__kamerplanter__get_plant`, `mcp__kamerplanter__get_species_info`,
     `mcp__kamerplanter__list_pests`.
     This review reads files, not a garden.
