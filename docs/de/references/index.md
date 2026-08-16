@@ -12,7 +12,9 @@ Nachschlagematerial: die mitgelieferten Rezepte mit ihren Parametern, die gemein
 
 ## Rezepte
 
-Ein Rezept, das Projekt-Skills lädt, muss mit diesem Repository-Checkout als Arbeitsverzeichnis gestartet werden, weil die Skill-Auffindung relativ zum Arbeitsverzeichnis des Goose-Prozesses erfolgt. Die drei Diagnosen und `plant-master-data-check` laden keines und laufen daher von überall — genau das macht sie über `GOOSE_RECIPE_GITHUB_REPO` nutzbar.
+Ein Rezept, das Projekt-Skills lädt, muss mit diesem Repository-Checkout als Arbeitsverzeichnis gestartet werden, weil die Skill-Auffindung relativ zum Arbeitsverzeichnis des Goose-Prozesses erfolgt. `connectivity-check`, `provider-surface-check` und `plant-master-data-check` laden keines und laufen von überall — genau das macht sie über `GOOSE_RECIPE_GITHUB_REPO` nutzbar.
+
+`provider-plugin-check` lädt ebenfalls keinen Skill und braucht dieses Checkout trotzdem: Seine letzten drei Sonden dispatchen Agents, die in diesem Baum definiert sind. Anderswo gestartet meldet es sie als unerreichbar — eine falsche Messung, kein fehlgeschlagener Lauf, und für eines der beiden verglichenen Verzeichnisse nicht vom echten Ergebnis zu unterscheiden.
 
 Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 

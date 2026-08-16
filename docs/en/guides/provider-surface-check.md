@@ -37,7 +37,7 @@ The report has four sections and nothing else:
 
 | Section | Contents |
 |---------|----------|
-| 1. MCP tools | every `mcp__<server>__<tool>` name, grouped by server, with a count per server |
+| 1. MCP tools | the count per server, plus up to five `mcp__<server>__<tool>` names each |
 | 2. Execution and file access | yes/no plus the exact tool name for shell execution, file reading, file writing, and URL fetching |
 | 3. Agent and orchestration tools | anything that spawns subagents, schedules work, runs workflows, manages tasks, or loads skills |
 | 4. Everything else | the remaining tool names |
@@ -45,6 +45,8 @@ The report has four sections and nothing else:
 | Closing line | Means |
 |--------------|-------|
 | `SURFACE: <n> MCP servers, <m> non-MCP tools` | `<n>` counted from section 1, `<m>` across sections 2 to 4 |
+
+Section 1 names at most five tools per server, so it is a sample rather than a catalogue — the count beside it is the complete number. A tool you do not see listed there is not thereby absent, and a question about one specific tool is answered by the count and a targeted look, never by that list.
 
 ## What the numbers do and do not tell you
 

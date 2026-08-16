@@ -58,7 +58,7 @@ Both identifiers are in the table on purpose. `instance_id` is what you recognis
 
 ## Cost
 
-One `list_plants` response already carries every field this recipe checks, so a garden of 120 plants costs three paginated calls rather than 120 — the recipe explicitly forbids a per-plant `get_plant`.
+One `list_plants` response already carries every field this recipe checks, and the recipe pages at `limit 200` — so a garden of 120 plants costs two calls in total, `list_tenants` and one `list_plants`, rather than 120. A per-plant `get_plant` is explicitly forbidden: it adds a round trip and returns nothing new.
 
 ## Sources
 

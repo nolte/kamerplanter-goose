@@ -61,9 +61,12 @@ Der Bericht beginnt mit einer Feldtabelle — Richtung, Belegstufe, zugewiesene 
 
 ## Wenn nichts Brauchbares herauskommt
 
-`undetermined` auf Stufe 3 ist das gewöhnliche Ergebnis für eine Pflanze, deren Tagebuch keine Messung enthält — und es ist ehrlich, nicht faul. Es gibt derzeit kein Werkzeug, das ein Düngeereignis mit Menge, EC und pH festhält. In einem Garten, in dem Erinnerungen bestätigt, aber nie Mengen protokolliert werden, fällt Stufe 2 damit auf Stufe 3 zurück, und die Antwort ist die Bitte zu messen.
+`undetermined` auf Stufe 3 ist das gewöhnliche Ergebnis für eine Pflanze, deren Tagebuch keine Messung enthält — und es ist ehrlich, nicht faul. In einem Garten, in dem Erinnerungen bestätigt, aber nie Mengen protokolliert werden, steht Stufe 2 auf nichts, und die Antwort ist die Bitte zu messen.
 
-Halte einen EC- oder pH-Wert in einem Tagebucheintrag fest und starte erneut: Dieselbe Pflanze antwortet dann auf Stufe 1.
+Zwei Dinge holen dieselbe Pflanze da heraus, und beide passieren außerhalb dieses Laufs:
+
+- **Halte einen EC- oder pH-Wert in einem Tagebucheintrag fest.** Das ist ein Stufe-1-Wert und legt die Richtung allein fest.
+- **Protokolliere die Düngung selbst mit `record_feeding_event`**, das Menge sowie EC und pH vor und nach der Gabe trägt. Dieses Rezept darf es nicht aufrufen — es schreibt —, aber ein Garten, der Fertigationen erfasst, gibt Stufe 2 die Düngefrequenz, die sie braucht.
 
 ## Quellen
 

@@ -61,9 +61,12 @@ The report opens with a field table — direction, evidence tier, the assigned p
 
 ## When it says nothing useful
 
-`undetermined` at tier 3 is the ordinary outcome for a plant whose diary holds no measurement, and it is honest rather than lazy. There is currently no tool that records a feeding event with its amount, EC, and pH — so for a garden where reminders get confirmed but quantities never get logged, tier 2 collapses to tier 3 and the answer is a request to measure.
+`undetermined` at tier 3 is the ordinary outcome for a plant whose diary holds no measurement, and it is honest rather than lazy. In a garden where reminders get confirmed but quantities never get logged, tier 2 has nothing to stand on and the answer is a request to measure.
 
-Record one EC or pH reading in a diary entry and re-run: the same plant then answers at tier 1.
+Two things lift the same plant out of it, and both happen outside this run:
+
+- **Record one EC or pH reading in a diary entry.** That is a tier 1 value, and it settles the direction on its own.
+- **Log the feeding itself with `record_feeding_event`**, which carries the amount and the EC and pH before and after. This recipe is forbidden from calling it — it writes — but a garden that records fertigations gives tier 2 the feeding frequency it needs.
 
 ## Sources
 

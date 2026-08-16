@@ -12,7 +12,9 @@ Reference material: the shipped recipes with their parameters, the shared MCP ex
 
 ## Recipes
 
-A recipe that loads project skills must be started with this repository checkout as the working directory, because skill discovery is relative to the Goose process's working directory. The three diagnostics and `plant-master-data-check` load none, so they run from anywhere — which is what lets them be used over `GOOSE_RECIPE_GITHUB_REPO`.
+A recipe that loads project skills must be started with this repository checkout as the working directory, because skill discovery is relative to the Goose process's working directory. `connectivity-check`, `provider-surface-check`, and `plant-master-data-check` load none and run from anywhere — which is what lets them be used over `GOOSE_RECIPE_GITHUB_REPO`.
+
+`provider-plugin-check` loads no skill either and still needs this checkout: its last three probes dispatch agents defined in this tree. Started elsewhere it reports them as unreachable, which is a wrong measurement rather than a failed run — and indistinguishable from the genuine result for one of the two directories it compares.
 
 Each recipe has a guide of its own, linked from its name.
 

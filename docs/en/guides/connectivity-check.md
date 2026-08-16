@@ -38,7 +38,7 @@ goose run --recipe connectivity-check --params tenant=my-garden
 | 3 | Reachability | Home Assistant | lists the tools your instance exposes, by name |
 | 4 | Payload | Home Assistant | one read-only tool — `GetLiveContext`, else `GetDateTime` or `todo_get_items` |
 
-Home Assistant's tool catalog is assembled per instance, so step 3 reports what your instance actually offers rather than checking against a fixed list. Step 4 then picks only from those three classified read-only tools; a tool that merely looks harmless is not called, because two of them (`TimeTillErnte`, `time_till`) carry no description of whether they act.
+Home Assistant's tool catalog is assembled per instance, so step 3 reports what your instance actually offers rather than checking against a fixed list. Step 4 then picks only from those three classified read-only tools; a tool that merely looks harmless is not called. Two are forbidden by name for exactly that reason: `TimeTillErnte` and `time_till` do not say in their description whether they act, so a read-only run leaves them alone.
 
 A failing step does not end the run. Each one is recorded and the next still runs, so a single report tells you whether one server is down or both.
 

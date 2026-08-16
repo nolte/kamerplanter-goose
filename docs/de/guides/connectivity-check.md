@@ -38,7 +38,7 @@ goose run --recipe connectivity-check --params tenant=my-garden
 | 3 | Erreichbarkeit | Home Assistant | listet die Werkzeuge, die deine Instanz anbietet, namentlich auf |
 | 4 | Nutzlast | Home Assistant | ein nur lesendes Werkzeug — `GetLiveContext`, sonst `GetDateTime` oder `todo_get_items` |
 
-Der Werkzeugkatalog von Home Assistant wird je Instanz zusammengestellt. Schritt 3 berichtet deshalb, was deine Instanz tatsächlich anbietet, statt gegen eine feste Liste zu prüfen. Schritt 4 wählt dann nur aus diesen drei als lesend klassifizierten Werkzeugen; ein Werkzeug, das bloß harmlos aussieht, wird nicht aufgerufen — zwei von ihnen (`TimeTillErnte`, `time_till`) sagen in ihrer Beschreibung nicht, ob sie handeln.
+Der Werkzeugkatalog von Home Assistant wird je Instanz zusammengestellt. Schritt 3 berichtet deshalb, was deine Instanz tatsächlich anbietet, statt gegen eine feste Liste zu prüfen. Schritt 4 wählt dann nur aus diesen drei als lesend klassifizierten Werkzeugen; ein Werkzeug, das bloß harmlos aussieht, wird nicht aufgerufen. Zwei sind aus genau diesem Grund namentlich verboten: `TimeTillErnte` und `time_till` sagen in ihrer Beschreibung nicht, ob sie handeln — ein nur lesender Lauf lässt sie deshalb in Ruhe.
 
 Ein fehlgeschlagener Schritt beendet den Lauf nicht. Jeder wird festgehalten, und der nächste läuft trotzdem — ein einziger Bericht sagt dir also, ob ein Server ausgefallen ist oder beide.
 

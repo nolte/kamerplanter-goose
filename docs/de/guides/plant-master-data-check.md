@@ -58,7 +58,7 @@ Beide Bezeichner stehen absichtlich in der Tabelle. `instance_id` erkennst du wi
 
 ## Kosten
 
-Eine `list_plants`-Antwort trägt bereits jedes hier geprüfte Feld, ein Garten mit 120 Pflanzen kostet also drei paginierte Aufrufe statt 120 — ein `get_plant` je Pflanze verbietet das Rezept ausdrücklich.
+Eine `list_plants`-Antwort trägt bereits jedes hier geprüfte Feld, und das Rezept paginiert mit `limit 200` — ein Garten mit 120 Pflanzen kostet also insgesamt zwei Aufrufe, `list_tenants` und ein `list_plants`, statt 120. Ein `get_plant` je Pflanze ist ausdrücklich verboten: Es kostet eine Runde und liefert nichts Neues.
 
 ## Quellen
 

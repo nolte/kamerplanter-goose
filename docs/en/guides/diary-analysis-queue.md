@@ -97,12 +97,16 @@ Every shape closes with lines you can grep, so a scheduled run is judged without
 | `SUBMITTED: failed` | single entry | the entry was claimed, the analysis could not be made, and the failure was submitted |
 | `NOT CLAIMED: <reason>` | single entry | nothing was claimed; the entry is untouched and stays in the queue |
 | `PROCESSED: <n> ok, <n> failed, <n> not claimed` | script | per-entry outcome of this run |
-| `REMAINING: <n> still pending with photos` | script, recipe | the backlog after this run |
-| `QUEUE TOTAL` / `PROCESSED` / `REMAINING` | recipe | the same three counts from the in-run loop |
+| `REMAINING: <n> still pending with photos` | script | the backlog after this run |
+| `QUEUE TOTAL: <n>` / `PROCESSED: <n> completed, <n> failed, <n> skipped` / `REMAINING: <n>` | recipe | the same three quantities from the in-run loop, in the recipe's own wording |
+
+Grep for the wording of the shape you actually ran. The two report the same quantities and phrase them differently — only the script's `REMAINING` line carries the `still pending with photos` suffix, so that exact string never matches a `diary-analysis-queue-apply` run.
+
+Their third counter also counts different things. The script's `not claimed` is an entry whose single-entry run printed `NOT CLAIMED` — it filtered photo-less entries out before starting, so this is a lease another worker held or a refusal. The recipe's `skipped` is an entry it never claimed because `photo_count` was 0.
 
 `REMAINING` counts what actually completed, not what was attempted: a failed run's lease expires and requeues its entry, and a `NOT CLAIMED` run never held one.
 
-A run that dies mid-analysis leaves a claim behind. That is not a state you have to repair — the lease expires on its own, and the next run picks the entry up again because `include_stale` is on by default.
+A run that dies mid-analysis leaves a claim behind. That is not a state you have to repair: the lease expires on its own. Which run picks the entry up again depends on the shape, though. `scripts/analyse-queue.sh` always asks for stale entries and `diary-analysis-queue-apply` defaults to it, so both heal the backlog by themselves. `diary-photo-analysis-apply` has no `include_stale` parameter at all — a bare single-entry run can walk past the parked entry, so send one of the queue shapes after it.
 
 ## Sources
 

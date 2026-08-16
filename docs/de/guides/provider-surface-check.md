@@ -37,7 +37,7 @@ Der Bericht hat vier Abschnitte und sonst nichts:
 
 | Abschnitt | Inhalt |
 |-----------|--------|
-| 1. MCP tools | jeder Name der Form `mcp__<server>__<tool>`, gruppiert je Server, mit Anzahl je Server |
+| 1. MCP tools | die Anzahl je Server, dazu bis zu fünf Namen der Form `mcp__<server>__<tool>` je Server |
 | 2. Execution and file access | ja/nein plus den exakten Werkzeugnamen für Shell-Ausführung, Datei-Lesen, Datei-Schreiben und URL-Abruf |
 | 3. Agent and orchestration tools | alles, was Subagents startet, Arbeit plant, Workflows ausführt, Aufgaben verwaltet oder Skills lädt |
 | 4. Everything else | die übrigen Werkzeugnamen |
@@ -45,6 +45,8 @@ Der Bericht hat vier Abschnitte und sonst nichts:
 | Schlusszeile | Bedeutung |
 |--------------|-----------|
 | `SURFACE: <n> MCP servers, <m> non-MCP tools` | `<n>` aus Abschnitt 1 gezählt, `<m>` über die Abschnitte 2 bis 4 |
+
+Abschnitt 1 nennt höchstens fünf Werkzeuge je Server, ist also eine Stichprobe und kein Katalog — die Zahl daneben ist die vollständige Anzahl. Ein Werkzeug, das dort nicht steht, fehlt deshalb nicht; eine Frage nach einem bestimmten Werkzeug beantwortet die Anzahl plus ein gezielter Blick, nie diese Liste.
 
 ## Was die Zahlen sagen — und was nicht
 

@@ -97,12 +97,16 @@ Jede Form schließt mit Zeilen, die sich greppen lassen — ein geplanter Lauf w
 | `SUBMITTED: failed` | Einzeleintrag | der Eintrag war beansprucht, die Analyse war nicht möglich, und der Fehlschlag wurde übermittelt |
 | `NOT CLAIMED: <reason>` | Einzeleintrag | nichts wurde beansprucht; der Eintrag bleibt unberührt in der Warteschlange |
 | `PROCESSED: <n> ok, <n> failed, <n> not claimed` | Skript | Ergebnis je Eintrag für diesen Lauf |
-| `REMAINING: <n> still pending with photos` | Skript, Rezept | der Rückstand nach diesem Lauf |
-| `QUEUE TOTAL` / `PROCESSED` / `REMAINING` | Rezept | dieselben drei Zahlen aus der Schleife im Lauf |
+| `REMAINING: <n> still pending with photos` | Skript | der Rückstand nach diesem Lauf |
+| `QUEUE TOTAL: <n>` / `PROCESSED: <n> completed, <n> failed, <n> skipped` / `REMAINING: <n>` | Rezept | dieselben drei Größen aus der Schleife im Lauf, im Wortlaut des Rezepts |
+
+Greppe nach dem Wortlaut der Form, die du tatsächlich gestartet hast. Beide berichten dieselben Größen und formulieren sie unterschiedlich — nur die `REMAINING`-Zeile des Skripts trägt den Zusatz `still pending with photos`, dieser Suchstring trifft also nie einen `diary-analysis-queue-apply`-Lauf.
+
+Auch ihr dritter Zähler zählt Unterschiedliches. Das `not claimed` des Skripts ist ein Eintrag, dessen Einzellauf `NOT CLAIMED` gedruckt hat — fotolose Einträge hat es vorher aussortiert, es geht also um eine fremde Lease oder eine Ablehnung. Das `skipped` des Rezepts ist ein Eintrag, den es nie beansprucht hat, weil `photo_count` 0 war.
 
 `REMAINING` zählt, was tatsächlich abgeschlossen wurde, nicht was versucht wurde: Bei einem fehlgeschlagenen Lauf läuft die Lease ab und der Eintrag kehrt in die Warteschlange zurück, und ein `NOT CLAIMED`-Lauf hielt nie eine.
 
-Ein Lauf, der mitten in der Analyse stirbt, hinterlässt einen Anspruch. Das ist kein Zustand, den du reparieren musst — die Lease läuft von selbst ab, und der nächste Lauf nimmt den Eintrag wieder auf, weil `include_stale` standardmäßig aktiv ist.
+Ein Lauf, der mitten in der Analyse stirbt, hinterlässt einen Anspruch. Das ist kein Zustand, den du reparieren musst: Die Lease läuft von selbst ab. Welcher Lauf den Eintrag wieder aufnimmt, hängt allerdings von der Form ab. `scripts/analyse-queue.sh` fragt abgelaufene Einträge immer mit ab, und `diary-analysis-queue-apply` tut es standardmäßig — beide heilen den Rückstand also von selbst. `diary-photo-analysis-apply` hat überhaupt keinen Parameter `include_stale`: Ein einzelner Lauf kann am geparkten Eintrag vorbeilaufen, schick ihm also eine der Warteschlangen-Formen hinterher.
 
 ## Quellen
 
