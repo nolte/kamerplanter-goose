@@ -75,6 +75,15 @@ plugins:
             Getting Started: Erste Schritte
             Guides: Anleitungen
             References: Referenzen
+            Connectivity check: Verbindungsprüfung
+            Plant master data check: Pflanzenstammdaten-Prüfung
+            Nutrient imbalance check: Nährstoffbilanz-Prüfung
+            Pest pressure check: Schädlingsdruck-Prüfung
+            Species baseline check: Artdaten-Prüfung
+            Diary analysis queue: Tagebuch-Analyse-Queue
+            Domain review: Persona-Review
+            Provider surface check: Provider-Werkzeuge prüfen
+            Provider plugin check: Provider-Plugins prüfen
 
   # Lets a page quote the current canonical source (a recipe, extensions.yaml,
   # the README) instead of a frozen copy. Include paths resolve relative to
@@ -132,5 +141,14 @@ nav:
       - en/getting-started/index.md
   - Guides:
       - en/guides/index.md
+      - Connectivity check: en/guides/connectivity-check.md
+      - Plant master data check: en/guides/plant-master-data-check.md
+      - Nutrient imbalance check: en/guides/nutrient-imbalance-check.md
+      - Pest pressure check: en/guides/pest-pressure-check.md
+      - Species baseline check: en/guides/species-baseline-check.md
+      - Diary analysis queue: en/guides/diary-analysis-queue.md
+      - Domain review: en/guides/domain-review.md
+      - Provider surface check: en/guides/provider-surface-check.md
+      - Provider plugin check: en/guides/provider-plugin-check.md
   - References:
       - en/references/index.md

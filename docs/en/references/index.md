@@ -3,7 +3,7 @@ title: References
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-08-07
+last_updated: 2026-08-16
 ---
 
 # References
@@ -12,20 +12,24 @@ Reference material: the shipped recipes with their parameters, the shared MCP ex
 
 ## Recipes
 
-A recipe that loads project skills must be started with this repository checkout as the working directory, because skill discovery is relative to the Goose process's working directory. The three diagnostics and `plant-master-data-check` load none, so they run from anywhere — which is what lets them be used over `GOOSE_RECIPE_GITHUB_REPO`.
+A recipe that loads project skills must be started with this repository checkout as the working directory, because skill discovery is relative to the Goose process's working directory. `connectivity-check`, `provider-surface-check`, and `plant-master-data-check` load none and run from anywhere — which is what lets them be used over `GOOSE_RECIPE_GITHUB_REPO`.
+
+`provider-plugin-check` loads no skill either and still needs this checkout: its last three probes dispatch agents defined in this tree. Started elsewhere it reports them as unreachable, which is a wrong measurement rather than a failed run — and indistinguishable from the genuine result for one of the two directories it compares.
+
+Each recipe has a guide of its own, linked from its name.
 
 | Recipe | Writes | Purpose |
 |--------|:------:|---------|
-| `connectivity-check` | no | Probes both MCP servers read-only and prints PASS/FAIL per step |
-| `provider-surface-check` | no | Inventories the tools the agent actually holds under the current provider |
-| `provider-plugin-check` | no | Whether plugin skills, plugin agents, and project agents are reachable from a run |
-| `nutrient-imbalance-check` | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
-| `pest-pressure-check` | no | Whether a pest or disease suspicion is biologically tenable |
-| `species-baseline-check` | no | Whether a species record is plausible, and what its lifecycle is |
-| `plant-master-data-check` | no | Which plants lack the master data a later analysis would need |
-| `domain-review` | to `.audits/` only | Reviews a recipe or spec as one grower persona |
-| `diary-photo-analysis-apply` | **yes** | Analyses one queued diary entry and submits the result |
-| `diary-analysis-queue-apply` | **yes** | Works through the analysis queue, entry by entry |
+| [`connectivity-check`](../guides/connectivity-check.md) | no | Probes both MCP servers read-only and prints PASS/FAIL per step |
+| [`provider-surface-check`](../guides/provider-surface-check.md) | no | Inventories the tools the agent actually holds under the current provider |
+| [`provider-plugin-check`](../guides/provider-plugin-check.md) | no | Whether plugin skills, plugin agents, and project agents are reachable from a run |
+| [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
+| [`pest-pressure-check`](../guides/pest-pressure-check.md) | no | Whether a pest or disease suspicion is biologically tenable |
+| [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
+| [`plant-master-data-check`](../guides/plant-master-data-check.md) | no | Which plants lack the master data a later analysis would need |
+| [`domain-review`](../guides/domain-review.md) | to `.audits/` only | Reviews a recipe or spec as one grower persona |
+| [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **yes** | Analyses one queued diary entry and submits the result |
+| [`diary-analysis-queue-apply`](../guides/diary-analysis-queue.md) | **yes** | Works through the analysis queue, entry by entry |
 
 ## Project skills
 
