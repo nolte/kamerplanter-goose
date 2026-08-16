@@ -75,13 +75,28 @@ prompt: |
   Step 1 — Resolve the garden.
   Call `mcp__kamerplanter__list_tenants`. Use "{{ tenant }}" if that is not
   empty, otherwise the single slug returned. If several gardens come back and
-  no tenant was given, stop and report that the run needs one.
+  no tenant was given, stop, print exactly
+
+  NOT INSPECTED: several gardens available, none given
+
+  as the last line, and report nothing after it.
 
   Step 2 — Read the plants.
-  Call `mcp__kamerplanter__list_plants` with include_archived {{ include_archived }}
-  and limit 200. If the response reports more plants than it returned, page
-  through with `offset` until you have them all. Report how many you inspected
-  and how many the garden holds in total.
+  Call `mcp__kamerplanter__list_plants` with `tenant` set to the slug resolved
+  in Step 1 — pass it on every call, never leave it to a default membership. A
+  key that covers several gardens answers for the wrong one otherwise, and the
+  report would still carry the requested garden in its header.
+
+  Pass include_archived {{ include_archived }} and limit 200. Page with
+  `offset` for as long as the response reports `truncated: true`, and stop when
+  it reports `truncated: false`.
+
+  `matched` is how many plants this filter selects, and it is the only correct
+  denominator. Do NOT page on `total_in_tenant`: that counts archived plants
+  regardless of the filter, so it exceeds `matched` on a page that is already
+  complete — measured on the reference garden, `matched: 9` against
+  `total_in_tenant: 11` with `truncated: false`. Paging on that difference
+  walks into empty responses and makes a complete sweep look short.
 
   Step 3 — Check each plant.
   These four fields are the master data. A plant missing one is reported, with
@@ -100,18 +115,31 @@ prompt: |
   above. If a pattern among them is striking, put one sentence in the closing
   note.
 
+  A plant whose `removed_on` is set is archived and only appears at all when
+  include_archived was true. Its master data drives no decision, so a gap in it
+  is not something to act on. Mark such a row `archived` in its Missing column
+  and sort those rows last, so they cannot be mistaken for a living plant that
+  needs attention. Do not count them in INCOMPLETE.
+
   Step 4 — Report.
   Print this and nothing after it:
 
   ## Plant Master Data
 
-  | Plant | Missing | Prevents |
-  |-------|---------|----------|
+  | Plant | Key | Missing | Prevents |
+  |-------|-----|---------|----------|
 
-  One row per plant that is missing at least one of the four fields, identified
-  by its `instance_id`. List every missing field in that row, and the shortest
-  true statement of what is thereby unavailable. Order the rows by how many
-  fields are missing, most first.
+  One row per plant that is missing at least one of the four fields. Put its
+  `instance_id` in Plant and its `plant_key` in Key. Both come from the same
+  list response, and both are needed: `instance_id` is what a human recognises,
+  `plant_key` is what every follow-up takes. They are different values —
+  `DRACA-0616-OWL` against `11441519` — and no tool accepts the readable one.
+  Dropping the key would hand the reader an identifier that fails in
+  `nutrient-imbalance-check`, `pest-pressure-check` and every plant tool.
+
+  List every missing field in that row, and the shortest true statement of what
+  is thereby unavailable. Order the rows by how many fields are missing, most
+  first, with archived rows last.
 
   If no plant is missing anything, write "No gaps." instead of the table.
 
@@ -122,5 +150,11 @@ prompt: |
 
   Close with two lines, exactly:
 
-  INSPECTED: <how many plants you checked> of <total in the garden>
-  INCOMPLETE: <how many are missing at least one of the four fields>
+  INSPECTED: <how many plants you checked> of <`matched` from Step 2>
+  INCOMPLETE: <how many living plants are missing at least one of the four fields>
+
+  Both numbers come from the same filter, so on a complete sweep the two halves
+  of INSPECTED are equal. Never use `total_in_tenant` as the denominator: it
+  counts plants this run deliberately excluded, which would report a coverage
+  shortfall that did not happen and is indistinguishable from a sweep that
+  really did miss plants.

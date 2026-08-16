@@ -12,7 +12,7 @@ Reference material: the shipped recipes with their parameters, the shared MCP ex
 
 ## Recipes
 
-Every recipe except the three diagnostics loads project skills, so it must be started with this repository checkout as the working directory.
+A recipe that loads project skills must be started with this repository checkout as the working directory, because skill discovery is relative to the Goose process's working directory. The three diagnostics and `plant-master-data-check` load none, so they run from anywhere — which is what lets them be used over `GOOSE_RECIPE_GITHUB_REPO`.
 
 | Recipe | Writes | Purpose |
 |--------|:------:|---------|
