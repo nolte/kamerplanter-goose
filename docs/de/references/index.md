@@ -12,7 +12,7 @@ Nachschlagematerial: die mitgelieferten Rezepte mit ihren Parametern, die gemein
 
 ## Rezepte
 
-Jedes Rezept außer den drei Diagnosen lädt Projekt-Skills und muss deshalb mit diesem Repository-Checkout als Arbeitsverzeichnis gestartet werden.
+Ein Rezept, das Projekt-Skills lädt, muss mit diesem Repository-Checkout als Arbeitsverzeichnis gestartet werden, weil die Skill-Auffindung relativ zum Arbeitsverzeichnis des Goose-Prozesses erfolgt. Die drei Diagnosen und `plant-master-data-check` laden keines und laufen daher von überall — genau das macht sie über `GOOSE_RECIPE_GITHUB_REPO` nutzbar.
 
 | Rezept | Schreibt | Zweck |
 |--------|:--------:|-------|
@@ -22,6 +22,7 @@ Jedes Rezept außer den drei Diagnosen lädt Projekt-Skills und muss deshalb mit
 | `nutrient-imbalance-check` | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
 | `pest-pressure-check` | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
 | `species-baseline-check` | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
+| `plant-master-data-check` | nein | Welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht |
 | `domain-review` | nur nach `.audits/` | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
 | `diary-photo-analysis-apply` | **ja** | Analysiert einen wartenden Tagebucheintrag und übermittelt das Ergebnis |
 | `diary-analysis-queue-apply` | **ja** | Arbeitet die Analyse-Warteschlange Eintrag für Eintrag ab |

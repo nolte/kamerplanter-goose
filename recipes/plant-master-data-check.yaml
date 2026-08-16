@@ -1,0 +1,160 @@
+version: "1.0.0"
+title: "Plant Master Data Check"
+description: >-
+  Read-only: sweeps every living plant in a garden and reports which ones are
+  missing master data an analysis would later need — species, location, growth
+  phase, planting date. Names what each gap prevents rather than scoring
+  completeness, and leaves optional fields uncounted.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; required only when the key covers several gardens.
+
+  - key: include_archived
+    input_type: string
+    requirement: optional
+    default: "false"
+    description: >-
+      Whether to also inspect plants that have been removed or archived. Their
+      master data no longer drives any decision, so the default leaves them out.
+
+# No `extensions:` block on purpose — the MCP servers come from the shared
+# extensions.yaml via GOOSE_ADDITIONAL_CONFIG_FILES. A block here would replace
+# that set rather than extend it.
+#
+# This recipe loads no project skill, so it runs from any working directory —
+# unlike the analysis recipes, which need this checkout as their cwd.
+#
+# One `list_plants` call carries every field checked below. Measured against the
+# reference instance 2026-08-15: the response items already contain species_key,
+# site_key, location_key, substrate_key, planted_on and current_phase_key, so a
+# per-plant `get_plant` adds a round trip and no information. A garden of 120
+# plants therefore costs three paginated calls, not 120.
+
+instructions: |
+  You audit record-keeping, not plants. Nothing you report is a statement about
+  a plant's health — only about what the garden's records do or do not say.
+
+  A gap matters because of what it prevents, not because a field is empty. Say
+  what each one blocks. A report that lists every empty column is one nobody
+  reads twice.
+
+  Absent is not wrong. Only the fields named below count as gaps; everything
+  else you notice is context, and belongs in the closing note rather than in
+  the table.
+
+prompt: |
+  Audit the master data of every living plant in garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, do not read or write
+  local files.
+
+  Hard constraints for this entire run:
+  - This run is READ-ONLY. Call no tool that changes state. Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool at all. Sensor readings say nothing about
+    whether a record is filled in.
+  - Never print an API key or a token.
+  - Do NOT call `mcp__kamerplanter__get_plant` per plant. The list response
+    already carries every field this recipe checks; a per-plant call costs a
+    round trip and returns nothing new.
+
+  Step 1 — Resolve the garden.
+  Call `mcp__kamerplanter__list_tenants`. Use "{{ tenant }}" if that is not
+  empty, otherwise the single slug returned. If several gardens come back and
+  no tenant was given, stop, print exactly
+
+  NOT INSPECTED: several gardens available, none given
+
+  as the last line, and report nothing after it.
+
+  Step 2 — Read the plants.
+  Call `mcp__kamerplanter__list_plants` with `tenant` set to the slug resolved
+  in Step 1 — pass it on every call, never leave it to a default membership. A
+  key that covers several gardens answers for the wrong one otherwise, and the
+  report would still carry the requested garden in its header.
+
+  Pass include_archived {{ include_archived }} and limit 200. Page with
+  `offset` for as long as the response reports `truncated: true`, and stop when
+  it reports `truncated: false`.
+
+  `matched` is how many plants this filter selects, and it is the only correct
+  denominator. Do NOT page on `total_in_tenant`: that counts archived plants
+  regardless of the filter, so it exceeds `matched` on a page that is already
+  complete — measured on the reference garden, `matched: 9` against
+  `total_in_tenant: 11` with `truncated: false`. Paging on that difference
+  walks into empty responses and makes a complete sweep look short.
+
+  Step 3 — Check each plant.
+  These four fields are the master data. A plant missing one is reported, with
+  what the gap prevents:
+
+  | Field | Missing means |
+  |-------|---------------|
+  | `species_key` | Nothing can be judged. No baseline, no phase plan, no pest plausibility. |
+  | `location_key` | No sensor, climate or site context can be attached to this plant. |
+  | `current_phase_key` | No watering interval, no stress tolerance, no "is it overdue" — every phase-dependent judgement is unavailable. |
+  | `planted_on` | Age is unknown, so nothing can be called early or late. |
+
+  Report NOTHING as a gap for `plant_name`, `cultivar_key`, `site_key`,
+  `substrate_key`, `slot_key` or any other field. This repository has not
+  established that they are required, and counting them would bury the four
+  above. If a pattern among them is striking, put one sentence in the closing
+  note.
+
+  A plant whose `removed_on` is set is archived and only appears at all when
+  include_archived was true. Its master data drives no decision, so a gap in it
+  is not something to act on. Mark such a row `archived` in its Missing column
+  and sort those rows last, so they cannot be mistaken for a living plant that
+  needs attention. Do not count them in INCOMPLETE.
+
+  Step 4 — Report.
+  Print this and nothing after it:
+
+  ## Plant Master Data
+
+  | Plant | Key | Missing | Prevents |
+  |-------|-----|---------|----------|
+
+  One row per plant that is missing at least one of the four fields. Put its
+  `instance_id` in Plant and its `plant_key` in Key. Both come from the same
+  list response, and both are needed: `instance_id` is what a human recognises,
+  `plant_key` is what every follow-up takes. They are different values —
+  `DRACA-0616-OWL` against `11441519` — and no tool accepts the readable one.
+  Dropping the key would hand the reader an identifier that fails in
+  `nutrient-imbalance-check`, `pest-pressure-check` and every plant tool.
+
+  List every missing field in that row, and the shortest true statement of what
+  is thereby unavailable. Order the rows by how many fields are missing, most
+  first, with archived rows last.
+
+  If no plant is missing anything, write "No gaps." instead of the table.
+
+  Then one closing note of at most three sentences: anything you noticed that
+  is not a gap but is worth a human's attention — an unexpected shape in the
+  optional fields, a tool that errored, a garden smaller or larger than
+  expected. Say "Nothing further." if there is none.
+
+  Close with two lines, exactly:
+
+  INSPECTED: <how many plants you checked> of <`matched` from Step 2>
+  INCOMPLETE: <how many living plants are missing at least one of the four fields>
+
+  Both numbers come from the same filter, so on a complete sweep the two halves
+  of INSPECTED are equal. Never use `total_in_tenant` as the denominator: it
+  counts plants this run deliberately excluded, which would report a coverage
+  shortfall that did not happen and is indistinguishable from a sweep that
+  really did miss plants.

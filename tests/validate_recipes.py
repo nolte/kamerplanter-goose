@@ -32,14 +32,25 @@ SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
 # outside a policy block has to carry the -apply suffix.
+#
+# Twelve as of 2026-08-16, counted against the server's live tool surface. The
+# last five arrived after the first seven were written, and a tool this set has
+# never heard of passes the guard silently: `task test` reports OK and CI stays
+# green while a write-capable recipe carries no -apply suffix. Re-count this
+# against the server whenever the MCP surface changes.
 STATE_CHANGING_TOOLS = {
     "add_plant_diary_entry",
     "archive_plant",
+    "assign_nutrient_plan",
+    "assign_species_phase_sequence",
     "claim_diary_analysis",
     "confirm_care_task",
+    "create_inspection",
     "create_site",
+    "record_feeding_event",
     "set_plant_location",
     "submit_diary_analysis",
+    "transition_plant_phase",
 }
 
 VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
