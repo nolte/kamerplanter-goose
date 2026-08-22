@@ -161,9 +161,13 @@ AUDIENCES.md        who this is for
 
 ## Related repositories
 
-- [nolte/kamerplanter](https://github.com/nolte/kamerplanter) — the plant management system these recipes read from
-- [nolte/kamerplanter-ha](https://github.com/nolte/kamerplanter-ha) — brings Kamerplanter into Home Assistant as ordinary entities, if you would rather build dashboards than ask questions
-- [nolte/home-assistant-config](https://github.com/nolte/home-assistant-config) — the Home Assistant setup these recipes are developed against
+Kamerplanter is more than one repository. This one is the recipe layer; the rest is where your plants, your dashboards and your photos actually live.
+
+| Repository | What it is |
+|---|---|
+| [nolte/kamerplanter](https://github.com/nolte/kamerplanter) | The plant management system these recipes read from — master data, growth phases, nutrient plans, care tasks, pest management, and the diary whose entries the queue recipes work through. |
+| [nolte/kamerplanter-ha](https://github.com/nolte/kamerplanter-ha) | Brings Kamerplanter into Home Assistant as ordinary entities and services, if you would rather build dashboards and automations than ask questions. |
+| [nolte/kamerplanter-android](https://github.com/nolte/kamerplanter-android) | Captures pest photos through a USB microscope and hands them to Kamerplanter — the close-ups a phone camera cannot get, and that `diary-photo-analysis-apply` later reads. |
 
 ## Status
 
