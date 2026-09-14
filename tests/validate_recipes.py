@@ -223,28 +223,39 @@ def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
     )
 
 
-def declared_state_changing_tools(body: str) -> set[str]:
-    """Every one of the twelve named anywhere in the artefact.
+def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
+    """Everything INSIDE a policy block — the complement of `outside_policy`."""
+    spans = sorted(span for marker in markers for span in policy_spans(body, marker))
+    return "\n".join(body[start:end] for start, end in spans)
 
-    Marker-blind on purpose, and it has to be. `calls_state_changing_tools`
-    answers the opposite question — which names sit OUTSIDE a policy block —
-    and needs the markers to do it. A name that is simply absent is outside
-    nothing, so that guard cannot see a subset at all: measured, stripping
-    eight of the twelve out of a read-only recipe's `Forbidden by name:` block
-    left the whole gate green.
+
+def declares_policy(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> bool:
+    """True when the artefact carries a tool-policy block at all."""
+    return any(policy_spans(body, marker) for marker in markers)
+
+
+def missing_from_policy(
+    body: str, markers: tuple[str, ...] = POLICY_MARKERS
+) -> list[str]:
+    """The twelve minus what the artefact names INSIDE a policy block.
+
+    Counting names anywhere in the body was the first shape of this check and
+    it was worthless: measured, moving five names out of
+    `diary-photo-analysis-apply.yaml`'s `Forbidden by name:` block into a
+    "Background:" sentence kept the gate green, and a skill whose prohibition
+    line held ONE name while the other eleven sat in a "for background only"
+    paragraph passed too. Presence is not prohibition, so the span is what
+    counts.
+
+    Completeness is a property of the union. Both `-apply` recipes split the
+    set as two permitted plus ten forbidden, so demanding twelve in the
+    forbidden half alone would fail exactly the artefacts that declare their
+    writes correctly.
     """
-    return {tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(body)}
-
-
-def missing_state_changing_tools(body: str) -> list[str]:
-    """The twelve minus what the artefact names, sorted.
-
-    Which half a name sits in does not matter here. Both `-apply` recipes
-    split the set as two permitted plus ten forbidden, so completeness is a
-    property of the union — requiring the forbidden half to hold twelve would
-    fail exactly the recipes that declare their writes correctly.
-    """
-    return sorted(STATE_CHANGING_TOOLS - declared_state_changing_tools(body))
+    inside = policy_text(body, markers)
+    return sorted(
+        tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
+    )
 
 
 def load_yaml(path: Path, findings: Findings) -> dict | None:
@@ -339,14 +350,15 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # call guard reads names outside a policy block, and an absent name is
     # outside nothing. Measured on 2026-09-14: every recipe here names all
     # twelve, so this check starts green and stays a floor.
-    missing = missing_state_changing_tools(body)
+    missing = missing_from_policy(body)
     if missing:
         findings.error(
             where,
-            f"names {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
-            f"{len(STATE_CHANGING_TOOLS)} state-changing tools; missing "
-            f"{', '.join(missing)}. Naming a subset is the failure this rule "
-            "exists to catch, and a category does not substitute for a name.",
+            f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
+            f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside a policy "
+            f"block; missing {', '.join(missing)}. Naming a subset is the "
+            "failure this rule exists to catch, and a name mentioned in prose "
+            "outside the block is not a prohibition.",
         )
 
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
@@ -512,21 +524,23 @@ def check_skills(findings: Findings) -> None:
                 "invisible to every non-interactive recipe run.",
             )
 
-        # Naming none of the twelve is not an omission: the recipe that loads
-        # the skill carries the policy. `plant-photo-read` names one read tool
-        # and runs under `-apply` recipes whose own block covers all twelve,
-        # and the four review lenses never reach a garden at all. Naming SOME
-        # is a list, and a partial list is the defect — which is why the
-        # selector is "names at least one" rather than "mentions the server".
-        declared = declared_state_changing_tools(text)
-        if declared and len(declared) < len(STATE_CHANGING_TOOLS):
+        # Carrying no policy block is not an omission: the recipe that loads
+        # the skill carries the policy instead. `plant-photo-read` names one
+        # read tool and runs under `-apply` recipes whose own block covers all
+        # twelve, and the four review lenses never reach a garden at all.
+        # Declaring a block is the claim that this skill states its own policy,
+        # and a partial one is the defect. Keying on the block rather than on
+        # "mentions a write tool" is what stops a descriptive sentence from
+        # demanding eleven more names — measured: one explanatory mention added
+        # to `plant-photo-read` failed the gate under the earlier shape.
+        missing = missing_from_policy(text)
+        if declares_policy(text) and missing:
             findings.error(
                 f".claude/skills/{skill_file.parent.name}",
-                f"names {len(declared)} of the {len(STATE_CHANGING_TOOLS)} "
-                "state-changing tools; missing "
-                f"{', '.join(sorted(STATE_CHANGING_TOOLS - declared))}. A skill "
-                "that names some of them has a prohibition list, and a partial "
-                "one is the failure the rule exists to catch.",
+                f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
+                f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside its "
+                f"policy block; missing {', '.join(missing)}. A name mentioned "
+                "in prose outside the block is not a prohibition.",
             )
 
 
@@ -732,18 +746,29 @@ ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGIN
 
 COMPLETENESS_CASES = [
     (
-        "a complete list anywhere in the body is complete",
+        "a complete list inside the block is complete",
         f"  - Call NO tool that changes state. Forbidden by name: {ALL_TWELVE}.",
         [],
     ),
     (
-        "markers are irrelevant — prose naming all twelve still counts",
+        "prose naming all twelve declares nothing — no block, no policy",
         f"Never call {ALL_TWELVE}. This skill reads and judges.",
-        [],
+        sorted(STATE_CHANGING_TOOLS),
+    ),
+    (
+        "a name moved out of the block into prose stops counting",
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(STATE_CHANGING_TOOLS - {"create_inspection"})
+        )
+        + ".\n\nFor background the server also offers "
+        "`mcp__kamerplanter__create_inspection`.",
+        ["create_inspection"],
     ),
     (
         "the catalog's seven-name era is a subset today",
-        "- Call no tool that changes state: "
+        "- Call no tool that changes state. Forbidden by name: "
         "`mcp__kamerplanter__confirm_care_task`, "
         "`mcp__kamerplanter__archive_plant`, "
         "`mcp__kamerplanter__set_plant_location`, "
@@ -781,7 +806,9 @@ COMPLETENESS_CASES = [
     ),
     (
         "the bare name counts, not only the mcp__ form",
-        "Forbidden: " + ", ".join(sorted(STATE_CHANGING_TOOLS)) + ".",
+        "Forbidden by name: "
+        + ", ".join(f"`{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+        + ".",
         [],
     ),
 ]
@@ -800,7 +827,7 @@ def run_self_test() -> int:
     print(f"OK — {len(WRITE_GUARD_CASES)} write-guard cases hold.")
 
     for name, body, expected in COMPLETENESS_CASES:
-        actual = missing_state_changing_tools(body)
+        actual = missing_from_policy(body)
         if actual != sorted(expected):
             failures += 1
             print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
