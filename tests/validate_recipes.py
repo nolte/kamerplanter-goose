@@ -302,6 +302,14 @@ def names_any_state_changing(body: str) -> bool:
 # permitted and passed the gate clean.
 SKILLS_THAT_WRITE = {"diary-analysis-claim"}
 
+# And WHICH writes each of them is for. `SKILLS_THAT_WRITE` says only that a
+# skill writes, exactly as an `-apply` suffix says only that a recipe does —
+# measured, that left a writing skill free to declare all twelve permitted and
+# pass, because being in the set above skipped the marker check entirely.
+SKILL_PERMITTED_WRITES = {
+    "diary-analysis-claim": {"claim_diary_analysis", "submit_diary_analysis"},
+}
+
 # What each `-apply` recipe is allowed to declare permitted. The suffix says
 # only THAT a recipe writes, never WHAT, so without this a recipe could move all
 # twelve into `Permitted by name:` and pass both guards at once — measured, the
@@ -383,8 +391,14 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A recipe may name a state-changing tool purely to forbid it, so the
     # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
-        permitted = declares_under(body, "Permitted by name:")
-        if permitted:
+        # Any name in the block, not only one of the twelve. Narrowing this to
+        # the catalog was a regression: measured, a read-only recipe declaring
+        # `mcp__home_assistant__call_service` — an actuating tool, a write by
+        # this repository's conventions — or a kamerplanter write added after
+        # the last catalog measurement passed clean. The false positive this
+        # replaced was a marker *mentioned* in prose, which carries no name at
+        # all, so asking for a name is enough to tell the two apart.
+        if BACKTICK_SPAN_PATTERN.search(policy_text(body, ("Permitted by name:",))):
             findings.error(
                 where,
                 "declares a `Permitted by name:` block without an `-apply` "
@@ -439,7 +453,11 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # `Permitted by name:` says which writes the recipe exists for. The `-apply`
     # suffix backs the claim that it writes, not the claim about which tools, so
     # the allowance is declared here and anything beyond it is an error.
-    permitted = declares_under(prompt_text, "Permitted by name:")
+    # Read from `body`, not `prompt_text`, unlike the completeness check above.
+    # Completeness asks what is ENFORCED, and only the prompt is; this asks what
+    # the artefact CLAIMS, and a permission declared in `instructions` still
+    # stands there for a reader even though a headless run ignores it.
+    permitted = declares_under(body, "Permitted by name:")
     # Only for `-apply`. A read-only recipe carrying the marker at all is
     # already reported above, and saying it twice buries the first finding.
     overreach = sorted(permitted - RECIPE_PERMITTED_WRITES.get(path.stem, set()))
@@ -665,13 +683,33 @@ def check_skills(findings: Findings) -> None:
         # filename to back it, so only a skill that genuinely writes may carry
         # the marker. Without this, renaming the forbidden block declared all
         # twelve writes permitted and passed.
-        if name not in SKILLS_THAT_WRITE and declares_under(text, "Permitted by name:"):
+        permitted_text = policy_text(text, ("Permitted by name:",))
+        # Any name, not only one of the twelve — the same narrowing that turned
+        # the recipe-side check into a hole. A skill declaring an actuating
+        # Home Assistant tool permitted is making the same claim as one naming
+        # a kamerplanter write, and a marker merely mentioned in prose carries
+        # no name at all, which is what separates the two.
+        if name not in SKILLS_THAT_WRITE and BACKTICK_SPAN_PATTERN.search(permitted_text):
             findings.error(
                 f".claude/skills/{name}",
                 "declares a `Permitted by name:` block but is not a writing "
                 "skill. That marker says which writes the artefact exists to "
                 "call; a read-only skill states its policy under `Forbidden by "
                 "name:` alone.",
+            )
+
+        # A writing skill still only gets the writes it is recorded for.
+        skill_overreach = sorted(
+            declares_under(text, "Permitted by name:")
+            - SKILL_PERMITTED_WRITES.get(name, set())
+        )
+        if name in SKILLS_THAT_WRITE and skill_overreach:
+            findings.error(
+                f".claude/skills/{name}",
+                f"declares {', '.join(skill_overreach)} permitted, which is "
+                "beyond what this skill is recorded as writing. Widen "
+                "`SKILL_PERMITTED_WRITES` deliberately if the skill really "
+                "gained a write.",
             )
 
 
