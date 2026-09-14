@@ -265,21 +265,6 @@ def missing_from_policy(
     )
 
 
-def declares_under(body: str, marker: str) -> set[str]:
-    """The twelve named inside `marker`'s blocks — empty when it declares none.
-
-    `policy_spans` opens a span on the marker alone, so a sentence that merely
-    *mentions* `Permitted by name:` yields a span with no tool in it. Measured:
-    the prose "The `Permitted by name:` marker says which writes a recipe
-    exists for" returns a span, which would reject a recipe or skill that only
-    documents the convention as though it declared itself a writer. Asking what
-    the span actually names separates a declaration from a mention without
-    touching `policy_spans`, whose behaviour the write-guard cases pin.
-    """
-    inside = policy_text(body, (marker,))
-    return {tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(inside)}
-
-
 def names_any_state_changing(body: str) -> bool:
     """True when the artefact names any of the twelve anywhere at all.
 
@@ -309,6 +294,93 @@ SKILLS_THAT_WRITE = {"diary-analysis-claim"}
 SKILL_PERMITTED_WRITES = {
     "diary-analysis-claim": {"claim_diary_analysis", "submit_diary_analysis"},
 }
+
+# A tool name has a shape, and that is what tells a declaration from a sentence
+# about the marker. The group is the bare tool name, so the same pattern serves
+# the predicate below and the extraction the overreach checks need.
+MCP_TOOL_NAME_PATTERN = re.compile(r"`mcp__[A-Za-z0-9_]+__([A-Za-z0-9_]+)`")
+
+
+def names_declared_under(body: str, marker: str) -> set[str]:
+    """Every tool named under `marker`, whether the catalog lists it or not.
+
+    The overreach checks weigh what an artefact declares permitted against
+    what it is recorded as writing, and filtering that to the twelve made the
+    comparison blind exactly where it matters: measured, an `-apply` recipe
+    could permit `mcp__home_assistant__call_service` — an actuating tool, a
+    write by this repository's conventions — or a kamerplanter write added
+    since the last catalog measurement, and neither allowance list was
+    consulted at all.
+    """
+    inside = policy_text(body, (marker,))
+    names = {match.group(1) for match in MCP_TOOL_NAME_PATTERN.finditer(inside)}
+    return names | {
+        tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(inside)
+    }
+
+
+# One case per shape the extraction has to get right, for the same reason the
+# marker cases exist: the overreach checks were changed without a single case
+# calling them.
+DECLARED_NAME_CASES = [
+    (
+        "catalog names come back bare",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.",
+        "Permitted by name:",
+        {"claim_diary_analysis", "submit_diary_analysis"},
+    ),
+    (
+        "a write the catalog does not list comes back too",
+        "  - Permitted by name: `mcp__home_assistant__call_service`.",
+        "Permitted by name:",
+        {"call_service"},
+    ),
+    (
+        "catalog and non-catalog together",
+        "  - Permitted by name: `mcp__home_assistant__call_service`, "
+        "`mcp__kamerplanter__archive_plant`.",
+        "Permitted by name:",
+        {"call_service", "archive_plant"},
+    ),
+    (
+        "prose naming the marker yields nothing",
+        "- The `Permitted by name:` marker says which writes a recipe is for.",
+        "Permitted by name:",
+        set(),
+    ),
+    (
+        "prose quoting something after the marker yields nothing",
+        "- Policy is under `Forbidden by name:`; the `Permitted by name:` "
+        "marker is reserved for an `-apply` recipe.",
+        "Permitted by name:",
+        set(),
+    ),
+]
+
+
+def declares_policy_under(body: str, marker: str) -> bool:
+    """True when `marker` opens a block that actually names a tool.
+
+    Three predicates have stood here and two were wrong in opposite
+    directions, because `policy_spans` takes every backticked token after the
+    marker — `-apply` included:
+
+    * asking for one of the twelve missed a write the catalog does not list
+      yet, so a read-only recipe could permit `mcp__home_assistant__call_service`
+      and pass;
+    * asking for any backtick at all caught prose that names the marker and
+      then quotes something, so a file documenting this very convention
+      stopped being committable.
+
+    Requiring a name-shaped token — the `mcp__server__tool` form, or a bare
+    catalog name, which the block convention also allows — answers both
+    without asking whether the tool is already known.
+    """
+    inside = policy_text(body, (marker,))
+    if MCP_TOOL_NAME_PATTERN.search(inside):
+        return True
+    return any(tool_pattern(tool).search(inside) for tool in STATE_CHANGING_TOOLS)
 
 # What each `-apply` recipe is allowed to declare permitted. The suffix says
 # only THAT a recipe writes, never WHAT, so without this a recipe could move all
@@ -391,14 +463,11 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A recipe may name a state-changing tool purely to forbid it, so the
     # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
-        # Any name in the block, not only one of the twelve. Narrowing this to
-        # the catalog was a regression: measured, a read-only recipe declaring
-        # `mcp__home_assistant__call_service` — an actuating tool, a write by
-        # this repository's conventions — or a kamerplanter write added after
-        # the last catalog measurement passed clean. The false positive this
-        # replaced was a marker *mentioned* in prose, which carries no name at
-        # all, so asking for a name is enough to tell the two apart.
-        if BACKTICK_SPAN_PATTERN.search(policy_text(body, ("Permitted by name:",))):
+        # `declares_policy_under` asks whether the block names something
+        # tool-shaped. Two narrower predicates stood here first and both were
+        # wrong, in opposite directions — see that function. MARKER_CASES pins
+        # the behaviour, which is what neither earlier version had.
+        if declares_policy_under(body, "Permitted by name:"):
             findings.error(
                 where,
                 "declares a `Permitted by name:` block without an `-apply` "
@@ -457,7 +526,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # Completeness asks what is ENFORCED, and only the prompt is; this asks what
     # the artefact CLAIMS, and a permission declared in `instructions` still
     # stands there for a reader even though a headless run ignores it.
-    permitted = declares_under(body, "Permitted by name:")
+    permitted = names_declared_under(body, "Permitted by name:")
     # Only for `-apply`. A read-only recipe carrying the marker at all is
     # already reported above, and saying it twice buries the first finding.
     overreach = sorted(permitted - RECIPE_PERMITTED_WRITES.get(path.stem, set()))
@@ -683,13 +752,10 @@ def check_skills(findings: Findings) -> None:
         # filename to back it, so only a skill that genuinely writes may carry
         # the marker. Without this, renaming the forbidden block declared all
         # twelve writes permitted and passed.
-        permitted_text = policy_text(text, ("Permitted by name:",))
-        # Any name, not only one of the twelve — the same narrowing that turned
-        # the recipe-side check into a hole. A skill declaring an actuating
-        # Home Assistant tool permitted is making the same claim as one naming
-        # a kamerplanter write, and a marker merely mentioned in prose carries
-        # no name at all, which is what separates the two.
-        if name not in SKILLS_THAT_WRITE and BACKTICK_SPAN_PATTERN.search(permitted_text):
+        # Same predicate as the recipe side, for the same reasons.
+        if name not in SKILLS_THAT_WRITE and declares_policy_under(
+            text, "Permitted by name:"
+        ):
             findings.error(
                 f".claude/skills/{name}",
                 "declares a `Permitted by name:` block but is not a writing "
@@ -700,7 +766,7 @@ def check_skills(findings: Findings) -> None:
 
         # A writing skill still only gets the writes it is recorded for.
         skill_overreach = sorted(
-            declares_under(text, "Permitted by name:")
+            names_declared_under(text, "Permitted by name:")
             - SKILL_PERMITTED_WRITES.get(name, set())
         )
         if name in SKILLS_THAT_WRITE and skill_overreach:
@@ -913,6 +979,52 @@ WRITE_GUARD_CASES = [
 # case per way a subset has actually been written in this repository.
 ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
 
+# One case per way this predicate has been wrong. It has been changed three
+# times and was wrong twice, in opposite directions, and every one of those
+# regressions shipped with the gate green — because nothing here called it.
+# Add the shape before changing the predicate.
+MARKER_CASES = [
+    (
+        "prose naming the marker declares nothing",
+        "- The `Permitted by name:` marker says which writes a recipe is for.",
+        "Permitted by name:",
+        False,
+    ),
+    (
+        "prose that quotes something after the marker still declares nothing",
+        "- Tool policy is declared under `Forbidden by name:`; the "
+        "`Permitted by name:` marker is reserved for an `-apply` recipe.",
+        "Permitted by name:",
+        False,
+    ),
+    (
+        "a block naming catalog tools declares",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.",
+        "Permitted by name:",
+        True,
+    ),
+    (
+        "a block naming a write the catalog does not list still declares",
+        "  - Permitted by name: `mcp__home_assistant__call_service`.",
+        "Permitted by name:",
+        True,
+    ),
+    (
+        "a bare catalog name declares, as the block convention allows",
+        "  - Forbidden by name: `archive_plant`.",
+        "Forbidden by name:",
+        True,
+    ),
+    (
+        "no marker, no declaration",
+        "- This skill reads and judges. It calls nothing that writes.",
+        "Permitted by name:",
+        False,
+    ),
+]
+
+
 COMPLETENESS_CASES = [
     (
         "a complete list inside the block is complete",
@@ -1004,6 +1116,26 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
         return 1
     print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
+
+    for name, body, marker, expected in MARKER_CASES:
+        actual = declares_policy_under(body, marker)
+        if actual != expected:
+            failures += 1
+            print(f"  FAIL {name}\n       expected {expected}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(MARKER_CASES)} marker case(s) failed.")
+        return 1
+    print(f"OK — {len(MARKER_CASES)} marker cases hold.")
+
+    for name, body, marker, expected in DECLARED_NAME_CASES:
+        actual = names_declared_under(body, marker)
+        if actual != expected:
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
+    if failures:
+        print(f"\n{failures} of {len(DECLARED_NAME_CASES)} declared-name case(s) failed.")
+        return 1
+    print(f"OK — {len(DECLARED_NAME_CASES)} declared-name cases hold.")
     return 0
 
 
