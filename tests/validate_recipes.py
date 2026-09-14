@@ -358,8 +358,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
         # `instructions` reports twice on `develop` and once here, because
         # `missing` is all twelve for an empty prompt while completeness stays
         # silent for the same reason. Both guards went quiet together.
-        reporting_incomplete = bool(prompt_text.strip()) and bool(missing)
-        if calling and not reporting_incomplete:
+        block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
+            missing
+        ) == len(STATE_CHANGING_TOOLS)
+        if calling and not block_collapsed:
             findings.error(
                 where,
                 f"calls state-changing tools ({', '.join(calling)}) outside a "
@@ -460,12 +462,15 @@ def check_recipe(path: Path, findings: Findings) -> None:
         for name in match.groups()
         if name
     }
-    for missing in sorted(referenced - available):
+    # Not `missing`: that name already holds the completeness result earlier in
+    # this same function. Rebinding it here worked only because nothing below
+    # reads it — the kind of silence this file exists to remove.
+    for unresolved_skill in sorted(referenced - available):
         findings.error(
             where,
-            f"names the skill `{missing}`, which has no directory under "
-            ".claude/skills/. The load fails silently and the run answers "
-            "from the prompt alone.",
+            f"names the skill `{unresolved_skill}`, which has no directory "
+            "under .claude/skills/. The load fails silently and the run "
+            "answers from the prompt alone.",
         )
 
     loads_skill = any(skill in body for skill in available)
@@ -538,10 +543,10 @@ def check_extensions(findings: Findings) -> None:
             if isinstance(value, str):
                 referenced.update(VAR_PATTERN.findall(value))
 
-        for missing in sorted(referenced - declared):
+        for undeclared_var in sorted(referenced - declared):
             findings.error(
                 where,
-                f"references ${{{missing}}} but does not list it in "
+                f"references ${{{undeclared_var}}} but does not list it in "
                 "`env_keys`. Goose sends the literal string instead of the "
                 "value, and the server answers 401 as though the credential "
                 "were wrong.",
