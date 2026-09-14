@@ -356,9 +356,30 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # Only where a prompt exists: reporting an incomplete policy on a recipe
     # that has none repeats one cause as three findings and buries the one
     # that matters.
+    # Only where the recipe reaches this server at all. The MUST comes from
+    # `spec/mcp/kamerplanter-mcp-server`, and a future read-only recipe that
+    # loads only Home Assistant would otherwise have to copy twelve
+    # kamerplanter tool names into its prompt to stay green, with an error
+    # message that makes no sense inside it. Every recipe here names the
+    # server today, so this condition changes nothing now and stops the check
+    # from outgrowing the rule it enforces.
+    #
+    # Both markers count, for every recipe. Narrowing them to
+    # `Forbidden by name:` on a read-only recipe was tried and removed as dead
+    # logic: measured, the marker choice only changes the answer when a
+    # `Permitted by name:` block carries names, and a read-only recipe that
+    # has one is already rejected by the check above. The only two recipes
+    # where the choice matters are the `-apply` pair, and those take both
+    # markers either way.
+    #
+    # What this therefore does NOT bound is what an `-apply` recipe may
+    # declare permitted: one that puts all twelve under `Permitted by name:`
+    # passes completeness, measured. Bounding that needs a per-recipe
+    # allowance register, which this branch removed deliberately after it
+    # produced findings in every round it existed. Tracked in #34.
     prompt_text = prompt if isinstance(prompt, str) else ""
     missing = missing_from_policy(prompt_text)
-    if prompt_text.strip() and missing:
+    if "mcp__kamerplanter__" in body and prompt_text.strip() and missing:
         findings.error(
             where,
             f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
@@ -366,7 +387,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
             f"block in its `prompt`; missing {', '.join(missing)}. Naming a "
             "subset is the failure this rule exists to catch; a name in prose "
             "outside the block is not a prohibition, and a block in "
-            "`instructions` is not enforced on a headless run.",
+            "`instructions` is not enforced on a headless run. The block runs "
+            "from the marker across name-only lines: a bullet or table cell "
+            "that adds prose after a name ends it, so keep the names together "
+            "and put the explanation after the block.",
         )
 
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
