@@ -99,18 +99,17 @@ BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
 BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
 TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
 
-# A fenced block is an illustration, not a declaration. Measured: a body whose
-# only marker sat inside ```…``` satisfied completeness for all twelve, so a
-# document that merely *shows* the convention counted as one that *follows* it.
-# Blanking rather than deleting keeps every offset and line number intact, which
-# `policy_spans` depends on.
-CODE_FENCE_PATTERN = re.compile(r"```.*?```", re.S)
-
-
-def without_code_fences(body: str) -> str:
-    return CODE_FENCE_PATTERN.sub(
-        lambda match: re.sub(r"[^\n]", " ", match.group(0)), body
-    )
+# A marker inside a fenced block still counts as policy, and that is a known
+# gap rather than an oversight. Blanking fenced regions before the analysis was
+# tried and withdrawn: it made a real instruction invisible when it sat in a
+# fenced report template (`calls_state_changing_tools` returned nothing for a
+# prompt whose fence said "Now call mcp__kamerplanter__archive_plant"), and an
+# unbalanced fence in `description` or `instructions` paired with the opener of
+# a genuine later example and blanked everything between them — erasing a real
+# `Forbidden by name:` block in one direction and a real call in the other.
+# Both were measured. Closing this needs a body that is parsed per field with
+# fences balanced inside each, not a global regex over three concatenated
+# fields.
 
 
 def tool_pattern(tool: str) -> re.Pattern:
@@ -230,7 +229,7 @@ def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
     claims and submits diary analyses passing clean.
     """
     markers = POLICY_MARKERS if is_apply else ("Forbidden by name:",)
-    remainder = outside_policy(without_code_fences(body), markers)
+    remainder = outside_policy(body, markers)
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(remainder)
     )
@@ -260,10 +259,25 @@ def missing_from_policy(
     forbidden half alone would fail exactly the artefacts that declare their
     writes correctly.
     """
-    inside = policy_text(without_code_fences(body), markers)
+    inside = policy_text(body, markers)
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
     )
+
+
+def declares_under(body: str, marker: str) -> set[str]:
+    """The twelve named inside `marker`'s blocks — empty when it declares none.
+
+    `policy_spans` opens a span on the marker alone, so a sentence that merely
+    *mentions* `Permitted by name:` yields a span with no tool in it. Measured:
+    the prose "The `Permitted by name:` marker says which writes a recipe
+    exists for" returns a span, which would reject a recipe or skill that only
+    documents the convention as though it declared itself a writer. Asking what
+    the span actually names separates a declaration from a mention without
+    touching `policy_spans`, whose behaviour the write-guard cases pin.
+    """
+    inside = policy_text(body, (marker,))
+    return {tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(inside)}
 
 
 def names_any_state_changing(body: str) -> bool:
@@ -369,7 +383,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A recipe may name a state-changing tool purely to forbid it, so the
     # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
-        permitted = policy_spans(body, "Permitted by name:")
+        permitted = declares_under(body, "Permitted by name:")
         if permitted:
             findings.error(
                 where,
@@ -389,23 +403,23 @@ def check_recipe(path: Path, findings: Findings) -> None:
             )
     # The prohibition has to name each tool individually, and the catalog has
     # grown twice — four names, then seven, then twelve. A list written against
-    # an earlier count is a subset today, and nothing above can see that: the
-    # call guard reads names outside a policy block, and an absent name is
-    # outside nothing. Measured on 2026-09-14: every recipe here names all
-    # twelve, so this check starts green and stays a floor.
-    # Scoped to `prompt` alone, not to `body`. The MUST this enforces is about
-    # the prompt precisely because `instructions` is not enforced on a headless
-    # run — so reading all three fields legitimised the placement the rule
-    # exists to prevent. Measured: moving the whole `Forbidden by name:` block
-    # out of `prompt` into `instructions` left zero of the twelve in the prompt
-    # and the gate still green.
+    # an earlier count is a subset today, and the guard above cannot see that:
+    # it reads names OUTSIDE a policy block, and an absent name is outside
+    # nothing. Measured on 2026-09-14: every recipe here names all twelve, so
+    # this check starts green and stays a floor.
     #
-    # Unconditional here, unlike the skill check below, which triggers only on
-    # a skill that names a write tool. Every recipe in this repository loads
-    # the kamerplanter server, so the asymmetry costs nothing today; a future
-    # recipe that loads only Home Assistant would have to name twelve tools it
-    # never sees, and that is the point at which this should gain the same
-    # trigger rather than an exemption list.
+    # Scoped to `prompt`, never to `body`. The MUST is about the prompt
+    # precisely because `instructions` is not enforced on a headless run, so
+    # reading all three fields legitimised the placement the rule exists to
+    # prevent — measured, moving the block out of `prompt` into `instructions`
+    # left zero of the twelve in the prompt and the gate still green.
+    #
+    # Unconditional, unlike the skill check below, which triggers only on a
+    # skill that names a write tool. Every recipe here loads the kamerplanter
+    # server, so the asymmetry costs nothing today; a future recipe that loads
+    # only Home Assistant would have to name twelve tools it never sees, and
+    # that is the point at which this should gain the same trigger rather than
+    # an exemption list.
     prompt_text = prompt if isinstance(prompt, str) else ""
     # Only where a prompt exists. Reporting an incomplete policy on a recipe
     # that has no prompt at all repeats one cause as three findings and buries
@@ -425,12 +439,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # `Permitted by name:` says which writes the recipe exists for. The `-apply`
     # suffix backs the claim that it writes, not the claim about which tools, so
     # the allowance is declared here and anything beyond it is an error.
-    permitted_text = policy_text(
-        without_code_fences(prompt_text), ("Permitted by name:",)
-    )
-    permitted = {
-        tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(permitted_text)
-    }
+    permitted = declares_under(prompt_text, "Permitted by name:")
     # Only for `-apply`. A read-only recipe carrying the marker at all is
     # already reported above, and saying it twice buries the first finding.
     overreach = sorted(permitted - RECIPE_PERMITTED_WRITES.get(path.stem, set()))
@@ -656,7 +665,7 @@ def check_skills(findings: Findings) -> None:
         # filename to back it, so only a skill that genuinely writes may carry
         # the marker. Without this, renaming the forbidden block declared all
         # twelve writes permitted and passed.
-        if name not in SKILLS_THAT_WRITE and policy_spans(text, "Permitted by name:"):
+        if name not in SKILLS_THAT_WRITE and declares_under(text, "Permitted by name:"):
             findings.error(
                 f".claude/skills/{name}",
                 "declares a `Permitted by name:` block but is not a writing "
@@ -875,11 +884,6 @@ COMPLETENESS_CASES = [
     (
         "prose naming all twelve declares nothing — no block, no policy",
         f"Never call {ALL_TWELVE}. This skill reads and judges.",
-        sorted(STATE_CHANGING_TOOLS),
-    ),
-    (
-        "a marker inside a fenced example declares nothing",
-        "```\nForbidden by name: " + ALL_TWELVE + "\n```",
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
