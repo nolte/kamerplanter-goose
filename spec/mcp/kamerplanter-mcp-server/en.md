@@ -193,7 +193,7 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 - [ ] A run against a server with `MCP_SERVER_ENABLED` unset reports the opt-in variable, not a URL error
 - [ ] A run with a missing or revoked key reports `401` as an authentication failure, distinct from a permission failure
 - [ ] Every read-only recipe names all twelve state-changing tools in its `prompt`, individually — never a subset, never a category standing in for a name
-- [ ] A machine check enforces the criterion above; a rule stated only in prose has drifted from the recipes twice
+- [x] A machine check enforces the criterion above; a rule stated only in prose has drifted from the recipes twice
 - [ ] Every recipe calling a write tool has an `-apply` filename and says so in `description`
 - [ ] A recipe run against a key covering two gardens either takes `tenant` as a parameter or calls `list_tenants` before any tenant-scoped tool
 - [ ] No recipe derives permission from a role name rather than from `mcp_permissions`

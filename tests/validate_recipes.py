@@ -327,11 +327,11 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
 
-    # Computed here, above the write-guard, because that guard needs to know
-    # whether the completeness check is already reporting on this recipe. A
-    # prohibition written as one annotated bullet per tool ends the block at
-    # the marker, and both checks then fire on it — the second advising an
-    # `-apply` rename for a recipe that calls nothing. One cause, one finding.
+    # Computed here, above the write-guard, because that guard reads `missing`
+    # to tell which repair to advise: a prohibition written as one annotated
+    # bullet per tool ends the block at the marker, leaving every name outside
+    # it, and "rename the file to `-apply`" is the wrong advice for a recipe
+    # that calls nothing. Both checks still report; only the wording varies.
     prompt_text = prompt if isinstance(prompt, str) else ""
     missing = missing_from_policy(prompt_text)
 
@@ -348,27 +348,34 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 "for, so a recipe that has one is a writer and has to say so "
                 "in its name and its `description`.",
             )
-        # Suppressed only while the completeness check is actually reporting —
-        # the same condition it fires on, not just a non-empty `missing`. An
-        # annotated bullet list trips both, and this one's advice — rename the
-        # file to `-apply` — is wrong for a recipe that calls nothing.
+        # A block that collapsed at its marker changes what the advice should
+        # be, not whether there is a finding. Suppressing the report instead
+        # was tried and removed: a recipe whose block collapses *and* calls a
+        # tool for real then showed only the completeness finding, whose repair
+        # — list the missing names — leaves the call in place.
         #
-        # Keying on `missing` alone removed a check that `develop` has.
-        # Measured: a recipe with no `prompt` that calls `archive_plant` from
-        # `instructions` reports twice on `develop` and once here, because
-        # `missing` is all twelve for an empty prompt while completeness stays
-        # silent for the same reason. Both guards went quiet together.
+        # Keying the suppression on `missing` alone had also removed a check
+        # `develop` has. Measured: a recipe with no `prompt` that calls
+        # `archive_plant` from `instructions` reported twice on `develop` and
+        # once here, because `missing` is all twelve for an empty prompt while
+        # completeness stays silent for the same reason.
         block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
             missing
         ) == len(STATE_CHANGING_TOOLS)
-        if calling and not block_collapsed:
+        advice = (
+            "Its `Forbidden by name:` block parses as empty, so every name in "
+            "it reads as a call: put a plain run of names directly after the "
+            "marker, and keep the prose out of that run."
+            if block_collapsed
+            else "Move the name into that block if the recipe forbids the "
+            "tool; rename the file and say so in `description` if it calls it."
+        )
+        if calling:
             findings.error(
                 where,
                 f"calls state-changing tools ({', '.join(calling)}) outside a "
-                "`Forbidden by name:` block and without an `-apply` filename "
-                "suffix. Move the name into that block if the recipe forbids "
-                "the tool; rename the file and say so in `description` if it "
-                "calls it.",
+                f"`Forbidden by name:` block and without an `-apply` filename "
+                f"suffix. {advice}",
             )
     # The prohibition has to name each tool individually, and the catalog has
     # grown twice — four names, then seven, then twelve. A list written against
