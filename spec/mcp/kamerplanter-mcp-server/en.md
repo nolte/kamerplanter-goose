@@ -192,8 +192,8 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 - [ ] `goose recipe validate` passes on the recipe
 - [ ] A run against a server with `MCP_SERVER_ENABLED` unset reports the opt-in variable, not a URL error
 - [ ] A run with a missing or revoked key reports `401` as an authentication failure, distinct from a permission failure
-- [ ] Every read-only recipe names all twelve state-changing tools in its `prompt`, individually — never a subset, never a category standing in for a name
-- [ ] A machine check enforces the criterion above; a rule stated only in prose has drifted from the recipes twice
+- [x] Every read-only recipe names all twelve state-changing tools in its `prompt`, individually — never a subset, never a category standing in for a name
+- [x] A machine check enforces the criterion above; a rule stated only in prose has drifted from the recipes twice
 - [ ] Every recipe calling a write tool has an `-apply` filename and says so in `description`
 - [ ] A recipe run against a key covering two gardens either takes `tenant` as a parameter or calls `list_tenants` before any tenant-scoped tool
 - [ ] No recipe derives permission from a role name rather than from `mcp_permissions`
@@ -206,7 +206,9 @@ Every call is audited with a SHA-256 hash of the arguments — never plaintext, 
 
   Two things follow. First, a prose list of affected artefacts in a spec is itself a stale-count risk — the paragraph you are reading was the source of the incomplete fix, which is why it now states the measurement method rather than a list of names.
 
-  Second, the durable gap: `tests/validate_recipes.py` enforces the *`-apply` suffix* rule (a recipe naming a write tool outside a policy block must carry the suffix) but not the *completeness* rule (a read-only recipe must name every state-changing tool). A validator check for the second rule is the only thing that would have caught any of the three regressions, and it should derive its list from one place that the catalog measurement also updates. Until it exists, the criterion is a statement of intent that holds until the catalog next grows.
+  Second, the gap that was durable until it was closed: `tests/validate_recipes.py` long enforced the *`-apply` suffix* rule (a recipe naming a write tool outside a policy block must carry the suffix) but not the *completeness* rule (a read-only recipe must name every state-changing tool). A validator check for the second rule was the only thing that would have caught any of the three regressions. It now exists, derives its list from `STATE_CHANGING_TOOLS` — the same constant the catalog measurement updates — and applies to every recipe that has a `prompt`, measured against that `prompt` alone because `instructions` is not enforced on a headless run; a recipe with no `prompt` is already rejected by its own check, and reporting an incomplete policy on it would bury that cause under a second finding. Restricting it to recipes that demonstrably reach this server was tried and withdrawn: the bare tool-name spelling is not detectable without a list of read tools, and such a list is the stale-name defect this check exists to catch.
+
+  Two things it deliberately does not do. It does not bound what an `-apply` recipe declares under `Permitted by name:`, so one that lists all twelve there passes; bounding that needs a per-recipe allowance register. And a prohibition written as one annotated bullet per tool, or as a table, ends the block at the marker and is rejected — as does a conjunction before the last name, so `` `a`, and `b`. `` leaves `b` outside the block and reported as a call. The names have to stay together, unbroken by prose, with the explanation after the block. A tool name inside a fenced example, by contrast, counts as declared: that is the one way to make a recipe look more complete than it is, left open deliberately as the benign direction.
 
   The two `-apply` recipes are outside the criterion, which binds read-only recipes only — but they carry an explicit `Permitted by name:` / `Forbidden by name:` split, and the five new tools were in neither. They were added to the forbidden side: a write-capable recipe has a *higher* need for the boundary to be complete, not a lower one.
 

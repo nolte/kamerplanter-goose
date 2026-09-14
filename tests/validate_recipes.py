@@ -21,6 +21,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -155,7 +156,20 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
             stop, cursor = match.end(), match.end()
             for span in BACKTICK_SPAN_PATTERN.finditer(head):
                 between = head[cursor - match.end():span.start()]
-                if re.search(r"[A-Za-z0-9]", between):
+                # A full stop ends the run as surely as a word does. Measured:
+                # `Forbidden by name: <names>. \`create_inspection\` is called
+                # at step 4.` pulled that last name into the block, because the
+                # gap between it and the previous one held punctuation only —
+                # so a recipe that really called it read as complete AND as
+                # calling nothing.
+                #
+                # This scan runs only where the marker line also carries prose.
+                # A line of names alone never reaches it, so `\`a\`. \`b\`.` on
+                # a bare name line still counts both — the full-stop rule is
+                # not a general "a period-separated list ends at the first
+                # name". Where the scan does run, for a guard "the sentence
+                # ended" is the safe reading.
+                if re.search(r"[A-Za-z0-9.]", between):
                     break
                 cursor = match.end() + span.end()
                 stop = cursor
@@ -175,9 +189,14 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
                 break
             bullet = BULLET_PREFIX_PATTERN.match(line)
             if bullet:
-                # A deeper bullet is the nested list itself; a sibling or
-                # shallower one is the next element, whichever shape the
-                # marker line used.
+                # The two shapes differ, and not "whichever shape the marker
+                # line used" — an earlier wording here claimed exactly that
+                # and was the reverse of the code. Where the marker line
+                # carries no names, the bullets below it ARE the list: a
+                # deeper one continues it, a sibling or shallower one is the
+                # next element. Where the marker line already carries names,
+                # `not nested` short-circuits and any bullet ends the block,
+                # the deeper one included.
                 indent = len(line) - len(line.lstrip())
                 if not nested or indent <= marker_indent:
                     break
@@ -220,6 +239,37 @@ def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
     remainder = outside_policy(body, markers)
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(remainder)
+    )
+
+
+def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
+    """Everything INSIDE a policy block — the complement of `outside_policy`."""
+    spans = sorted(span for marker in markers for span in policy_spans(body, marker))
+    return "\n".join(body[start:end] for start, end in spans)
+
+
+def missing_from_policy(
+    body: str, markers: tuple[str, ...] = POLICY_MARKERS
+) -> list[str]:
+    """The twelve minus what the artefact names INSIDE a policy block.
+
+    The guard above answers the opposite question — which names sit OUTSIDE a
+    block, i.e. are called — and cannot see a subset at all, because an absent
+    name is outside nothing. Measured: stripping eight of the twelve out of a
+    read-only recipe's `Forbidden by name:` block left the whole gate green.
+
+    Completeness is a property of the union. Both `-apply` recipes split the
+    set as two permitted plus ten forbidden, so demanding twelve in the
+    forbidden half alone would fail exactly the recipes that declare their
+    writes correctly.
+
+    A tool name inside a fenced example counts as declared. That is a false
+    negative — it can only make a recipe look more complete than it is, never
+    block a correct one — and it is the benign direction to leave open.
+    """
+    inside = policy_text(body, markers)
+    return sorted(
+        tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
     )
 
 
@@ -287,9 +337,18 @@ def check_recipe(path: Path, findings: Findings) -> None:
 
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
+
+    # Computed here, above the write-guard, because that guard reads `missing`
+    # to tell which repair to advise: a prohibition written as one annotated
+    # bullet per tool ends the block at the marker, leaving every name outside
+    # it, and "rename the file to `-apply`" is the wrong advice for a recipe
+    # that calls nothing. Both checks still report; only the wording varies.
+    prompt_text = prompt if isinstance(prompt, str) else ""
+    missing = missing_from_policy(prompt_text)
+
     if not is_apply:
-    # A recipe may name a state-changing tool purely to forbid it, so the
-    # policy blocks are cut out before the remainder is read.
+        # A recipe may name a state-changing tool purely to forbid it, so the
+        # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
         permitted = policy_spans(body, "Permitted by name:")
         if permitted:
@@ -300,15 +359,96 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 "for, so a recipe that has one is a writer and has to say so "
                 "in its name and its `description`.",
             )
+        # A block that collapsed at its marker changes what the advice should
+        # be, not whether there is a finding. Suppressing the report instead
+        # was tried and removed: a recipe whose block collapses *and* calls a
+        # tool for real then showed only the completeness finding, whose repair
+        # — list the missing names — leaves the call in place.
+        #
+        # Keying the suppression on `missing` alone had also removed a check
+        # `develop` has. Measured: a recipe with no `prompt` that calls
+        # `archive_plant` from `instructions` reported twice on `develop` and
+        # once here, because `missing` is all twelve for an empty prompt while
+        # completeness stays silent for the same reason.
+        block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
+            missing
+        ) == len(STATE_CHANGING_TOOLS)
+        advice = (
+            "Its `Forbidden by name:` block parses as empty, so every name in "
+            "it reads as a call: put a plain run of names directly after the "
+            "marker, and keep the prose out of that run."
+            if block_collapsed
+            else "Move the name into that block if the recipe forbids the "
+            "tool — prose between two names ends the block there, and a "
+            "conjunction is prose, so `` `a`, and `b`. `` leaves `b` outside "
+            "it; rename the file and say so in `description` if the recipe "
+            "really calls the tool."
+        )
         if calling:
             findings.error(
                 where,
                 f"calls state-changing tools ({', '.join(calling)}) outside a "
-                "`Forbidden by name:` block and without an `-apply` filename "
-                "suffix. Move the name into that block if the recipe forbids "
-                "the tool; rename the file and say so in `description` if it "
-                "calls it.",
+                f"`Forbidden by name:` block and without an `-apply` filename "
+                f"suffix. {advice}",
             )
+    # The prohibition has to name each tool individually, and the catalog has
+    # grown twice — four names, then seven, then twelve. A list written against
+    # an earlier count is a subset today, and the guard above cannot see that:
+    # it reads names OUTSIDE a policy block, and an absent name is outside
+    # nothing. Measured on 2026-09-14: every recipe here names all twelve, so
+    # this check starts green and stays a floor.
+    #
+    # Scoped to `prompt`, never to `body`. The MUST is about the prompt
+    # precisely because `instructions` is not enforced on a headless run, so
+    # reading all three fields legitimised the placement the rule exists to
+    # prevent — measured, moving the block out of `prompt` into `instructions`
+    # left zero of the twelve in the prompt and the gate still green.
+    #
+    # Only where a prompt exists: reporting an incomplete policy on a recipe
+    # that has none repeats one cause as three findings and buries the one
+    # that matters.
+    # Both markers count, for every recipe. Narrowing them to
+    # `Forbidden by name:` on a read-only recipe was tried and removed as dead
+    # logic: measured, the marker choice only changes the answer when a
+    # `Permitted by name:` block carries names, and a read-only recipe that
+    # has one is already rejected by the check above. The only two recipes
+    # where the choice matters are the `-apply` pair, and those take both
+    # markers either way.
+    #
+    # What this therefore does NOT bound is what an `-apply` recipe may
+    # declare permitted: one that puts all twelve under `Permitted by name:`
+    # passes completeness, measured. Bounding that needs a per-recipe
+    # allowance register, which this branch removed deliberately after it
+    # produced findings in every round it existed. Tracked in #34.
+    # Unconditional, and a filter on "does this recipe reach the server" was
+    # tried and withdrawn. It cannot be written from the data this file has:
+    # the prefixed form is detectable, the bare form is not without a list of
+    # read tools — and such a list is the stale-name defect this whole check
+    # exists to catch. Measured, the filter let the case the check exists for
+    # walk straight through: a read-only recipe naming `get_plant` and
+    # `list_plants` in bare form, carrying no policy block at all, was skipped
+    # with all twelve missing.
+    #
+    # The cost is the other direction: a future recipe that loads only Home
+    # Assistant would have to name twelve kamerplanter tools it never calls.
+    # No such recipe exists — all ten reach this server — and when one arrives,
+    # the filter belongs on the declared extensions, not on tool names.
+    if prompt_text.strip() and missing:
+        findings.error(
+            where,
+            f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
+            f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside a policy "
+            f"block in its `prompt`; missing {', '.join(missing)}. Naming a "
+            "subset is the failure this rule exists to catch; a name in prose "
+            "outside the block is not a prohibition, and a block in "
+            "`instructions` is not enforced on a headless run. The block runs "
+            "from the marker across name-only lines: a bullet or table cell "
+            "that adds prose after a name ends it, and so does a conjunction "
+            "before the last name (`` `a`, and `b`. ``). Keep the names "
+            "together, unbroken by prose, and put the explanation after the "
+            "block.",
+        )
+
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
     # for backend state, so a report-writing recipe has nothing else to warn
     # with — and a reader who granted the run on the strength of "read-only"
@@ -345,12 +485,15 @@ def check_recipe(path: Path, findings: Findings) -> None:
         for name in match.groups()
         if name
     }
-    for missing in sorted(referenced - available):
+    # Not `missing`: that name already holds the completeness result earlier in
+    # this same function. Rebinding it here worked only because nothing below
+    # reads it — the kind of silence this file exists to remove.
+    for unresolved_skill in sorted(referenced - available):
         findings.error(
             where,
-            f"names the skill `{missing}`, which has no directory under "
-            ".claude/skills/. The load fails silently and the run answers "
-            "from the prompt alone.",
+            f"names the skill `{unresolved_skill}`, which has no directory "
+            "under .claude/skills/. The load fails silently and the run "
+            "answers from the prompt alone.",
         )
 
     loads_skill = any(skill in body for skill in available)
@@ -423,10 +566,10 @@ def check_extensions(findings: Findings) -> None:
             if isinstance(value, str):
                 referenced.update(VAR_PATTERN.findall(value))
 
-        for missing in sorted(referenced - declared):
+        for undeclared_var in sorted(referenced - declared):
             findings.error(
                 where,
-                f"references ${{{missing}}} but does not list it in "
+                f"references ${{{undeclared_var}}} but does not list it in "
                 "`env_keys`. Goose sends the literal string instead of the "
                 "value, and the server answers 401 as though the credential "
                 "were wrong.",
@@ -665,7 +808,314 @@ WRITE_GUARD_CASES = [
         "unarchive_plantx and archive_plants",
         [],
     ),
+    (
+        "a table row carrying names ends the block",
+        "- Forbidden by name:\n"
+        "| `mcp__kamerplanter__archive_plant` | `mcp__kamerplanter__create_site` |",
+        ["archive_plant", "create_site"],
+    ),
+    (
+        "an indented table row ends it too",
+        "  - Forbidden by name:\n"
+        "    | `mcp__kamerplanter__archive_plant` | "
+        "`mcp__kamerplanter__create_site` |",
+        ["archive_plant", "create_site"],
+    ),
+    (
+        "an indented sibling bullet ends the nested list",
+        "  - Forbidden by name:\n"
+        "    - `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "trailing whitespace does not deepen a sibling bullet",
+        "  - Forbidden by name:\n"
+        "    - `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`   ",
+        ["create_site"],
+    ),
+    (
+        "asterisk bullets nest like dashes",
+        "  * Forbidden by name:\n"
+        "    * `mcp__kamerplanter__archive_plant`\n"
+        "  * `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "a one-space nested list still stays inside the block",
+        "- Forbidden by name:\n"
+        " - `mcp__kamerplanter__archive_plant`\n"
+        " - `mcp__kamerplanter__create_site`",
+        [],
+    ),
+    (
+        "a deeper bullet after a marker line that already has names is a call",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "the left word boundary counts too",
+        "x_archive_plant, 9archive_plant and unarchive_plant",
+        [],
+    ),
+    (
+        "a sentence after the block does not extend it",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`. "
+        "`mcp__kamerplanter__create_site` is called at step 4.",
+        ["create_site"],
+    ),
 ]
+
+
+# The completeness guard has its own shapes, because it answers a different
+# question than the write-guard above and shares none of its marker logic.
+ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+
+COMPLETENESS_CASES = [
+    (
+        "a complete list inside the block is complete",
+        f"  - Call NO tool that changes state. Forbidden by name: {ALL_TWELVE}.",
+        [],
+    ),
+    (
+        "prose naming all twelve declares nothing — no block, no policy",
+        f"Never call {ALL_TWELVE}. This recipe reads and judges.",
+        sorted(STATE_CHANGING_TOOLS),
+    ),
+    (
+        "a name moved out of the block into prose stops counting",
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(STATE_CHANGING_TOOLS - {"create_inspection"})
+        )
+        + ".\n\nFor background the server also offers "
+        "`mcp__kamerplanter__create_inspection`.",
+        ["create_inspection"],
+    ),
+    (
+        "the catalog's seven-name era is a subset today",
+        "- Call no tool that changes state. Forbidden by name: "
+        "`mcp__kamerplanter__confirm_care_task`, "
+        "`mcp__kamerplanter__archive_plant`, "
+        "`mcp__kamerplanter__set_plant_location`, "
+        "`mcp__kamerplanter__create_site`, "
+        "`mcp__kamerplanter__add_plant_diary_entry`, "
+        "`mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.",
+        [
+            "assign_nutrient_plan",
+            "assign_species_phase_sequence",
+            "create_inspection",
+            "record_feeding_event",
+            "transition_plant_phase",
+        ],
+    ),
+    (
+        "a permitted/forbidden split is complete as a union",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.\n"
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(
+                STATE_CHANGING_TOOLS
+                - {"claim_diary_analysis", "submit_diary_analysis"}
+            )
+        )
+        + ".",
+        [],
+    ),
+    (
+        "a category is not a name",
+        "  - Call no state-changing tool, and nothing else that writes.",
+        sorted(STATE_CHANGING_TOOLS),
+    ),
+    (
+        "a fenced example counts as declared — the one way to silence this",
+        "This recipe declares no policy of its own. It prints the template:\n"
+        "```\n"
+        f"Forbidden by name: {ALL_TWELVE}.\n"
+        "```\n",
+        [],
+    ),
+    (
+        "a conjunction before the last name leaves it outside the block",
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(STATE_CHANGING_TOOLS - {"transition_plant_phase"})
+        )
+        + ", and `mcp__kamerplanter__transition_plant_phase`.",
+        ["transition_plant_phase"],
+    ),
+    (
+        "the bare name counts, not only the mcp__ form",
+        "Forbidden by name: "
+        + ", ".join(f"`{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+        + ".",
+        [],
+    ),
+]
+
+
+# Both lists above exercise a helper directly, and neither can reach what
+# `check_recipe` decides on its own: which findings fire together, and which
+# repair each one advises. That gap was not theoretical — a review restored the
+# suppression this file had just removed, and every case above still held with
+# the gate green. These cases run the real check against a synthetic recipe.
+RECIPE_TEMPLATE = """\
+version: "1.0.0"
+title: "Self-test case"
+description: >-
+  Read-only: a synthetic recipe the self-test writes to a temporary directory.
+instructions: |
+{instructions}
+"""
+
+# Appended only when the case carries a prompt: a case that omits it is how the
+# promptless path gets exercised at all.
+PROMPT_FIELD = "prompt: |\n{prompt}\n"
+
+PLAIN_INSTRUCTIONS = "Synthetic."
+PLAIN_PROMPT = "Assess the plant and report. Load no skill."
+
+REAL_CALL = "\n  Step 5 - then call `mcp__kamerplanter__archive_plant` for real.\n"
+
+COMPLETE_BLOCK = (
+    "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
+    + ALL_TWELVE
+    + "."
+)
+
+# One annotated bullet per tool: the block ends at the marker, so every name in
+# it lands outside policy and reads as a call.
+COLLAPSED_BLOCK = (
+    "  - Call NO tool that changes state. Forbidden by name:\n"
+) + "".join(
+    f"    - `mcp__kamerplanter__{tool}` - never; this recipe only reads.\n"
+    for tool in sorted(STATE_CHANGING_TOOLS)
+)
+
+ELEVEN_OF_TWELVE = (
+    "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
+    + ", ".join(
+        f"`mcp__kamerplanter__{tool}`"
+        for tool in sorted(STATE_CHANGING_TOOLS - {"confirm_care_task"})
+    )
+    + "."
+)
+
+# A read-only recipe splitting the set across both markers. Completeness reads
+# the union and is satisfied; the write-guard, at `is_apply=False`, counts the
+# permitted name as a call. That asymmetry is the whole point of the marker
+# choice in `calls_state_changing_tools`, and nothing else measures it.
+PERMITTED_SPLIT = (
+    "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n"
+    "  - Call NO other tool that changes state.\n    Forbidden by name:\n    "
+    + ", ".join(
+        f"`mcp__kamerplanter__{tool}`"
+        for tool in sorted(STATE_CHANGING_TOOLS - {"claim_diary_analysis"})
+    )
+    + "."
+)
+
+RECIPE_CASES = [
+    (
+        "a complete block reports nothing",
+        COMPLETE_BLOCK,
+        PLAIN_INSTRUCTIONS,
+        [],
+        ["calls state-changing tools", "state-changing tools inside a policy"],
+    ),
+    (
+        "a collapsed block plus a real call reports the call as well",
+        COLLAPSED_BLOCK + REAL_CALL,
+        PLAIN_INSTRUCTIONS,
+        [
+            "calls state-changing tools",
+            "parses as empty",
+            "declares 0 of the 12",
+        ],
+        [],
+    ),
+    (
+        "eleven of twelve plus a real call advises the rename, not the list",
+        ELEVEN_OF_TWELVE + REAL_CALL,
+        PLAIN_INSTRUCTIONS,
+        [
+            "calls state-changing tools",
+            "rename the file",
+            "declares 11 of the 12",
+        ],
+        ["parses as empty"],
+    ),
+    (
+        "a complete block in `instructions` declares nothing",
+        PLAIN_PROMPT,
+        COMPLETE_BLOCK,
+        ["declares 0 of the 12"],
+        ["calls state-changing tools"],
+    ),
+    (
+        "a recipe with no prompt reports that, and not an incomplete policy",
+        "",
+        "  Then call `mcp__kamerplanter__archive_plant`.",
+        ["has no non-empty `prompt`", "calls state-changing tools"],
+        ["state-changing tools inside a policy"],
+    ),
+    (
+        "a permitted block on a read-only recipe is a call, not policy",
+        PERMITTED_SPLIT,
+        PLAIN_INSTRUCTIONS,
+        [
+            "calls state-changing tools (claim_diary_analysis)",
+            "`Permitted by name:` block without an `-apply`",
+        ],
+        ["state-changing tools inside a policy"],
+    ),
+    (
+        "no marker at all is not a collapsed block",
+        "  Read-only run. Then call `mcp__kamerplanter__archive_plant`.",
+        PLAIN_INSTRUCTIONS,
+        ["rename the file", "declares 0 of the 12"],
+        ["parses as empty"],
+    ),
+    (
+        "a block in `instructions` does not collapse the prompt's advice",
+        "  Then call `mcp__kamerplanter__archive_plant`.",
+        COMPLETE_BLOCK,
+        ["calls state-changing tools", "rename the file", "declares 0 of the 12"],
+        ["parses as empty"],
+    ),
+]
+
+
+def indent_block(text: str) -> str:
+    return "\n".join(
+        ("  " + line) if line.strip() else "" for line in text.split("\n")
+    )
+
+
+def recipe_case_findings(prompt_body: str, instructions_body: str) -> list[str]:
+    """Run the real `check_recipe` over a synthetic recipe built on disk.
+
+    The filename carries no `-apply` suffix, so this is the read-only path —
+    the only one that calls the write-guard with `is_apply=False`, and
+    therefore the only place the marker choice for `Permitted by name:` is
+    observable at all.
+    """
+    text = RECIPE_TEMPLATE.format(instructions=indent_block(instructions_body))
+    if prompt_body.strip():
+        text += PROMPT_FIELD.format(prompt=indent_block(prompt_body))
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "selftest-check.yaml"
+        path.write_text(text, encoding="utf-8")
+        findings = Findings()
+        check_recipe(path, findings)
+        return findings.errors
 
 
 def run_self_test() -> int:
@@ -679,6 +1129,31 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(WRITE_GUARD_CASES)} write-guard case(s) failed.")
         return 1
     print(f"OK — {len(WRITE_GUARD_CASES)} write-guard cases hold.")
+
+    for name, body, expected in COMPLETENESS_CASES:
+        actual = missing_from_policy(body)
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
+        return 1
+    print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
+
+    for name, prompt_body, instructions_body, required, forbidden in RECIPE_CASES:
+        reported = "\n".join(recipe_case_findings(prompt_body, instructions_body))
+        for needle in required:
+            if needle not in reported:
+                failures += 1
+                print(f"  FAIL {name}\n       no finding contains {needle!r}")
+        for needle in forbidden:
+            if needle in reported:
+                failures += 1
+                print(f"  FAIL {name}\n       a finding contains {needle!r}")
+    if failures:
+        print(f"\n{failures} recipe-level assertion(s) failed.")
+        return 1
+    print(f"OK — {len(RECIPE_CASES)} recipe-level cases hold.")
     return 0
 
 

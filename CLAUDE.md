@@ -38,7 +38,7 @@ The `worktree:*` and `mkdocs:*` targets come from [nolte/taskfiles](https://gith
 
 `docs:serve` delegates to `mkdocs:start`, which runs from the shared `~/.venvs/docs` — the module hardcodes that path and a consumer cannot override it. `docs` stays local because it is the CI command and must resolve the exact pins in `docs/requirements.txt` from the project-local `.venv`.
 
-`tests/validate_recipes.py` is where the constraints below are enforced. It checks what the schema cannot see — a recipe-local `extensions:` block, a missing `prompt`, an `${VAR}` absent from `env_keys`, a write-capable recipe without the `-apply` suffix, a named skill with no directory, an agent in the directory this provider cannot see — and runs without a provider call. Adding a house rule means adding a check there, not only a paragraph to the spec.
+`tests/validate_recipes.py` is where the constraints below are enforced. It checks what the schema cannot see — a recipe-local `extensions:` block, a missing `prompt`, an `${VAR}` absent from `env_keys`, a write-capable recipe without the `-apply` suffix, a recipe whose `prompt` names only a subset of the state-changing tools inside its policy block, a named skill with no directory, an agent in the directory this provider cannot see — and runs without a provider call. Adding a house rule means adding a check there, not only a paragraph to the spec.
 
 Every recipe that loads a project skill **must be started with this checkout as the working directory** — skill discovery is relative to the Goose process's cwd, and a run from elsewhere loses the skill silently and still produces a plausible answer.
 

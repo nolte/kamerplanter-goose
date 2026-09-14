@@ -67,6 +67,8 @@ Every finding names three things: **which photo**, **which visible feature**, an
 - Never report more than 10 findings or cite more than 5 photo ids; the submit path rejects more. When the nine axes yield more than ten findings, merge the least specific ones rather than dropping an axis silently.
 - Never leave an axis unmentioned. `not-assessable` is a valid, useful answer; silence is not.
 - Judge timing against the entry's `created_at`. A photo analysed three weeks late is evidence about the plant three weeks ago.
+- Never call a tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. This skill reads photos and judges them, and calls none of those.
+- `mcp__kamerplanter__claim_diary_analysis` and `mcp__kamerplanter__submit_diary_analysis` are the two this skill must **not** be read as forbidding. It never calls them itself, but it runs inside a claim cycle that has to reach its submit on every path — a blanket prohibition here composes into the caller's context and fights that obligation, leaving the lease to expire instead of being released. They belong to `diary-analysis-claim`; this skill hands back to it.
 
 ## Gotchas
 
