@@ -301,6 +301,28 @@ SKILL_PERMITTED_WRITES = {
 MCP_TOOL_NAME_PATTERN = re.compile(r"`mcp__[A-Za-z0-9_]+__([A-Za-z0-9_]+)`")
 
 
+# A fenced block is an illustration, not a declaration — and a file that shows
+# this convention must stay committable. Sixteen fenced blocks already sit in
+# `.claude/skills/`, and `domain-review` reviews the convention itself.
+#
+# Two rules make this safe where the round-4 attempt was not. It runs on ONE
+# field, never on `description` + `instructions` + `prompt` joined, so an
+# opener can no longer pair with a later field's example. And the markers must
+# start a line, so a backtick triple inside prose pairs nothing. An unbalanced
+# opener therefore matches nothing at all and swallows nothing — the failure
+# that erased a real `Forbidden by name:` block last time.
+#
+# Blanking rather than deleting keeps every offset, which `policy_spans` needs.
+FENCED_BLOCK_PATTERN = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.S | re.M)
+
+
+def without_fenced_blocks(field: str) -> str:
+    """One field with its balanced fenced blocks blanked out."""
+    return FENCED_BLOCK_PATTERN.sub(
+        lambda match: re.sub(r"[^\n]", " ", match.group(0)), field
+    )
+
+
 def names_declared_under(body: str, marker: str) -> set[str]:
     """Every tool named under `marker`, whether the catalog lists it or not.
 
@@ -322,6 +344,43 @@ def names_declared_under(body: str, marker: str) -> set[str]:
 # One case per shape the extraction has to get right, for the same reason the
 # marker cases exist: the overreach checks were changed without a single case
 # calling them.
+# One case per direction this has to get right. The round-4 version was wrong
+# in both at once, so both are pinned before the helper is used anywhere.
+# Each case gives the names that survive the blanking.
+FENCE_CASES = [
+    (
+        "a fenced example declares nothing",
+        "```yaml\n  - Permitted by name: `mcp__kamerplanter__archive_plant`\n```",
+        set(),
+    ),
+    (
+        "a real block outside a fence survives",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "```yaml\n  example: `mcp__kamerplanter__create_site`\n```",
+        {"archive_plant"},
+    ),
+    (
+        "an unbalanced opener swallows nothing",
+        "```yaml\n  example only\n\n"
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        {"archive_plant"},
+    ),
+    (
+        "a backtick triple inside prose pairs nothing",
+        "Write ```like this``` in prose. "
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        {"archive_plant"},
+    ),
+    (
+        "two fenced blocks blank independently",
+        "```\n`mcp__kamerplanter__create_site`\n```\n"
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "```\n`mcp__kamerplanter__confirm_care_task`\n```",
+        {"archive_plant"},
+    ),
+]
+
+
 DECLARED_NAME_CASES = [
     (
         "catalog names come back bare",
@@ -425,8 +484,11 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # Search the parsed prose fields rather than the raw file: a comment that
     # explains why a mechanism is *not* used names it too, and matching that
     # would fail the very recipe that documents the trap correctly.
+    # Fences are stripped per field, BEFORE the join. Doing it after — on the
+    # three fields concatenated — is what let an unbalanced opener in one field
+    # pair with a later field's example and blank everything between them.
     body = "\n".join(
-        value
+        without_fenced_blocks(value)
         for key in ("description", "instructions", "prompt")
         if isinstance(value := recipe.get(key), str)
     )
@@ -503,7 +565,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # only Home Assistant would have to name twelve tools it never sees, and
     # that is the point at which this should gain the same trigger rather than
     # an exemption list.
-    prompt_text = prompt if isinstance(prompt, str) else ""
+    prompt_text = without_fenced_blocks(prompt) if isinstance(prompt, str) else ""
     # Only where a prompt exists. Reporting an incomplete policy on a recipe
     # that has no prompt at all repeats one cause as three findings and buries
     # the one that matters.
@@ -713,8 +775,11 @@ def check_skills(findings: Findings) -> None:
         # this trigger is that a purely descriptive mention now requires a
         # block — measured on `plant-photo-read`, and accepted.
         name = skill_file.parent.name
-        missing = missing_from_policy(text)
-        if names_any_state_changing(text) and missing:
+        # A SKILL.md is one field, so its fences pair unambiguously. `text`
+        # itself stays untouched for the frontmatter read above.
+        policy_source = without_fenced_blocks(text)
+        missing = missing_from_policy(policy_source)
+        if names_any_state_changing(policy_source) and missing:
             findings.error(
                 f".claude/skills/{name}",
                 f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
@@ -754,7 +819,7 @@ def check_skills(findings: Findings) -> None:
         # twelve writes permitted and passed.
         # Same predicate as the recipe side, for the same reasons.
         if name not in SKILLS_THAT_WRITE and declares_policy_under(
-            text, "Permitted by name:"
+            policy_source, "Permitted by name:"
         ):
             findings.error(
                 f".claude/skills/{name}",
@@ -766,7 +831,7 @@ def check_skills(findings: Findings) -> None:
 
         # A writing skill still only gets the writes it is recorded for.
         skill_overreach = sorted(
-            names_declared_under(text, "Permitted by name:")
+            names_declared_under(policy_source, "Permitted by name:")
             - SKILL_PERMITTED_WRITES.get(name, set())
         )
         if name in SKILLS_THAT_WRITE and skill_overreach:
@@ -776,6 +841,24 @@ def check_skills(findings: Findings) -> None:
                 "beyond what this skill is recorded as writing. Widen "
                 "`SKILL_PERMITTED_WRITES` deliberately if the skill really "
                 "gained a write.",
+            )
+
+        # And it has to declare them. `SKILLS_THAT_WRITE` only ever acted in the
+        # rejecting direction, so the inverse defect was invisible: measured,
+        # putting all twelve under `Forbidden by name:` — the shape the five
+        # sibling skills use, which is where a copy-paste edit lands — passed
+        # every check while forbidding the skill the two calls it exists to
+        # make. A run would then refuse its own claim.
+        undeclared = sorted(
+            SKILL_PERMITTED_WRITES.get(name, set())
+            - names_declared_under(policy_source, "Permitted by name:")
+        )
+        if name in SKILLS_THAT_WRITE and undeclared:
+            findings.error(
+                f".claude/skills/{name}",
+                f"is recorded as writing {', '.join(undeclared)} but does not "
+                "declare them under `Permitted by name:`. A writing skill that "
+                "forbids its own calls refuses the work it exists for.",
             )
 
 
@@ -1136,6 +1219,19 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(DECLARED_NAME_CASES)} declared-name case(s) failed.")
         return 1
     print(f"OK — {len(DECLARED_NAME_CASES)} declared-name cases hold.")
+
+    for name, field, expected in FENCE_CASES:
+        stripped = without_fenced_blocks(field)
+        actual = {
+            tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(stripped)
+        }
+        if actual != expected:
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
+    if failures:
+        print(f"\n{failures} of {len(FENCE_CASES)} fence case(s) failed.")
+        return 1
+    print(f"OK — {len(FENCE_CASES)} fence cases hold.")
     return 0
 
 
