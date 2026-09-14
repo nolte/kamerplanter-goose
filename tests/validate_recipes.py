@@ -804,6 +804,23 @@ WRITE_GUARD_CASES = [
         [],
     ),
     (
+        "a table row carrying names ends the block",
+        "- Forbidden by name:\n"
+        "| `mcp__kamerplanter__archive_plant` | `mcp__kamerplanter__create_site` |",
+        ["archive_plant", "create_site"],
+    ),
+    (
+        "a deeper bullet after a marker line that already has names is a call",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "the left word boundary counts too",
+        "x_archive_plant, 9archive_plant and unarchive_plant",
+        [],
+    ),
+    (
         "a sentence after the block does not extend it",
         "  - Forbidden by name: `mcp__kamerplanter__archive_plant`. "
         "`mcp__kamerplanter__create_site` is called at step 4.",
@@ -1018,6 +1035,20 @@ RECIPE_CASES = [
             "`Permitted by name:` block without an `-apply`",
         ],
         ["state-changing tools inside a policy"],
+    ),
+    (
+        "no marker at all is not a collapsed block",
+        "  Read-only run. Then call `mcp__kamerplanter__archive_plant`.",
+        PLAIN_INSTRUCTIONS,
+        ["rename the file", "declares 0 of the 12"],
+        ["parses as empty"],
+    ),
+    (
+        "a block in `instructions` does not collapse the prompt's advice",
+        "  Then call `mcp__kamerplanter__archive_plant`.",
+        COMPLETE_BLOCK,
+        ["calls state-changing tools", "rename the file", "declares 0 of the 12"],
+        ["parses as empty"],
     ),
 ]
 
