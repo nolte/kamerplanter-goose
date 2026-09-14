@@ -66,7 +66,7 @@ The gaps list is not a footnote. A missing field means the corresponding questio
 - Never infer the species from anything other than `species_key`. If a caller reports a photo that appears to show a different plant, that contradiction is the caller's finding to report, not a reason to re-anchor this context.
 - Never fill an absent field with a typical value, a genus-level guess, or a general assumption. Absent goes into the gaps list.
 - Judge all timing against the date of the observation being analysed — a diary entry's `created_at` — never against today, unless the caller states there is no observation date.
-- Call no tool that changes state. On this server that means `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, and `mcp__kamerplanter__submit_diary_analysis` are all out of bounds here.
+- Call no tool that changes state. On this server that means `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, and `mcp__kamerplanter__create_inspection` are all out of bounds here.
 - Report a tool error verbatim and continue with the remaining steps. A partial context with a named gap is useful; a context that hides a failed call is not.
 
 ## Gotchas
@@ -75,7 +75,7 @@ The gaps list is not a footnote. A missing field means the corresponding questio
 - `mcp__kamerplanter__get_plant_nutrient_plan` frequently returns `{"plan": null}` — no plan assigned is an ordinary state, not an error. This skill does not call it; the nutrient path does.
 - `mcp__kamerplanter__list_tenants` returns `mcp_permissions` directly. Deriving permissions from the role name is unreliable: undocumented roles exist on real instances.
 - The tenant argument is optional only when the key grants exactly one garden. With several, omitting it fails.
-- An empty `mcp__kamerplanter__get_plant_inspections` result is the normal state for a plant tended only through agents, because agents currently have no tool for writing an inspection back.
+- An empty `mcp__kamerplanter__get_plant_inspections` result is the normal state for a plant tended only through agents, and it means no inspection was recorded — never that recording one is impossible. `mcp__kamerplanter__create_inspection` writes an IPM inspection back, but it writes, so this skill must not call it and the inspection is recorded outside the run.
 
 ## Source
 
