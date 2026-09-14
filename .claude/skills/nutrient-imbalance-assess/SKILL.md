@@ -72,7 +72,7 @@ State the direction, the tier that established it, and — when a correction is 
 - Never derive direction from symptoms alone, however characteristic they look.
 - Never treat a confirmed feeding in the care log as a dose. It records that feeding happened, never how much of what. Where dose matters and is unrecorded, report the gap.
 - Never actuate irrigation, dosing, or any Home Assistant device. A correction is a proposal for a human.
-- Call no state-changing tool. `mcp__kamerplanter__calculate_mixing_protocol` is safe — it carries no `dry_run` and no `idempotency_key` because it only calculates.
+- Call no state-changing tool. On this server that means `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, and `mcp__kamerplanter__create_inspection` are all out of bounds. `mcp__kamerplanter__calculate_mixing_protocol` is safe — it carries no `dry_run` and no `idempotency_key` because it only calculates.
 
 ## Gotchas
 
@@ -80,7 +80,7 @@ State the direction, the tier that established it, and — when a correction is 
 - `mcp__kamerplanter__get_plant_nutrient_plan` returning `plan: null` is the normal state for a plant never put on a programme — not an error and not a reason to stop.
 - Most plans on this instance are global templates whose `tags` name a specific crop. A template tagged for one crop applied to another is a weaker target than a plant-specific plan; weigh it accordingly and say that you did.
 - Repeated `snoozed` repotting in the care log points at exhausted substrate, which mimics undersupply and is not fixed by feeding.
-- `mcp__kamerplanter__record_feeding_event` carries the amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation has to be recorded outside the run. For growers who confirm reminders but log no quantities, tier 2 collapses to tier 3, and the honest output is a refusal plus a request to measure *and* to log the next feeding with that tool.
+- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. Be precise about what that buys: the catalog carries **no tool that reads those events back**, and step 2 reads only `mcp__kamerplanter__get_plant_care_log` and the diary `measurements`. Logging improves the garden's record; it does not lift this run's tier, and no read call for it may be invented. For growers who confirm reminders but log no quantities, tier 2 collapses to tier 3, and the honest output is a refusal plus a request for one EC or pH reading in a diary entry — the tier 1 value that does settle the direction.
 
 ## Source
 
