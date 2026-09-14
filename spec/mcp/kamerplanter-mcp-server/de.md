@@ -192,7 +192,7 @@ Jeder Aufruf wird mit einem SHA-256-Hash der Argumente auditiert — nie im Klar
 - [ ] `goose recipe validate` läuft für das Rezept durch
 - [ ] Ein Lauf gegen einen Server ohne gesetztes `MCP_SERVER_ENABLED` meldet die Opt-in-Variable, keinen URL-Fehler
 - [ ] Ein Lauf mit fehlendem oder widerrufenem Schlüssel meldet `401` als Authentifizierungsfehler, unterscheidbar von einem Berechtigungsfehler
-- [ ] Jedes nur lesende Rezept nennt alle zwölf zustandsändernden Tools einzeln in seinem `prompt` — nie eine Teilmenge, nie eine Kategorie anstelle eines Namens
+- [x] Jedes nur lesende Rezept nennt alle zwölf zustandsändernden Tools einzeln in seinem `prompt` — nie eine Teilmenge, nie eine Kategorie anstelle eines Namens
 - [x] Eine maschinelle Prüfung setzt das obige Kriterium durch; eine nur in Prosa formulierte Regel ist zweimal von den Rezepten abgedriftet
 - [ ] Jedes Rezept, das ein Schreibtool aufruft, trägt einen `-apply`-Dateinamen und sagt dies in `description`
 - [ ] Ein Rezeptlauf mit einem Schlüssel über zwei Gärten nimmt entweder `tenant` als Parameter an oder ruft `list_tenants` vor jedem mandantenbezogenen Tool auf

@@ -915,10 +915,15 @@ title: "Self-test case"
 description: >-
   Read-only: a synthetic recipe the self-test writes to a temporary directory.
 instructions: |
-  Synthetic.
-prompt: |
-{prompt}
+{instructions}
 """
+
+# Appended only when the case carries a prompt: a case that omits it is how the
+# promptless path gets exercised at all.
+PROMPT_FIELD = "prompt: |\n{prompt}\n"
+
+PLAIN_INSTRUCTIONS = "Synthetic."
+PLAIN_PROMPT = "Assess the plant and report. Load no skill."
 
 REAL_CALL = "\n  Step 5 - then call `mcp__kamerplanter__archive_plant` for real.\n"
 
@@ -946,16 +951,32 @@ ELEVEN_OF_TWELVE = (
     + "."
 )
 
+# A read-only recipe splitting the set across both markers. Completeness reads
+# the union and is satisfied; the write-guard, at `is_apply=False`, counts the
+# permitted name as a call. That asymmetry is the whole point of the marker
+# choice in `calls_state_changing_tools`, and nothing else measures it.
+PERMITTED_SPLIT = (
+    "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n"
+    "  - Call NO other tool that changes state.\n    Forbidden by name:\n    "
+    + ", ".join(
+        f"`mcp__kamerplanter__{tool}`"
+        for tool in sorted(STATE_CHANGING_TOOLS - {"claim_diary_analysis"})
+    )
+    + "."
+)
+
 RECIPE_CASES = [
     (
         "a complete block reports nothing",
         COMPLETE_BLOCK,
+        PLAIN_INSTRUCTIONS,
         [],
         ["calls state-changing tools", "state-changing tools inside a policy"],
     ),
     (
         "a collapsed block plus a real call reports the call as well",
         COLLAPSED_BLOCK + REAL_CALL,
+        PLAIN_INSTRUCTIONS,
         [
             "calls state-changing tools",
             "parses as empty",
@@ -966,6 +987,7 @@ RECIPE_CASES = [
     (
         "eleven of twelve plus a real call advises the rename, not the list",
         ELEVEN_OF_TWELVE + REAL_CALL,
+        PLAIN_INSTRUCTIONS,
         [
             "calls state-changing tools",
             "rename the file",
@@ -973,17 +995,53 @@ RECIPE_CASES = [
         ],
         ["parses as empty"],
     ),
+    (
+        "a complete block in `instructions` declares nothing",
+        PLAIN_PROMPT,
+        COMPLETE_BLOCK,
+        ["declares 0 of the 12"],
+        ["calls state-changing tools"],
+    ),
+    (
+        "a recipe with no prompt reports that, and not an incomplete policy",
+        "",
+        "  Then call `mcp__kamerplanter__archive_plant`.",
+        ["has no non-empty `prompt`", "calls state-changing tools"],
+        ["state-changing tools inside a policy"],
+    ),
+    (
+        "a permitted block on a read-only recipe is a call, not policy",
+        PERMITTED_SPLIT,
+        PLAIN_INSTRUCTIONS,
+        [
+            "calls state-changing tools (claim_diary_analysis)",
+            "`Permitted by name:` block without an `-apply`",
+        ],
+        ["state-changing tools inside a policy"],
+    ),
 ]
 
 
-def recipe_case_findings(prompt_body: str) -> list[str]:
-    """Run the real `check_recipe` over a synthetic recipe built on disk."""
-    indented = "\n".join(
-        ("  " + line) if line.strip() else "" for line in prompt_body.split("\n")
+def indent_block(text: str) -> str:
+    return "\n".join(
+        ("  " + line) if line.strip() else "" for line in text.split("\n")
     )
+
+
+def recipe_case_findings(prompt_body: str, instructions_body: str) -> list[str]:
+    """Run the real `check_recipe` over a synthetic recipe built on disk.
+
+    The filename carries no `-apply` suffix, so this is the read-only path —
+    the only one that calls the write-guard with `is_apply=False`, and
+    therefore the only place the marker choice for `Permitted by name:` is
+    observable at all.
+    """
+    text = RECIPE_TEMPLATE.format(instructions=indent_block(instructions_body))
+    if prompt_body.strip():
+        text += PROMPT_FIELD.format(prompt=indent_block(prompt_body))
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "selftest-check.yaml"
-        path.write_text(RECIPE_TEMPLATE.format(prompt=indented), encoding="utf-8")
+        path.write_text(text, encoding="utf-8")
         findings = Findings()
         check_recipe(path, findings)
         return findings.errors
@@ -1011,8 +1069,8 @@ def run_self_test() -> int:
         return 1
     print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
 
-    for name, prompt_body, required, forbidden in RECIPE_CASES:
-        reported = "\n".join(recipe_case_findings(prompt_body))
+    for name, prompt_body, instructions_body, required, forbidden in RECIPE_CASES:
+        reported = "\n".join(recipe_case_findings(prompt_body, instructions_body))
         for needle in required:
             if needle not in reported:
                 failures += 1
