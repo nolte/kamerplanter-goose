@@ -21,6 +21,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import yaml
@@ -160,9 +161,14 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
                 # at step 4.` pulled that last name into the block, because the
                 # gap between it and the previous one held punctuation only —
                 # so a recipe that really called it read as complete AND as
-                # calling nothing. A period-separated list of names therefore
-                # ends at the first name; that spelling does not occur here,
-                # and for a guard "the sentence ended" is the safe reading.
+                # calling nothing.
+                #
+                # This scan runs only where the marker line also carries prose.
+                # A line of names alone never reaches it, so `\`a\`. \`b\`.` on
+                # a bare name line still counts both — the full-stop rule is
+                # not a general "a period-separated list ends at the first
+                # name". Where the scan does run, for a guard "the sentence
+                # ended" is the safe reading.
                 if re.search(r"[A-Za-z0-9.]", between):
                     break
                 cursor = match.end() + span.end()
@@ -368,7 +374,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
             "marker, and keep the prose out of that run."
             if block_collapsed
             else "Move the name into that block if the recipe forbids the "
-            "tool; rename the file and say so in `description` if it calls it."
+            "tool — prose between two names ends the block there, and a "
+            "conjunction is prose, so `` `a`, and `b`. `` leaves `b` outside "
+            "it; rename the file and say so in `description` if the recipe "
+            "really calls the tool."
         )
         if calling:
             findings.error(
@@ -429,8 +438,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
             "outside the block is not a prohibition, and a block in "
             "`instructions` is not enforced on a headless run. The block runs "
             "from the marker across name-only lines: a bullet or table cell "
-            "that adds prose after a name ends it, so keep the names together "
-            "and put the explanation after the block.",
+            "that adds prose after a name ends it, and so does a conjunction "
+            "before the last name (`` `a`, and `b`. ``). Keep the names "
+            "together, unbroken by prose, and put the explanation after the "
+            "block.",
         )
 
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
@@ -866,6 +877,24 @@ COMPLETENESS_CASES = [
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
+        "a fenced example counts as declared — the one way to silence this",
+        "This recipe declares no policy of its own. It prints the template:\n"
+        "```\n"
+        f"Forbidden by name: {ALL_TWELVE}.\n"
+        "```\n",
+        [],
+    ),
+    (
+        "a conjunction before the last name leaves it outside the block",
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(STATE_CHANGING_TOOLS - {"transition_plant_phase"})
+        )
+        + ", and `mcp__kamerplanter__transition_plant_phase`.",
+        ["transition_plant_phase"],
+    ),
+    (
         "the bare name counts, not only the mcp__ form",
         "Forbidden by name: "
         + ", ".join(f"`{t}`" for t in sorted(STATE_CHANGING_TOOLS))
@@ -873,6 +902,91 @@ COMPLETENESS_CASES = [
         [],
     ),
 ]
+
+
+# Both lists above exercise a helper directly, and neither can reach what
+# `check_recipe` decides on its own: which findings fire together, and which
+# repair each one advises. That gap was not theoretical — a review restored the
+# suppression this file had just removed, and every case above still held with
+# the gate green. These cases run the real check against a synthetic recipe.
+RECIPE_TEMPLATE = """\
+version: "1.0.0"
+title: "Self-test case"
+description: >-
+  Read-only: a synthetic recipe the self-test writes to a temporary directory.
+instructions: |
+  Synthetic.
+prompt: |
+{prompt}
+"""
+
+REAL_CALL = "\n  Step 5 - then call `mcp__kamerplanter__archive_plant` for real.\n"
+
+COMPLETE_BLOCK = (
+    "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
+    + ALL_TWELVE
+    + "."
+)
+
+# One annotated bullet per tool: the block ends at the marker, so every name in
+# it lands outside policy and reads as a call.
+COLLAPSED_BLOCK = (
+    "  - Call NO tool that changes state. Forbidden by name:\n"
+) + "".join(
+    f"    - `mcp__kamerplanter__{tool}` - never; this recipe only reads.\n"
+    for tool in sorted(STATE_CHANGING_TOOLS)
+)
+
+ELEVEN_OF_TWELVE = (
+    "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
+    + ", ".join(
+        f"`mcp__kamerplanter__{tool}`"
+        for tool in sorted(STATE_CHANGING_TOOLS - {"confirm_care_task"})
+    )
+    + "."
+)
+
+RECIPE_CASES = [
+    (
+        "a complete block reports nothing",
+        COMPLETE_BLOCK,
+        [],
+        ["calls state-changing tools", "state-changing tools inside a policy"],
+    ),
+    (
+        "a collapsed block plus a real call reports the call as well",
+        COLLAPSED_BLOCK + REAL_CALL,
+        [
+            "calls state-changing tools",
+            "parses as empty",
+            "declares 0 of the 12",
+        ],
+        [],
+    ),
+    (
+        "eleven of twelve plus a real call advises the rename, not the list",
+        ELEVEN_OF_TWELVE + REAL_CALL,
+        [
+            "calls state-changing tools",
+            "rename the file",
+            "declares 11 of the 12",
+        ],
+        ["parses as empty"],
+    ),
+]
+
+
+def recipe_case_findings(prompt_body: str) -> list[str]:
+    """Run the real `check_recipe` over a synthetic recipe built on disk."""
+    indented = "\n".join(
+        ("  " + line) if line.strip() else "" for line in prompt_body.split("\n")
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "selftest-check.yaml"
+        path.write_text(RECIPE_TEMPLATE.format(prompt=indented), encoding="utf-8")
+        findings = Findings()
+        check_recipe(path, findings)
+        return findings.errors
 
 
 def run_self_test() -> int:
@@ -896,6 +1010,21 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
         return 1
     print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
+
+    for name, prompt_body, required, forbidden in RECIPE_CASES:
+        reported = "\n".join(recipe_case_findings(prompt_body))
+        for needle in required:
+            if needle not in reported:
+                failures += 1
+                print(f"  FAIL {name}\n       no finding contains {needle!r}")
+        for needle in forbidden:
+            if needle in reported:
+                failures += 1
+                print(f"  FAIL {name}\n       a finding contains {needle!r}")
+    if failures:
+        print(f"\n{failures} recipe-level assertion(s) failed.")
+        return 1
+    print(f"OK — {len(RECIPE_CASES)} recipe-level cases hold.")
     return 0
 
 
