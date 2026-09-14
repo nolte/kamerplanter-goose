@@ -229,11 +229,6 @@ def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
     return "\n".join(body[start:end] for start, end in spans)
 
 
-def declares_policy(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> bool:
-    """True when the artefact carries a tool-policy block at all."""
-    return any(policy_spans(body, marker) for marker in markers)
-
-
 def missing_from_policy(
     body: str, markers: tuple[str, ...] = POLICY_MARKERS
 ) -> list[str]:
@@ -256,6 +251,29 @@ def missing_from_policy(
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
     )
+
+
+def names_any_state_changing(body: str) -> bool:
+    """True when the artefact names any of the twelve anywhere at all.
+
+    This is the trigger, and it deliberately does not look at the markers.
+    Keying the skill check on "declares a policy block" made the guard
+    opt-out: measured, deleting the marker line from a skill and leaving
+    three names in ordinary prose dropped it out of the gate entirely —
+    which is exactly the state the six garden skills were in before this
+    check existed. Mentioning a write tool is the trigger; the block is
+    where the answer has to be.
+    """
+    return any(tool_pattern(tool).search(body) for tool in STATE_CHANGING_TOOLS)
+
+
+# A skill may declare `Permitted by name:` only where it exists to write.
+# Recipes carry that claim in the `-apply` filename suffix and `check_recipe`
+# rejects the marker without it; a skill has no filename to say it, so the
+# allowlist says it instead. Measured: renaming a read-only skill's
+# `Forbidden by name:` to `Permitted by name:` declared all twelve writes
+# permitted and passed the gate clean.
+SKILLS_THAT_WRITE = {"diary-analysis-claim"}
 
 
 def load_yaml(path: Path, findings: Findings) -> dict | None:
@@ -350,15 +368,30 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # call guard reads names outside a policy block, and an absent name is
     # outside nothing. Measured on 2026-09-14: every recipe here names all
     # twelve, so this check starts green and stays a floor.
-    missing = missing_from_policy(body)
+    # Scoped to `prompt` alone, not to `body`. The MUST this enforces is about
+    # the prompt precisely because `instructions` is not enforced on a headless
+    # run — so reading all three fields legitimised the placement the rule
+    # exists to prevent. Measured: moving the whole `Forbidden by name:` block
+    # out of `prompt` into `instructions` left zero of the twelve in the prompt
+    # and the gate still green.
+    #
+    # Unconditional here, unlike the skill check below, which triggers only on
+    # a skill that names a write tool. Every recipe in this repository loads
+    # the kamerplanter server, so the asymmetry costs nothing today; a future
+    # recipe that loads only Home Assistant would have to name twelve tools it
+    # never sees, and that is the point at which this should gain the same
+    # trigger rather than an exemption list.
+    prompt_text = prompt if isinstance(prompt, str) else ""
+    missing = missing_from_policy(prompt_text)
     if missing:
         findings.error(
             where,
             f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
             f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside a policy "
-            f"block; missing {', '.join(missing)}. Naming a subset is the "
-            "failure this rule exists to catch, and a name mentioned in prose "
-            "outside the block is not a prohibition.",
+            f"block in its `prompt`; missing {', '.join(missing)}. Naming a "
+            "subset is the failure this rule exists to catch; a name in prose "
+            "outside the block is not a prohibition, and a block in "
+            "`instructions` is not enforced on a headless run.",
         )
 
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
@@ -533,14 +566,31 @@ def check_skills(findings: Findings) -> None:
         # "mentions a write tool" is what stops a descriptive sentence from
         # demanding eleven more names — measured: one explanatory mention added
         # to `plant-photo-read` failed the gate under the earlier shape.
+        name = skill_file.parent.name
         missing = missing_from_policy(text)
-        if declares_policy(text) and missing:
+        if names_any_state_changing(text) and missing:
             findings.error(
-                f".claude/skills/{skill_file.parent.name}",
+                f".claude/skills/{name}",
                 f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
-                f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside its "
-                f"policy block; missing {', '.join(missing)}. A name mentioned "
-                "in prose outside the block is not a prohibition.",
+                f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside a "
+                f"policy block; missing {', '.join(missing)}. A skill that "
+                "names a write tool at all states a policy, and a name in "
+                "prose outside the block is not a prohibition. A skill that "
+                "names none is governed by the recipe that loads it.",
+            )
+
+        # `Permitted by name:` is the claim "this is what I exist to call".
+        # A recipe backs that claim with an `-apply` filename; a skill has no
+        # filename to back it, so only a skill that genuinely writes may carry
+        # the marker. Without this, renaming the forbidden block declared all
+        # twelve writes permitted and passed.
+        if name not in SKILLS_THAT_WRITE and policy_spans(text, "Permitted by name:"):
+            findings.error(
+                f".claude/skills/{name}",
+                "declares a `Permitted by name:` block but is not a writing "
+                "skill. That marker says which writes the artefact exists to "
+                "call; a read-only skill states its policy under `Forbidden by "
+                "name:` alone.",
             )
 
 
