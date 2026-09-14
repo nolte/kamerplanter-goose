@@ -313,14 +313,35 @@ MCP_TOOL_NAME_PATTERN = re.compile(r"`mcp__[A-Za-z0-9_]+__([A-Za-z0-9_]+)`")
 # that erased a real `Forbidden by name:` block last time.
 #
 # Blanking rather than deleting keeps every offset, which `policy_spans` needs.
-FENCED_BLOCK_PATTERN = re.compile(r"^[ \t]*```.*?^[ \t]*```", re.S | re.M)
+FENCE_MARKER_PATTERN = re.compile(r"^[ \t]*(?:```|~~~)")
 
 
 def without_fenced_blocks(field: str) -> str:
-    """One field with its balanced fenced blocks blanked out."""
-    return FENCED_BLOCK_PATTERN.sub(
-        lambda match: re.sub(r"[^\n]", " ", match.group(0)), field
-    )
+    """One field with its fenced blocks blanked out, offsets preserved.
+
+    Counted line by line, not paired by regex. A regex pairs the first marker
+    with the second whatever they mean, so a forgotten opener followed by a
+    real example block erased the policy sitting between them — and because
+    the skill trigger reads this same source, the guard went *silent* instead
+    of loud. Measured on `plant-context-collect`: zero findings, exit 0.
+
+    An odd number of markers means the fencing is malformed and every pairing
+    is a guess. Nothing is blanked then. A fenced example counting as policy
+    is a loud false positive, visible to whoever wrote the broken fence; a
+    wrong pairing is the quiet failure, and quiet is the one that matters in a
+    guard. `~~~` counts as a marker too — it is valid CommonMark and MkDocs
+    renders it, so treating only backticks left the same false positive for
+    the other syntax.
+    """
+    lines = field.split("\n")
+    markers = [i for i, line in enumerate(lines) if FENCE_MARKER_PATTERN.match(line)]
+    if len(markers) % 2:
+        return field
+    blanked = list(lines)
+    for start, end in zip(markers[::2], markers[1::2]):
+        for index in range(start, end + 1):
+            blanked[index] = re.sub(r"[^\n]", " ", blanked[index])
+    return "\n".join(blanked)
 
 
 def names_declared_under(body: str, marker: str) -> set[str]:
@@ -377,6 +398,63 @@ FENCE_CASES = [
         "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
         "```\n`mcp__kamerplanter__confirm_care_task`\n```",
         {"archive_plant"},
+    ),
+]
+
+
+# The fence cases above pin one shape each. These pin the CLASS — how many
+# fence markers a field carries — because pinning the shape I had in mind is
+# exactly how the previous version shipped broken: with three markers, a
+# forgotten opener paired with a real example block and blanked the policy
+# between them, and on the skill path that turned the guard silent rather than
+# loud, since the trigger reads the same blanked source.
+#
+# An odd count means the fencing is malformed and any pairing is a guess.
+# Guessing wrong either erases a real block or exposes an example, so nothing
+# is blanked at all: a loud false positive is the safe direction for a guard,
+# and it is visible to whoever wrote the broken fence.
+FENCE_COUNT_CASES = [
+    (
+        "no fence, nothing blanked",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        {"archive_plant"},
+    ),
+    (
+        "one marker is malformed — blank nothing",
+        "```yaml\n  opener only\n\n"
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.",
+        {"archive_plant"},
+    ),
+    (
+        "two markers pair, the block between them goes",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "```yaml\n`mcp__kamerplanter__create_site`\n```",
+        {"archive_plant"},
+    ),
+    (
+        "three markers are malformed — blank nothing, keep the policy",
+        "```yaml\n  forgotten opener\n\n"
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n\n"
+        "```json\n  a real example\n```",
+        {"archive_plant"},
+    ),
+    (
+        "four markers pair twice, the policy between survives",
+        "```\n`mcp__kamerplanter__create_site`\n```\n"
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "```\n`mcp__kamerplanter__confirm_care_task`\n```",
+        {"archive_plant"},
+    ),
+    (
+        "tilde fences pair like backtick fences",
+        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
+        "~~~markdown\n`mcp__kamerplanter__create_site`\n~~~",
+        {"archive_plant"},
+    ),
+    (
+        "a tilde block alone declares nothing",
+        "~~~markdown\n- Permitted by name: `mcp__kamerplanter__create_site`\n~~~",
+        set(),
     ),
 ]
 
@@ -522,8 +600,8 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
     if not is_apply:
-    # A recipe may name a state-changing tool purely to forbid it, so the
-    # policy blocks are cut out before the remainder is read.
+        # A recipe may name a state-changing tool purely to forbid it, so the
+        # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
         # `declares_policy_under` asks whether the block names something
         # tool-shaped. Two narrower predicates stood here first and both were
@@ -859,6 +937,33 @@ def check_skills(findings: Findings) -> None:
                 f"is recorded as writing {', '.join(undeclared)} but does not "
                 "declare them under `Permitted by name:`. A writing skill that "
                 "forbids its own calls refuses the work it exists for.",
+            )
+
+
+def check_write_registers(findings: Findings) -> None:
+    """Every allowlist key names an artefact that still exists.
+
+    All three registers are keyed by directory name or file stem, and nothing
+    tied them to disk. Rename `diary-analysis-claim` and both directions of
+    its write check — the overreach ceiling and the undeclared-writes check —
+    fall away without a word, while the entries sit there looking
+    authoritative. That is the class this file exists to catch, one level up
+    from the artefacts it checks.
+    """
+    for name in sorted(SKILLS_THAT_WRITE | set(SKILL_PERMITTED_WRITES)):
+        if not (SKILLS_DIR / name).is_dir():
+            findings.error(
+                "tests/validate_recipes.py",
+                f"the write registers name the skill `{name}`, which has no "
+                "directory under .claude/skills/. Both write checks for it "
+                "silently do nothing.",
+            )
+    for stem in sorted(RECIPE_PERMITTED_WRITES):
+        if not (RECIPES_DIR / f"{stem}.yaml").is_file():
+            findings.error(
+                "tests/validate_recipes.py",
+                f"`RECIPE_PERMITTED_WRITES` names the recipe `{stem}`, which "
+                "has no file under recipes/. Its overreach ceiling is gone.",
             )
 
 
@@ -1232,6 +1337,19 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(FENCE_CASES)} fence case(s) failed.")
         return 1
     print(f"OK — {len(FENCE_CASES)} fence cases hold.")
+
+    for name, field, expected in FENCE_COUNT_CASES:
+        stripped = without_fenced_blocks(field)
+        actual = {
+            tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(stripped)
+        }
+        if actual != expected:
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
+    if failures:
+        print(f"\n{failures} of {len(FENCE_COUNT_CASES)} fence-count case(s) failed.")
+        return 1
+    print(f"OK — {len(FENCE_COUNT_CASES)} fence-count cases hold.")
     return 0
 
 
@@ -1254,6 +1372,7 @@ def main() -> int:
         check_recipe(path, findings)
     check_extensions(findings)
     check_skills(findings)
+    check_write_registers(findings)
     check_agents(findings)
     run_goose_validate(findings)
 
