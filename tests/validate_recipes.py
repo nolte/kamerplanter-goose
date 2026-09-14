@@ -189,9 +189,14 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
                 break
             bullet = BULLET_PREFIX_PATTERN.match(line)
             if bullet:
-                # A deeper bullet is the nested list itself; a sibling or
-                # shallower one is the next element, whichever shape the
-                # marker line used.
+                # The two shapes differ, and not "whichever shape the marker
+                # line used" — an earlier wording here claimed exactly that
+                # and was the reverse of the code. Where the marker line
+                # carries no names, the bullets below it ARE the list: a
+                # deeper one continues it, a sibling or shallower one is the
+                # next element. Where the marker line already carries names,
+                # `not nested` short-circuits and any bullet ends the block,
+                # the deeper one included.
                 indent = len(line) - len(line.lstrip())
                 if not nested or indent <= marker_indent:
                     break
@@ -808,6 +813,20 @@ WRITE_GUARD_CASES = [
         "- Forbidden by name:\n"
         "| `mcp__kamerplanter__archive_plant` | `mcp__kamerplanter__create_site` |",
         ["archive_plant", "create_site"],
+    ),
+    (
+        "an indented table row ends it too",
+        "  - Forbidden by name:\n"
+        "    | `mcp__kamerplanter__archive_plant` | "
+        "`mcp__kamerplanter__create_site` |",
+        ["archive_plant", "create_site"],
+    ),
+    (
+        "an indented sibling bullet ends the nested list",
+        "  - Forbidden by name:\n"
+        "    - `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`",
+        ["create_site"],
     ),
     (
         "a deeper bullet after a marker line that already has names is a call",
