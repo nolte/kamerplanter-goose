@@ -829,6 +829,27 @@ WRITE_GUARD_CASES = [
         ["create_site"],
     ),
     (
+        "trailing whitespace does not deepen a sibling bullet",
+        "  - Forbidden by name:\n"
+        "    - `mcp__kamerplanter__archive_plant`\n"
+        "  - `mcp__kamerplanter__create_site`   ",
+        ["create_site"],
+    ),
+    (
+        "asterisk bullets nest like dashes",
+        "  * Forbidden by name:\n"
+        "    * `mcp__kamerplanter__archive_plant`\n"
+        "  * `mcp__kamerplanter__create_site`",
+        ["create_site"],
+    ),
+    (
+        "a one-space nested list still stays inside the block",
+        "- Forbidden by name:\n"
+        " - `mcp__kamerplanter__archive_plant`\n"
+        " - `mcp__kamerplanter__create_site`",
+        [],
+    ),
+    (
         "a deeper bullet after a marker line that already has names is a call",
         "- Forbidden by name: `mcp__kamerplanter__archive_plant`\n"
         "  - `mcp__kamerplanter__create_site`",
