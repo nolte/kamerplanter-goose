@@ -75,7 +75,7 @@ The gaps list is not a footnote. A missing field means the corresponding questio
 - `mcp__kamerplanter__get_plant_nutrient_plan` frequently returns `{"plan": null}` — no plan assigned is an ordinary state, not an error. This skill does not call it; the nutrient path does.
 - `mcp__kamerplanter__list_tenants` returns `mcp_permissions` directly. Deriving permissions from the role name is unreliable: undocumented roles exist on real instances.
 - The tenant argument is optional only when the key grants exactly one garden. With several, omitting it fails.
-- An empty `mcp__kamerplanter__get_plant_inspections` result is the normal state for a plant tended only through agents, and it means no inspection was recorded — never that recording one is impossible. `mcp__kamerplanter__create_inspection` writes an IPM inspection back, but it writes, so this skill must not call it and the inspection is recorded outside the run. Report the emptiness as a gap, not as a property of the plant.
+- An empty `mcp__kamerplanter__get_plant_inspections` result is the normal state for a plant tended only through agents, and it means no inspection was recorded — never that recording one is impossible. `mcp__kamerplanter__create_inspection` writes an IPM inspection back, but it writes, so this skill must not call it and the inspection is recorded outside the run.
 
 ## Source
 
