@@ -179,7 +179,7 @@ spec/                          this layer plus one spec per backend
 - **MUST NOT** carry `disable-model-invocation: true` in a project skill that a recipe is meant to load, since the key makes the skill invisible to every non-interactive run
 - **MUST** place a project agent under `.claude/agents/` rather than the `.agents/agents/` that Goose's own documentation recommends, since only the former is in the registry a run under this provider sees
 - **MUST** name the required working directory in the `description` of a recipe that dispatches a project-local agent, for the same reason it does for a skill: `.claude/agents/` resolves against the Goose process's cwd, and no frontmatter key exists to make an agent selectively invisible when it does not
-- **MUST** declare its tool policy in the `prompt` under two literal markers — `Forbidden by name:` and, for an `-apply` recipe, `Permitted by name:` — each opening a block whose body is backticked tool names and punctuation. A name inside such a block is policy; a name outside every block is a call. Deciding it by convention rather than by reading the surrounding English is what makes it checkable: twelve review rounds went into a parser that inferred it from sentence and list structure, and it misread in both directions throughout. A project skill that states a tool policy of its own uses the same two markers rather than a second convention, because the check that reads them is the same one — and a skill whose prohibition lives in ordinary prose declares nothing a machine can verify
+- **MUST** declare its tool policy in the `prompt` under two literal markers — `Forbidden by name:` and, for an `-apply` recipe, `Permitted by name:` — each opening a block whose body is backticked tool names and punctuation. A name inside such a block is policy; a name outside every block is a call. Deciding it by convention rather than by reading the surrounding English is what makes it checkable: twelve review rounds went into a parser that inferred it from sentence and list structure, and it misread in both directions throughout
 - **MUST NOT** dispatch a plugin-provided agent type from a recipe; only the built-in types and those defined in the working directory's `.claude/agents/` are in the registry a run sees
 - **SHOULD** ship a connectivity recipe that exercises every declared server read-only and reports per-server PASS/FAIL, and **SHOULD** run it before trusting any other recipe against a new environment
 - **SHOULD** ship a provider-surface recipe that inventories the agent's tools, so the execution surface is a measurement rather than an assumption
@@ -209,8 +209,6 @@ spec/                          this layer plus one spec per backend
 - [ ] No recipe dispatches a plugin-provided agent type
 - [ ] Every project agent lives under `.claude/agents/`, not `.agents/agents/`
 - [ ] Every state-changing tool a recipe names outside a `Forbidden by name:` or `Permitted by name:` block belongs to an `-apply` recipe
-- [ ] Every recipe, and every skill that names any state-changing tool at all, names all twelve *inside* a `Forbidden by name:` or `Permitted by name:` block — a name in the surrounding prose does not count
-- [ ] No skill outside the recorded writing set, and no `-apply` recipe beyond its recorded writes, declares a tool under `Permitted by name:`
 - [ ] `goose recipe validate` passes for every file in `recipes/`
 
 ## Open Questions

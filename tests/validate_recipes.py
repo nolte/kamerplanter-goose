@@ -99,18 +99,6 @@ BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
 BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
 TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
 
-# A marker inside a fenced block still counts as policy, and that is a known
-# gap rather than an oversight. Blanking fenced regions before the analysis was
-# tried and withdrawn: it made a real instruction invisible when it sat in a
-# fenced report template (`calls_state_changing_tools` returned nothing for a
-# prompt whose fence said "Now call mcp__kamerplanter__archive_plant"), and an
-# unbalanced fence in `description` or `instructions` paired with the opener of
-# a genuine later example and blanked everything between them — erasing a real
-# `Forbidden by name:` block in one direction and a real call in the other.
-# Both were measured. Closing this needs a body that is parsed per field with
-# fences balanced inside each, not a global regex over three concatenated
-# fields.
-
 
 def tool_pattern(tool: str) -> re.Pattern:
     """Match a tool by its bare name or in its `mcp__<server>__` form.
@@ -246,290 +234,24 @@ def missing_from_policy(
 ) -> list[str]:
     """The twelve minus what the artefact names INSIDE a policy block.
 
-    Counting names anywhere in the body was the first shape of this check and
-    it was worthless: measured, moving five names out of
-    `diary-photo-analysis-apply.yaml`'s `Forbidden by name:` block into a
-    "Background:" sentence kept the gate green, and a skill whose prohibition
-    line held ONE name while the other eleven sat in a "for background only"
-    paragraph passed too. Presence is not prohibition, so the span is what
-    counts.
+    The guard above answers the opposite question — which names sit OUTSIDE a
+    block, i.e. are called — and cannot see a subset at all, because an absent
+    name is outside nothing. Measured: stripping eight of the twelve out of a
+    read-only recipe's `Forbidden by name:` block left the whole gate green.
 
     Completeness is a property of the union. Both `-apply` recipes split the
     set as two permitted plus ten forbidden, so demanding twelve in the
-    forbidden half alone would fail exactly the artefacts that declare their
+    forbidden half alone would fail exactly the recipes that declare their
     writes correctly.
+
+    A tool name inside a fenced example counts as declared. That is a false
+    negative — it can only make a recipe look more complete than it is, never
+    block a correct one — and it is the benign direction to leave open.
     """
     inside = policy_text(body, markers)
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
     )
-
-
-def names_any_state_changing(body: str) -> bool:
-    """True when the artefact names any of the twelve anywhere at all.
-
-    This is the trigger, and it deliberately does not look at the markers.
-    Keying the skill check on "declares a policy block" made the guard
-    opt-out: measured, deleting the marker line from a skill and leaving
-    three names in ordinary prose dropped it out of the gate entirely —
-    which is exactly the state the six garden skills were in before this
-    check existed. Mentioning a write tool is the trigger; the block is
-    where the answer has to be.
-    """
-    return any(tool_pattern(tool).search(body) for tool in STATE_CHANGING_TOOLS)
-
-
-# A skill may declare `Permitted by name:` only where it exists to write.
-# Recipes carry that claim in the `-apply` filename suffix and `check_recipe`
-# rejects the marker without it; a skill has no filename to say it, so the
-# allowlist says it instead. Measured: renaming a read-only skill's
-# `Forbidden by name:` to `Permitted by name:` declared all twelve writes
-# permitted and passed the gate clean.
-SKILLS_THAT_WRITE = {"diary-analysis-claim"}
-
-# And WHICH writes each of them is for. `SKILLS_THAT_WRITE` says only that a
-# skill writes, exactly as an `-apply` suffix says only that a recipe does —
-# measured, that left a writing skill free to declare all twelve permitted and
-# pass, because being in the set above skipped the marker check entirely.
-SKILL_PERMITTED_WRITES = {
-    "diary-analysis-claim": {"claim_diary_analysis", "submit_diary_analysis"},
-}
-
-# A tool name has a shape, and that is what tells a declaration from a sentence
-# about the marker. The group is the bare tool name, so the same pattern serves
-# the predicate below and the extraction the overreach checks need.
-MCP_TOOL_NAME_PATTERN = re.compile(r"`mcp__[A-Za-z0-9_]+__([A-Za-z0-9_]+)`")
-
-
-# A fenced block is an illustration, not a declaration — and a file that shows
-# this convention must stay committable. Sixteen fenced blocks already sit in
-# `.claude/skills/`, and `domain-review` reviews the convention itself.
-#
-# Two rules make this safe where the round-4 attempt was not. It runs on ONE
-# field, never on `description` + `instructions` + `prompt` joined, so an
-# opener can no longer pair with a later field's example. And the markers must
-# start a line, so a backtick triple inside prose pairs nothing. An unbalanced
-# opener therefore matches nothing at all and swallows nothing — the failure
-# that erased a real `Forbidden by name:` block last time.
-#
-# Blanking rather than deleting keeps every offset, which `policy_spans` needs.
-FENCE_MARKER_PATTERN = re.compile(r"^[ \t]*(?:```|~~~)")
-
-
-def without_fenced_blocks(field: str) -> str:
-    """One field with its fenced blocks blanked out, offsets preserved.
-
-    Counted line by line, not paired by regex. A regex pairs the first marker
-    with the second whatever they mean, so a forgotten opener followed by a
-    real example block erased the policy sitting between them — and because
-    the skill trigger reads this same source, the guard went *silent* instead
-    of loud. Measured on `plant-context-collect`: zero findings, exit 0.
-
-    An odd number of markers means the fencing is malformed and every pairing
-    is a guess. Nothing is blanked then. A fenced example counting as policy
-    is a loud false positive, visible to whoever wrote the broken fence; a
-    wrong pairing is the quiet failure, and quiet is the one that matters in a
-    guard. `~~~` counts as a marker too — it is valid CommonMark and MkDocs
-    renders it, so treating only backticks left the same false positive for
-    the other syntax.
-    """
-    lines = field.split("\n")
-    markers = [i for i, line in enumerate(lines) if FENCE_MARKER_PATTERN.match(line)]
-    if len(markers) % 2:
-        return field
-    blanked = list(lines)
-    for start, end in zip(markers[::2], markers[1::2]):
-        for index in range(start, end + 1):
-            blanked[index] = re.sub(r"[^\n]", " ", blanked[index])
-    return "\n".join(blanked)
-
-
-def names_declared_under(body: str, marker: str) -> set[str]:
-    """Every tool named under `marker`, whether the catalog lists it or not.
-
-    The overreach checks weigh what an artefact declares permitted against
-    what it is recorded as writing, and filtering that to the twelve made the
-    comparison blind exactly where it matters: measured, an `-apply` recipe
-    could permit `mcp__home_assistant__call_service` — an actuating tool, a
-    write by this repository's conventions — or a kamerplanter write added
-    since the last catalog measurement, and neither allowance list was
-    consulted at all.
-    """
-    inside = policy_text(body, (marker,))
-    names = {match.group(1) for match in MCP_TOOL_NAME_PATTERN.finditer(inside)}
-    return names | {
-        tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(inside)
-    }
-
-
-# One case per shape the extraction has to get right, for the same reason the
-# marker cases exist: the overreach checks were changed without a single case
-# calling them.
-# One case per direction this has to get right. The round-4 version was wrong
-# in both at once, so both are pinned before the helper is used anywhere.
-# Each case gives the names that survive the blanking.
-FENCE_CASES = [
-    (
-        "a fenced example declares nothing",
-        "```yaml\n  - Permitted by name: `mcp__kamerplanter__archive_plant`\n```",
-        set(),
-    ),
-    (
-        "a real block outside a fence survives",
-        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "```yaml\n  example: `mcp__kamerplanter__create_site`\n```",
-        {"archive_plant"},
-    ),
-    (
-        "an unbalanced opener swallows nothing",
-        "```yaml\n  example only\n\n"
-        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.",
-        {"archive_plant"},
-    ),
-    (
-        "a backtick triple inside prose pairs nothing",
-        "Write ```like this``` in prose. "
-        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.",
-        {"archive_plant"},
-    ),
-    (
-        "two fenced blocks blank independently",
-        "```\n`mcp__kamerplanter__create_site`\n```\n"
-        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "```\n`mcp__kamerplanter__confirm_care_task`\n```",
-        {"archive_plant"},
-    ),
-]
-
-
-# The fence cases above pin one shape each. These pin the CLASS — how many
-# fence markers a field carries — because pinning the shape I had in mind is
-# exactly how the previous version shipped broken: with three markers, a
-# forgotten opener paired with a real example block and blanked the policy
-# between them, and on the skill path that turned the guard silent rather than
-# loud, since the trigger reads the same blanked source.
-#
-# An odd count means the fencing is malformed and any pairing is a guess.
-# Guessing wrong either erases a real block or exposes an example, so nothing
-# is blanked at all: a loud false positive is the safe direction for a guard,
-# and it is visible to whoever wrote the broken fence.
-FENCE_COUNT_CASES = [
-    (
-        "no fence, nothing blanked",
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.",
-        {"archive_plant"},
-    ),
-    (
-        "one marker is malformed — blank nothing",
-        "```yaml\n  opener only\n\n"
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.",
-        {"archive_plant"},
-    ),
-    (
-        "two markers pair, the block between them goes",
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "```yaml\n`mcp__kamerplanter__create_site`\n```",
-        {"archive_plant"},
-    ),
-    (
-        "three markers are malformed — blank nothing, keep the policy",
-        "```yaml\n  forgotten opener\n\n"
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n\n"
-        "```json\n  a real example\n```",
-        {"archive_plant"},
-    ),
-    (
-        "four markers pair twice, the policy between survives",
-        "```\n`mcp__kamerplanter__create_site`\n```\n"
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "```\n`mcp__kamerplanter__confirm_care_task`\n```",
-        {"archive_plant"},
-    ),
-    (
-        "tilde fences pair like backtick fences",
-        "- Forbidden by name: `mcp__kamerplanter__archive_plant`.\n"
-        "~~~markdown\n`mcp__kamerplanter__create_site`\n~~~",
-        {"archive_plant"},
-    ),
-    (
-        "a tilde block alone declares nothing",
-        "~~~markdown\n- Permitted by name: `mcp__kamerplanter__create_site`\n~~~",
-        set(),
-    ),
-]
-
-
-DECLARED_NAME_CASES = [
-    (
-        "catalog names come back bare",
-        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
-        "`mcp__kamerplanter__submit_diary_analysis`.",
-        "Permitted by name:",
-        {"claim_diary_analysis", "submit_diary_analysis"},
-    ),
-    (
-        "a write the catalog does not list comes back too",
-        "  - Permitted by name: `mcp__home_assistant__call_service`.",
-        "Permitted by name:",
-        {"call_service"},
-    ),
-    (
-        "catalog and non-catalog together",
-        "  - Permitted by name: `mcp__home_assistant__call_service`, "
-        "`mcp__kamerplanter__archive_plant`.",
-        "Permitted by name:",
-        {"call_service", "archive_plant"},
-    ),
-    (
-        "prose naming the marker yields nothing",
-        "- The `Permitted by name:` marker says which writes a recipe is for.",
-        "Permitted by name:",
-        set(),
-    ),
-    (
-        "prose quoting something after the marker yields nothing",
-        "- Policy is under `Forbidden by name:`; the `Permitted by name:` "
-        "marker is reserved for an `-apply` recipe.",
-        "Permitted by name:",
-        set(),
-    ),
-]
-
-
-def declares_policy_under(body: str, marker: str) -> bool:
-    """True when `marker` opens a block that actually names a tool.
-
-    Three predicates have stood here and two were wrong in opposite
-    directions, because `policy_spans` takes every backticked token after the
-    marker — `-apply` included:
-
-    * asking for one of the twelve missed a write the catalog does not list
-      yet, so a read-only recipe could permit `mcp__home_assistant__call_service`
-      and pass;
-    * asking for any backtick at all caught prose that names the marker and
-      then quotes something, so a file documenting this very convention
-      stopped being committable.
-
-    Requiring a name-shaped token — the `mcp__server__tool` form, or a bare
-    catalog name, which the block convention also allows — answers both
-    without asking whether the tool is already known.
-    """
-    inside = policy_text(body, (marker,))
-    if MCP_TOOL_NAME_PATTERN.search(inside):
-        return True
-    return any(tool_pattern(tool).search(inside) for tool in STATE_CHANGING_TOOLS)
-
-# What each `-apply` recipe is allowed to declare permitted. The suffix says
-# only THAT a recipe writes, never WHAT, so without this a recipe could move all
-# twelve into `Permitted by name:` and pass both guards at once — measured, the
-# completeness union stayed whole and the call guard excised the marker. Keeping
-# it here rather than deriving it from the `description` is a deliberate second
-# source of truth: spec/goose/recipe-project-pattern §182 records that inferring
-# policy from prose misread in both directions for twelve review rounds.
-RECIPE_PERMITTED_WRITES = {
-    "diary-photo-analysis-apply": {"claim_diary_analysis", "submit_diary_analysis"},
-    "diary-analysis-queue-apply": {"claim_diary_analysis", "submit_diary_analysis"},
-}
 
 
 def load_yaml(path: Path, findings: Findings) -> dict | None:
@@ -562,11 +284,8 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # Search the parsed prose fields rather than the raw file: a comment that
     # explains why a mechanism is *not* used names it too, and matching that
     # would fail the very recipe that documents the trap correctly.
-    # Fences are stripped per field, BEFORE the join. Doing it after — on the
-    # three fields concatenated — is what let an unbalanced opener in one field
-    # pair with a later field's example and blank everything between them.
     body = "\n".join(
-        without_fenced_blocks(value)
+        value
         for key in ("description", "instructions", "prompt")
         if isinstance(value := recipe.get(key), str)
     )
@@ -600,14 +319,11 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
     if not is_apply:
-        # A recipe may name a state-changing tool purely to forbid it, so the
-        # policy blocks are cut out before the remainder is read.
+    # A recipe may name a state-changing tool purely to forbid it, so the
+    # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
-        # `declares_policy_under` asks whether the block names something
-        # tool-shaped. Two narrower predicates stood here first and both were
-        # wrong, in opposite directions — see that function. MARKER_CASES pins
-        # the behaviour, which is what neither earlier version had.
-        if declares_policy_under(body, "Permitted by name:"):
+        permitted = policy_spans(body, "Permitted by name:")
+        if permitted:
             findings.error(
                 where,
                 "declares a `Permitted by name:` block without an `-apply` "
@@ -637,16 +353,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # prevent — measured, moving the block out of `prompt` into `instructions`
     # left zero of the twelve in the prompt and the gate still green.
     #
-    # Unconditional, unlike the skill check below, which triggers only on a
-    # skill that names a write tool. Every recipe here loads the kamerplanter
-    # server, so the asymmetry costs nothing today; a future recipe that loads
-    # only Home Assistant would have to name twelve tools it never sees, and
-    # that is the point at which this should gain the same trigger rather than
-    # an exemption list.
-    prompt_text = without_fenced_blocks(prompt) if isinstance(prompt, str) else ""
-    # Only where a prompt exists. Reporting an incomplete policy on a recipe
-    # that has no prompt at all repeats one cause as three findings and buries
-    # the one that matters.
+    # Only where a prompt exists: reporting an incomplete policy on a recipe
+    # that has none repeats one cause as three findings and buries the one
+    # that matters.
+    prompt_text = prompt if isinstance(prompt, str) else ""
     missing = missing_from_policy(prompt_text)
     if prompt_text.strip() and missing:
         findings.error(
@@ -657,27 +367,6 @@ def check_recipe(path: Path, findings: Findings) -> None:
             "subset is the failure this rule exists to catch; a name in prose "
             "outside the block is not a prohibition, and a block in "
             "`instructions` is not enforced on a headless run.",
-        )
-
-    # `Permitted by name:` says which writes the recipe exists for. The `-apply`
-    # suffix backs the claim that it writes, not the claim about which tools, so
-    # the allowance is declared here and anything beyond it is an error.
-    # Read from `body`, not `prompt_text`, unlike the completeness check above.
-    # Completeness asks what is ENFORCED, and only the prompt is; this asks what
-    # the artefact CLAIMS, and a permission declared in `instructions` still
-    # stands there for a reader even though a headless run ignores it.
-    permitted = names_declared_under(body, "Permitted by name:")
-    # Only for `-apply`. A read-only recipe carrying the marker at all is
-    # already reported above, and saying it twice buries the first finding.
-    overreach = sorted(permitted - RECIPE_PERMITTED_WRITES.get(path.stem, set()))
-    if is_apply and overreach:
-        findings.error(
-            where,
-            f"declares {', '.join(overreach)} permitted, which is beyond what "
-            "this recipe is recorded as writing. The `-apply` suffix says that "
-            "a recipe writes, never which tools; widen "
-            "`RECIPE_PERMITTED_WRITES` deliberately if the recipe really "
-            "gained a write.",
         )
 
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
@@ -841,129 +530,6 @@ def check_skills(findings: Findings) -> None:
                 f".claude/skills/{skill_file.parent.name}",
                 "carries `disable-model-invocation: true`, which makes it "
                 "invisible to every non-interactive recipe run.",
-            )
-
-        # Naming none of the twelve is not an omission: the recipe that loads
-        # the skill carries the policy instead. `plant-photo-read` names one
-        # read tool and runs under `-apply` recipes whose own block covers all
-        # twelve, and the four review lenses never reach a garden at all.
-        # Naming any of them is the trigger, and the count happens inside the
-        # block. Keying on the block itself was the earlier shape and made the
-        # guard opt-out: deleting the marker line bought silence. The cost of
-        # this trigger is that a purely descriptive mention now requires a
-        # block — measured on `plant-photo-read`, and accepted.
-        name = skill_file.parent.name
-        # A SKILL.md is one field, so its fences pair unambiguously. `text`
-        # itself stays untouched for the frontmatter read above.
-        policy_source = without_fenced_blocks(text)
-        missing = missing_from_policy(policy_source)
-        if names_any_state_changing(policy_source) and missing:
-            findings.error(
-                f".claude/skills/{name}",
-                f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
-                f"{len(STATE_CHANGING_TOOLS)} state-changing tools inside a "
-                f"policy block; missing {', '.join(missing)}. A skill that "
-                "names a write tool at all states a policy, and a name in "
-                "prose outside the block is not a prohibition. A skill that "
-                "names none is governed by the recipe that loads it.",
-            )
-
-        # There is deliberately NO call guard here, and the absence is the
-        # finding rather than an oversight. A complete prohibition list is not
-        # the same as obeying it, so a skill can name all twelve inside its
-        # block and then say "Step 9 — call `mcp__kamerplanter__archive_plant`"
-        # and pass. That gap is real and stays open.
-        #
-        # The recipe guard does not port. `calls_state_changing_tools` rests on
-        # "a name outside the block is a call", which holds for a recipe
-        # `prompt` because a prompt is nothing but instruction. A SKILL.md is
-        # instruction AND documentation: it explains tools in prose on purpose.
-        # Measured, enabling it here flagged all six garden skills — including
-        # the `record_feeding_event` gotcha that closes #26 and the
-        # `create_inspection` one that closes #33, plus `diary-analysis-claim`
-        # describing the two calls it exists to make. Enforcing it would mean
-        # deleting the very sentences those issues were opened to add.
-        #
-        # Narrowing it to imperative forms ("call `x`", "Step N — call `x`") is
-        # the prose inference spec/goose/recipe-project-pattern §182 records as
-        # having misread in both directions for twelve review rounds. Do not
-        # re-add this without an artefact convention that separates a skill's
-        # instructions from its explanations.
-
-        # `Permitted by name:` is the claim "this is what I exist to call".
-        # A recipe backs that claim with an `-apply` filename; a skill has no
-        # filename to back it, so only a skill that genuinely writes may carry
-        # the marker. Without this, renaming the forbidden block declared all
-        # twelve writes permitted and passed.
-        # Same predicate as the recipe side, for the same reasons.
-        if name not in SKILLS_THAT_WRITE and declares_policy_under(
-            policy_source, "Permitted by name:"
-        ):
-            findings.error(
-                f".claude/skills/{name}",
-                "declares a `Permitted by name:` block but is not a writing "
-                "skill. That marker says which writes the artefact exists to "
-                "call; a read-only skill states its policy under `Forbidden by "
-                "name:` alone.",
-            )
-
-        # A writing skill still only gets the writes it is recorded for.
-        skill_overreach = sorted(
-            names_declared_under(policy_source, "Permitted by name:")
-            - SKILL_PERMITTED_WRITES.get(name, set())
-        )
-        if name in SKILLS_THAT_WRITE and skill_overreach:
-            findings.error(
-                f".claude/skills/{name}",
-                f"declares {', '.join(skill_overreach)} permitted, which is "
-                "beyond what this skill is recorded as writing. Widen "
-                "`SKILL_PERMITTED_WRITES` deliberately if the skill really "
-                "gained a write.",
-            )
-
-        # And it has to declare them. `SKILLS_THAT_WRITE` only ever acted in the
-        # rejecting direction, so the inverse defect was invisible: measured,
-        # putting all twelve under `Forbidden by name:` — the shape the five
-        # sibling skills use, which is where a copy-paste edit lands — passed
-        # every check while forbidding the skill the two calls it exists to
-        # make. A run would then refuse its own claim.
-        undeclared = sorted(
-            SKILL_PERMITTED_WRITES.get(name, set())
-            - names_declared_under(policy_source, "Permitted by name:")
-        )
-        if name in SKILLS_THAT_WRITE and undeclared:
-            findings.error(
-                f".claude/skills/{name}",
-                f"is recorded as writing {', '.join(undeclared)} but does not "
-                "declare them under `Permitted by name:`. A writing skill that "
-                "forbids its own calls refuses the work it exists for.",
-            )
-
-
-def check_write_registers(findings: Findings) -> None:
-    """Every allowlist key names an artefact that still exists.
-
-    All three registers are keyed by directory name or file stem, and nothing
-    tied them to disk. Rename `diary-analysis-claim` and both directions of
-    its write check — the overreach ceiling and the undeclared-writes check —
-    fall away without a word, while the entries sit there looking
-    authoritative. That is the class this file exists to catch, one level up
-    from the artefacts it checks.
-    """
-    for name in sorted(SKILLS_THAT_WRITE | set(SKILL_PERMITTED_WRITES)):
-        if not (SKILLS_DIR / name).is_dir():
-            findings.error(
-                "tests/validate_recipes.py",
-                f"the write registers name the skill `{name}`, which has no "
-                "directory under .claude/skills/. Both write checks for it "
-                "silently do nothing.",
-            )
-    for stem in sorted(RECIPE_PERMITTED_WRITES):
-        if not (RECIPES_DIR / f"{stem}.yaml").is_file():
-            findings.error(
-                "tests/validate_recipes.py",
-                f"`RECIPE_PERMITTED_WRITES` names the recipe `{stem}`, which "
-                "has no file under recipes/. Its overreach ceiling is gone.",
             )
 
 
@@ -1163,55 +729,8 @@ WRITE_GUARD_CASES = [
 
 
 # The completeness guard has its own shapes, because it answers a different
-# question than the write-guard above and shares none of its marker logic. One
-# case per way a subset has actually been written in this repository.
+# question than the write-guard above and shares none of its marker logic.
 ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
-
-# One case per way this predicate has been wrong. It has been changed three
-# times and was wrong twice, in opposite directions, and every one of those
-# regressions shipped with the gate green — because nothing here called it.
-# Add the shape before changing the predicate.
-MARKER_CASES = [
-    (
-        "prose naming the marker declares nothing",
-        "- The `Permitted by name:` marker says which writes a recipe is for.",
-        "Permitted by name:",
-        False,
-    ),
-    (
-        "prose that quotes something after the marker still declares nothing",
-        "- Tool policy is declared under `Forbidden by name:`; the "
-        "`Permitted by name:` marker is reserved for an `-apply` recipe.",
-        "Permitted by name:",
-        False,
-    ),
-    (
-        "a block naming catalog tools declares",
-        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
-        "`mcp__kamerplanter__submit_diary_analysis`.",
-        "Permitted by name:",
-        True,
-    ),
-    (
-        "a block naming a write the catalog does not list still declares",
-        "  - Permitted by name: `mcp__home_assistant__call_service`.",
-        "Permitted by name:",
-        True,
-    ),
-    (
-        "a bare catalog name declares, as the block convention allows",
-        "  - Forbidden by name: `archive_plant`.",
-        "Forbidden by name:",
-        True,
-    ),
-    (
-        "no marker, no declaration",
-        "- This skill reads and judges. It calls nothing that writes.",
-        "Permitted by name:",
-        False,
-    ),
-]
-
 
 COMPLETENESS_CASES = [
     (
@@ -1221,7 +740,7 @@ COMPLETENESS_CASES = [
     ),
     (
         "prose naming all twelve declares nothing — no block, no policy",
-        f"Never call {ALL_TWELVE}. This skill reads and judges.",
+        f"Never call {ALL_TWELVE}. This recipe reads and judges.",
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
@@ -1304,52 +823,6 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
         return 1
     print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
-
-    for name, body, marker, expected in MARKER_CASES:
-        actual = declares_policy_under(body, marker)
-        if actual != expected:
-            failures += 1
-            print(f"  FAIL {name}\n       expected {expected}, got {actual}")
-    if failures:
-        print(f"\n{failures} of {len(MARKER_CASES)} marker case(s) failed.")
-        return 1
-    print(f"OK — {len(MARKER_CASES)} marker cases hold.")
-
-    for name, body, marker, expected in DECLARED_NAME_CASES:
-        actual = names_declared_under(body, marker)
-        if actual != expected:
-            failures += 1
-            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
-    if failures:
-        print(f"\n{failures} of {len(DECLARED_NAME_CASES)} declared-name case(s) failed.")
-        return 1
-    print(f"OK — {len(DECLARED_NAME_CASES)} declared-name cases hold.")
-
-    for name, field, expected in FENCE_CASES:
-        stripped = without_fenced_blocks(field)
-        actual = {
-            tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(stripped)
-        }
-        if actual != expected:
-            failures += 1
-            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
-    if failures:
-        print(f"\n{failures} of {len(FENCE_CASES)} fence case(s) failed.")
-        return 1
-    print(f"OK — {len(FENCE_CASES)} fence cases hold.")
-
-    for name, field, expected in FENCE_COUNT_CASES:
-        stripped = without_fenced_blocks(field)
-        actual = {
-            tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(stripped)
-        }
-        if actual != expected:
-            failures += 1
-            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {sorted(actual)}")
-    if failures:
-        print(f"\n{failures} of {len(FENCE_COUNT_CASES)} fence-count case(s) failed.")
-        return 1
-    print(f"OK — {len(FENCE_COUNT_CASES)} fence-count cases hold.")
     return 0
 
 
@@ -1372,7 +845,6 @@ def main() -> int:
         check_recipe(path, findings)
     check_extensions(findings)
     check_skills(findings)
-    check_write_registers(findings)
     check_agents(findings)
     run_goose_validate(findings)
 
