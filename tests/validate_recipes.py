@@ -326,9 +326,18 @@ def check_recipe(path: Path, findings: Findings) -> None:
 
     # A write-capable recipe announces itself in its filename and description.
     is_apply = path.stem.endswith("-apply")
+
+    # Computed here, above the write-guard, because that guard needs to know
+    # whether the completeness check is already reporting on this recipe. A
+    # prohibition written as one annotated bullet per tool ends the block at
+    # the marker, and both checks then fire on it — the second advising an
+    # `-apply` rename for a recipe that calls nothing. One cause, one finding.
+    prompt_text = prompt if isinstance(prompt, str) else ""
+    missing = missing_from_policy(prompt_text)
+
     if not is_apply:
-    # A recipe may name a state-changing tool purely to forbid it, so the
-    # policy blocks are cut out before the remainder is read.
+        # A recipe may name a state-changing tool purely to forbid it, so the
+        # policy blocks are cut out before the remainder is read.
         calling = calls_state_changing_tools(body, is_apply=False)
         permitted = policy_spans(body, "Permitted by name:")
         if permitted:
@@ -339,7 +348,10 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 "for, so a recipe that has one is a writer and has to say so "
                 "in its name and its `description`.",
             )
-        if calling:
+        # Suppressed while the completeness check is already reporting: an
+        # annotated bullet list trips both, and this one's advice — rename the
+        # file to `-apply` — is wrong for a recipe that calls nothing.
+        if calling and not missing:
             findings.error(
                 where,
                 f"calls state-changing tools ({', '.join(calling)}) outside a "
@@ -364,14 +376,6 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # Only where a prompt exists: reporting an incomplete policy on a recipe
     # that has none repeats one cause as three findings and buries the one
     # that matters.
-    # Only where the recipe reaches this server at all. The MUST comes from
-    # `spec/mcp/kamerplanter-mcp-server`, and a future read-only recipe that
-    # loads only Home Assistant would otherwise have to copy twelve
-    # kamerplanter tool names into its prompt to stay green, with an error
-    # message that makes no sense inside it. Every recipe here names the
-    # server today, so this condition changes nothing now and stops the check
-    # from outgrowing the rule it enforces.
-    #
     # Both markers count, for every recipe. Narrowing them to
     # `Forbidden by name:` on a read-only recipe was tried and removed as dead
     # logic: measured, the marker choice only changes the answer when a
@@ -385,19 +389,20 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # passes completeness, measured. Bounding that needs a per-recipe
     # allowance register, which this branch removed deliberately after it
     # produced findings in every round it existed. Tracked in #34.
-    prompt_text = prompt if isinstance(prompt, str) else ""
-    missing = missing_from_policy(prompt_text)
-    # Both forms count as reaching the server. Keying on the `mcp__kamerplanter__`
-    # literal alone contradicted `COMPLETENESS_CASES`, which blesses the bare
-    # name as a valid declaration: a recipe written that way throughout was
-    # skipped entirely — the one spelling the tests call correct switched the
-    # check off. The prefixed clause still has to stay, because a recipe may
-    # reach the server through a read tool and name none of the twelve, which
-    # is exactly the subset this check exists to catch.
-    reaches_server = "mcp__kamerplanter__" in body or any(
-        tool_pattern(tool).search(body) for tool in STATE_CHANGING_TOOLS
-    )
-    if reaches_server and prompt_text.strip() and missing:
+    # Unconditional, and a filter on "does this recipe reach the server" was
+    # tried and withdrawn. It cannot be written from the data this file has:
+    # the prefixed form is detectable, the bare form is not without a list of
+    # read tools — and such a list is the stale-name defect this whole check
+    # exists to catch. Measured, the filter let the case the check exists for
+    # walk straight through: a read-only recipe naming `get_plant` and
+    # `list_plants` in bare form, carrying no policy block at all, was skipped
+    # with all twelve missing.
+    #
+    # The cost is the other direction: a future recipe that loads only Home
+    # Assistant would have to name twelve kamerplanter tools it never calls.
+    # No such recipe exists — all ten reach this server — and when one arrives,
+    # the filter belongs on the declared extensions, not on tool names.
+    if prompt_text.strip() and missing:
         findings.error(
             where,
             f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
