@@ -155,7 +155,15 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
             stop, cursor = match.end(), match.end()
             for span in BACKTICK_SPAN_PATTERN.finditer(head):
                 between = head[cursor - match.end():span.start()]
-                if re.search(r"[A-Za-z0-9]", between):
+                # A full stop ends the run as surely as a word does. Measured:
+                # `Forbidden by name: <names>. \`create_inspection\` is called
+                # at step 4.` pulled that last name into the block, because the
+                # gap between it and the previous one held punctuation only —
+                # so a recipe that really called it read as complete AND as
+                # calling nothing. A period-separated list of names therefore
+                # ends at the first name; that spelling does not occur here,
+                # and for a guard "the sentence ended" is the safe reading.
+                if re.search(r"[A-Za-z0-9.]", between):
                     break
                 cursor = match.end() + span.end()
                 stop = cursor
@@ -379,7 +387,17 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # produced findings in every round it existed. Tracked in #34.
     prompt_text = prompt if isinstance(prompt, str) else ""
     missing = missing_from_policy(prompt_text)
-    if "mcp__kamerplanter__" in body and prompt_text.strip() and missing:
+    # Both forms count as reaching the server. Keying on the `mcp__kamerplanter__`
+    # literal alone contradicted `COMPLETENESS_CASES`, which blesses the bare
+    # name as a valid declaration: a recipe written that way throughout was
+    # skipped entirely — the one spelling the tests call correct switched the
+    # check off. The prefixed clause still has to stay, because a recipe may
+    # reach the server through a read tool and name none of the twelve, which
+    # is exactly the subset this check exists to catch.
+    reaches_server = "mcp__kamerplanter__" in body or any(
+        tool_pattern(tool).search(body) for tool in STATE_CHANGING_TOOLS
+    )
+    if reaches_server and prompt_text.strip() and missing:
         findings.error(
             where,
             f"declares {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
@@ -748,6 +766,12 @@ WRITE_GUARD_CASES = [
         "substring is not a match",
         "unarchive_plantx and archive_plants",
         [],
+    ),
+    (
+        "a sentence after the block does not extend it",
+        "  - Forbidden by name: `mcp__kamerplanter__archive_plant`. "
+        "`mcp__kamerplanter__create_site` is called at step 4.",
+        ["create_site"],
     ),
 ]
 
