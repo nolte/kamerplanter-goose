@@ -348,10 +348,18 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 "for, so a recipe that has one is a writer and has to say so "
                 "in its name and its `description`.",
             )
-        # Suppressed while the completeness check is already reporting: an
+        # Suppressed only while the completeness check is actually reporting —
+        # the same condition it fires on, not just a non-empty `missing`. An
         # annotated bullet list trips both, and this one's advice — rename the
         # file to `-apply` — is wrong for a recipe that calls nothing.
-        if calling and not missing:
+        #
+        # Keying on `missing` alone removed a check that `develop` has.
+        # Measured: a recipe with no `prompt` that calls `archive_plant` from
+        # `instructions` reports twice on `develop` and once here, because
+        # `missing` is all twelve for an empty prompt while completeness stays
+        # silent for the same reason. Both guards went quiet together.
+        reporting_incomplete = bool(prompt_text.strip()) and bool(missing)
+        if calling and not reporting_incomplete:
             findings.error(
                 where,
                 f"calls state-changing tools ({', '.join(calling)}) outside a "
