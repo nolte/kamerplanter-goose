@@ -223,6 +223,30 @@ def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
     )
 
 
+def declared_state_changing_tools(body: str) -> set[str]:
+    """Every one of the twelve named anywhere in the artefact.
+
+    Marker-blind on purpose, and it has to be. `calls_state_changing_tools`
+    answers the opposite question — which names sit OUTSIDE a policy block —
+    and needs the markers to do it. A name that is simply absent is outside
+    nothing, so that guard cannot see a subset at all: measured, stripping
+    eight of the twelve out of a read-only recipe's `Forbidden by name:` block
+    left the whole gate green.
+    """
+    return {tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(body)}
+
+
+def missing_state_changing_tools(body: str) -> list[str]:
+    """The twelve minus what the artefact names, sorted.
+
+    Which half a name sits in does not matter here. Both `-apply` recipes
+    split the set as two permitted plus ten forbidden, so completeness is a
+    property of the union — requiring the forbidden half to hold twelve would
+    fail exactly the recipes that declare their writes correctly.
+    """
+    return sorted(STATE_CHANGING_TOOLS - declared_state_changing_tools(body))
+
+
 def load_yaml(path: Path, findings: Findings) -> dict | None:
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -309,6 +333,22 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 "the tool; rename the file and say so in `description` if it "
                 "calls it.",
             )
+    # The prohibition has to name each tool individually, and the catalog has
+    # grown twice — four names, then seven, then twelve. A list written against
+    # an earlier count is a subset today, and nothing above can see that: the
+    # call guard reads names outside a policy block, and an absent name is
+    # outside nothing. Measured on 2026-09-14: every recipe here names all
+    # twelve, so this check starts green and stays a floor.
+    missing = missing_state_changing_tools(body)
+    if missing:
+        findings.error(
+            where,
+            f"names {len(STATE_CHANGING_TOOLS) - len(missing)} of the "
+            f"{len(STATE_CHANGING_TOOLS)} state-changing tools; missing "
+            f"{', '.join(missing)}. Naming a subset is the failure this rule "
+            "exists to catch, and a category does not substitute for a name.",
+        )
+
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
     # for backend state, so a report-writing recipe has nothing else to warn
     # with — and a reader who granted the run on the strength of "read-only"
@@ -470,6 +510,23 @@ def check_skills(findings: Findings) -> None:
                 f".claude/skills/{skill_file.parent.name}",
                 "carries `disable-model-invocation: true`, which makes it "
                 "invisible to every non-interactive recipe run.",
+            )
+
+        # Naming none of the twelve is not an omission: the recipe that loads
+        # the skill carries the policy. `plant-photo-read` names one read tool
+        # and runs under `-apply` recipes whose own block covers all twelve,
+        # and the four review lenses never reach a garden at all. Naming SOME
+        # is a list, and a partial list is the defect — which is why the
+        # selector is "names at least one" rather than "mentions the server".
+        declared = declared_state_changing_tools(text)
+        if declared and len(declared) < len(STATE_CHANGING_TOOLS):
+            findings.error(
+                f".claude/skills/{skill_file.parent.name}",
+                f"names {len(declared)} of the {len(STATE_CHANGING_TOOLS)} "
+                "state-changing tools; missing "
+                f"{', '.join(sorted(STATE_CHANGING_TOOLS - declared))}. A skill "
+                "that names some of them has a prohibition list, and a partial "
+                "one is the failure the rule exists to catch.",
             )
 
 
@@ -668,6 +725,68 @@ WRITE_GUARD_CASES = [
 ]
 
 
+# The completeness guard has its own shapes, because it answers a different
+# question than the write-guard above and shares none of its marker logic. One
+# case per way a subset has actually been written in this repository.
+ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+
+COMPLETENESS_CASES = [
+    (
+        "a complete list anywhere in the body is complete",
+        f"  - Call NO tool that changes state. Forbidden by name: {ALL_TWELVE}.",
+        [],
+    ),
+    (
+        "markers are irrelevant — prose naming all twelve still counts",
+        f"Never call {ALL_TWELVE}. This skill reads and judges.",
+        [],
+    ),
+    (
+        "the catalog's seven-name era is a subset today",
+        "- Call no tool that changes state: "
+        "`mcp__kamerplanter__confirm_care_task`, "
+        "`mcp__kamerplanter__archive_plant`, "
+        "`mcp__kamerplanter__set_plant_location`, "
+        "`mcp__kamerplanter__create_site`, "
+        "`mcp__kamerplanter__add_plant_diary_entry`, "
+        "`mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.",
+        [
+            "assign_nutrient_plan",
+            "assign_species_phase_sequence",
+            "create_inspection",
+            "record_feeding_event",
+            "transition_plant_phase",
+        ],
+    ),
+    (
+        "a permitted/forbidden split is complete as a union",
+        "  - Permitted by name: `mcp__kamerplanter__claim_diary_analysis`, "
+        "`mcp__kamerplanter__submit_diary_analysis`.\n"
+        "  - Forbidden by name: "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(
+                STATE_CHANGING_TOOLS
+                - {"claim_diary_analysis", "submit_diary_analysis"}
+            )
+        )
+        + ".",
+        [],
+    ),
+    (
+        "a category is not a name",
+        "  - Call no state-changing tool, and nothing else that writes.",
+        sorted(STATE_CHANGING_TOOLS),
+    ),
+    (
+        "the bare name counts, not only the mcp__ form",
+        "Forbidden: " + ", ".join(sorted(STATE_CHANGING_TOOLS)) + ".",
+        [],
+    ),
+]
+
+
 def run_self_test() -> int:
     failures = 0
     for name, body, expected in WRITE_GUARD_CASES:
@@ -679,6 +798,16 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(WRITE_GUARD_CASES)} write-guard case(s) failed.")
         return 1
     print(f"OK — {len(WRITE_GUARD_CASES)} write-guard cases hold.")
+
+    for name, body, expected in COMPLETENESS_CASES:
+        actual = missing_state_changing_tools(body)
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
+        return 1
+    print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
     return 0
 
 

@@ -88,7 +88,7 @@ A catalogue defect found along the way is reported as a finding against the cata
 
 ## Hard rules
 
-- **Never** call `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, or `mcp__kamerplanter__submit_diary_analysis`. This skill reads and judges.
+- **Never** call `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, or `mcp__kamerplanter__create_inspection`. This skill reads and judges. `create_inspection` is the write an IPM path would reach for first, which is why it is named rather than left to a category.
 - **Never** state a pest's humidity preference, host range, or monitoring method as recorded. Those fields do not exist on `get_pest`.
 - **Never** report an empty inspection history as absence of pressure.
 - **Never** write *identified* where the evidence supports *not contradicted*.
