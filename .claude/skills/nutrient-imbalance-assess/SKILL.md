@@ -80,7 +80,7 @@ State the direction, the tier that established it, and — when a correction is 
 - `mcp__kamerplanter__get_plant_nutrient_plan` returning `plan: null` is the normal state for a plant never put on a programme — not an error and not a reason to stop.
 - Most plans on this instance are global templates whose `tags` name a specific crop. A template tagged for one crop applied to another is a weaker target than a plant-specific plan; weigh it accordingly and say that you did.
 - Repeated `snoozed` repotting in the care log points at exhausted substrate, which mimics undersupply and is not fixed by feeding.
-- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run.
+- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. For growers who confirm reminders but log no quantities, tier 2 collapses to tier 3 and the honest output is a refusal plus a request to measure.
 
 ## Source
 
