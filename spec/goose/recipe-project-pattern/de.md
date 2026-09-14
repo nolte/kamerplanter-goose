@@ -209,7 +209,8 @@ spec/                          diese Ebene plus eine Spec je Backend
 - [ ] Kein Rezept dispatcht einen von einem Plugin bereitgestellten Agent-Typ
 - [ ] Jeder Projekt-Agent liegt unter `.claude/agents/`, nicht unter `.agents/agents/`
 - [ ] Jedes zustandsändernde Tool, das ein Rezept außerhalb eines `Forbidden by name:`- oder `Permitted by name:`-Blocks nennt, gehört zu einem `-apply`-Rezept
-- [ ] Jedes Rezept, und jeder Skill, der überhaupt einen Policy-Block führt, nennt alle zwölf zustandsändernden Tools *innerhalb* dieser Blöcke — ein Name in der umgebenden Prosa zählt nicht
+- [ ] Jedes Rezept, und jeder Skill, der überhaupt ein zustandsänderndes Tool nennt, nennt alle zwölf *innerhalb* eines `Forbidden by name:`- oder `Permitted by name:`-Blocks — ein Name in der umgebenden Prosa oder in einem eingezäunten Beispiel zählt nicht
+- [ ] Kein Skill außerhalb der erfassten schreibenden Menge, und kein `-apply`-Rezept über seine erfassten Writes hinaus, deklariert ein Tool unter `Permitted by name:`
 - [ ] `goose recipe validate` läuft für jede Datei in `recipes/` durch
 
 ## Offene Fragen

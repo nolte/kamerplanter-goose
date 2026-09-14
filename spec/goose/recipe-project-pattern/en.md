@@ -209,7 +209,8 @@ spec/                          this layer plus one spec per backend
 - [ ] No recipe dispatches a plugin-provided agent type
 - [ ] Every project agent lives under `.claude/agents/`, not `.agents/agents/`
 - [ ] Every state-changing tool a recipe names outside a `Forbidden by name:` or `Permitted by name:` block belongs to an `-apply` recipe
-- [ ] Every recipe, and every skill that declares a policy block at all, names all twelve state-changing tools *inside* those blocks — a name in the surrounding prose does not count
+- [ ] Every recipe, and every skill that names any state-changing tool at all, names all twelve *inside* a `Forbidden by name:` or `Permitted by name:` block — a name in the surrounding prose, or inside a fenced example, does not count
+- [ ] No skill outside the recorded writing set, and no `-apply` recipe beyond its recorded writes, declares a tool under `Permitted by name:`
 - [ ] `goose recipe validate` passes for every file in `recipes/`
 
 ## Open Questions
