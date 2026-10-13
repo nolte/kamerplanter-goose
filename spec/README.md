@@ -14,6 +14,7 @@ Specifications for this repository. The canonical language is `en`; `de.md` is a
 | process | [nutrient-imbalance-detection](process/nutrient-imbalance-detection/en.md) | Nutrient Imbalance Detection | [Erkennung von Nährstoff-Ungleichgewichten](process/nutrient-imbalance-detection/de.md) | draft | local | 2026-08-10 |
 | process | [pest-pressure-assessment](process/pest-pressure-assessment/en.md) | Pest Pressure Assessment | [Beurteilung des Schädlingsdrucks](process/pest-pressure-assessment/de.md) | draft | local | 2026-08-09 |
 | process | [plant-health-image-analysis](process/plant-health-image-analysis/en.md) | Plant Health Image Analysis | [Bildgestützte Pflanzengesundheitsanalyse](process/plant-health-image-analysis/de.md) | draft | local | 2026-08-09 |
+| process | [site-analysis-and-crop-selection](process/site-analysis-and-crop-selection/en.md) | Site Analysis and Crop Selection | [Standortanalyse und Kulturwahl](process/site-analysis-and-crop-selection/de.md) | draft | local | 2026-10-13 |
 | process | [species-baseline-verification](process/species-baseline-verification/en.md) | Species Baseline Verification | [Überprüfung der Speziesbaseline](process/species-baseline-verification/de.md) | draft | local | 2026-08-09 |
 
 <!-- Regenerate with the `spec` skill (operation 4). Do not edit by hand. -->
