@@ -40,7 +40,7 @@ List every item the caller holds with its source and retrieval time. An item wit
 
 ### 2. Assign each claim one level
 
-A claim that rests on two items takes the level of the weaker. A model reading of a photo has no level in this hierarchy yet; report it as a reading and hold it below every recorded level, and name that placement as an open question in the result.
+A claim that rests on two items takes the level of the weaker. A model reading of a photo has no level in this hierarchy yet; report it as a reading: it may corroborate or contradict, never decide alone, and when it meets level-8 knowledge report both without ranking them. Name that placement as an open question in the result; the spec lists it as one.
 
 ### 3. Check the six rules
 

@@ -47,7 +47,8 @@ Elf Felder, jedes als `present` oder `absent` gemeldet.
 | Gieß- und Düngezustand | die fälligen Pflegeaufgaben, und nur diese: eine leere Liste ist kein Beleg für kürzliche Pflege, weil das Pflegeprotokoll je Pflanze gelesen wird |
 | Beete und Gefäße | **keine Quelle gemessen** |
 | Wetter | **keine Quelle gemessen** |
-| Aktuelle Messungen, historische Beobachtungen | Belege je Pflanze, für die von Ihnen genannten Pflanzen gesammelt, nicht auf Gartenebene |
+| Aktuelle Messungen | `not collected`: Belege je Pflanze, für die von Ihnen genannten Pflanzen gelesen, nicht auf Gartenebene |
+| Historische Beobachtungen | `not collected`: dasselbe, aus Inspektionen, Tagebuch und Pflegeprotokoll |
 | Ziele und Einschränkungen | nur von Ihnen |
 
 Eine fällige Pflegeaufgabe wird als Anforderung des Plans geführt, nicht als Messung der Pflanze. Der Lauf zählt Pflanzen nach `matched`, nicht nach `total_in_tenant`, das archivierte Pflanzen einschließt.

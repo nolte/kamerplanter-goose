@@ -47,7 +47,8 @@ Eleven fields, each reported `present` or `absent`.
 | Watering and fertilisation state | the care tasks that are due, and only those: an empty list is not evidence of recent care, because the care log is read per plant |
 | Beds and containers | **no source measured** |
 | Weather | **no source measured** |
-| Current measurements, historical observations | per-plant evidence, collected for the plants you name, not at garden level |
+| Current measurements | `not collected`: per-plant evidence, read for the plants you name, not at garden level |
+| Historical observations | `not collected`: the same, from inspections, diary and care log |
 | User goals and constraints | only from you |
 
 A due care task is carried as a request from the schedule, not as a measurement of the plant. The run counts plants by `matched`, not by `total_in_tenant`, which includes archived plants.

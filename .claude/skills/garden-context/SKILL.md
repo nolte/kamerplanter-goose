@@ -18,7 +18,7 @@ Every tool below is on the `kamerplanter` MCP server and is addressed as `mcp__k
 
 ### 1. Resolve the garden and permissions
 
-Call `mcp__kamerplanter__list_tenants`. Take the `tenant` slug from the caller when given. Without one, use the slug `list_tenants` returns only when it returns exactly one, and say in the report that it was discovered; several slugs and none given is a stop, not a guess. Record the `mcp_permissions` array verbatim. Pass `tenant` on every later call.
+Call `mcp__kamerplanter__list_tenants`. Take the `tenant` slug from the caller when given, and check that it is among the slugs `list_tenants` returned: if not, stop and report the slugs that were returned. Without one, use the slug `list_tenants` returns only when it returns exactly one, and say in the report that it was discovered; several slugs and none given is a stop, not a guess. Record the `mcp_permissions` array verbatim. Pass `tenant` on every later call.
 
 ### 2. Read the plants
 
@@ -58,7 +58,7 @@ Mark these fields absent and give the reason. The reason names its kind: `no sou
 
 ### 8. Report
 
-Return one block with an entry per field of the policy's garden context, each `present` or `absent`:
+Return one block with an entry for each of these eleven fields, in this order, each `present` or `absent`: site and location; beds and containers; crops and cultivars; planting runs; growth stage; current measurements; historical observations; weather; soil and substrate; watering and fertilisation state; user goals and constraints.
 
 ```
 GARDEN CONTEXT: <tenant> (given | discovered)
