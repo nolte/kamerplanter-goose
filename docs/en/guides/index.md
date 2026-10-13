@@ -17,6 +17,7 @@ Task-oriented how-tos: one page per shipped recipe, naming the command it takes,
 ## Ask about one garden
 
 - [Garden context check](garden-context-check.md) — what is known about a garden and what is absent, field by field, with the reason
+- [Crop selection](crop-selection.md) — which candidate crops a site supports, which it rules out and why, and what is not known well enough to decide
 - [Plant master data check](plant-master-data-check.md) — which plants lack the master data a later analysis would need, and what each gap prevents
 - [Nutrient imbalance check](nutrient-imbalance-check.md) — under- or oversupplied, or unable to take up what is there, for one plant
 - [Pest pressure check](pest-pressure-check.md) — whether a pest or disease suspicion survives the record
