@@ -273,6 +273,31 @@ def missing_from_policy(
     )
 
 
+SKILL_SERVER_REFERENCE = "mcp__kamerplanter__"
+
+
+def skill_missing_tools(text: str) -> list[str]:
+    """The twelve minus what a skill names ANYWHERE, for a skill that reaches
+    the Kamerplanter server at all.
+
+    The selector is the reference to `mcp__kamerplanter__`, not "every skill":
+    the four `*-review` lenses read this checkout and never a garden, and a
+    forbidden list there would be noise. Measured on develop, the reference
+    selects exactly the seven garden skills.
+
+    This is a completeness check and nothing more. A skill is instruction AND
+    documentation, so a name outside a policy block is not a call there, and a
+    name inside a call counts here like any other. The call direction needs a
+    convention separating instruction from explanation first; until then a
+    skill that names all twelve and then calls one still passes.
+    """
+    if SKILL_SERVER_REFERENCE not in text:
+        return []
+    return sorted(
+        tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(text)
+    )
+
+
 def load_yaml(path: Path, findings: Findings) -> dict | None:
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8"))
@@ -613,6 +638,18 @@ def check_skills(findings: Findings) -> None:
                 f".claude/skills/{skill_file.parent.name}",
                 "carries `disable-model-invocation: true`, which makes it "
                 "invisible to every non-interactive recipe run.",
+            )
+        missing = skill_missing_tools(text)
+        if missing:
+            findings.error(
+                f".claude/skills/{skill_file.parent.name}",
+                f"references the Kamerplanter server but names only "
+                f"{len(STATE_CHANGING_TOOLS) - len(missing)} of the "
+                f"{len(STATE_CHANGING_TOOLS)} state-changing tools; missing "
+                f"{', '.join(missing)}. Naming a subset is the failure "
+                "spec/mcp/kamerplanter-mcp-server/en.md calls the one this rule "
+                "exists to catch, and a skill loaded into a recipe carries its "
+                "prohibitions into that run's context.",
             )
 
 
@@ -1008,6 +1045,57 @@ ELEVEN_OF_TWELVE = (
     + "."
 )
 
+# The skill check answers the same question as COMPLETENESS_CASES but selects
+# differently and reads the whole file, because a SKILL.md has no policy
+# markers. One shape per way the selector or the count can be wrong.
+SKILL_COMPLETENESS_CASES = [
+    (
+        "a skill naming all twelve is complete",
+        "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
+        f"Never call {ALL_TWELVE}.",
+        [],
+    ),
+    (
+        "the seven-name era is a subset today",
+        "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
+        "Never call "
+        + ", ".join(
+            f"`mcp__kamerplanter__{t}`"
+            for t in sorted(STATE_CHANGING_TOOLS)[:7]
+        )
+        + ".",
+        sorted(STATE_CHANGING_TOOLS)[7:],
+    ),
+    (
+        "a skill that reaches the server and names no write is the worst subset",
+        "Reads the photos through `mcp__kamerplanter__get_diary_entry_photos`.",
+        sorted(STATE_CHANGING_TOOLS),
+    ),
+    (
+        "a skill that never reaches the server is not selected",
+        "Reviews a recipe in this checkout as a casual owner of three plants.",
+        [],
+    ),
+    (
+        "naming the tools without the server prefix does not select the skill",
+        "Never call " + ", ".join(f"`{t}`" for t in sorted(STATE_CHANGING_TOOLS)[:3]) + ".",
+        [],
+    ),
+    (
+        "bare names count once the skill is selected",
+        "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
+        "Never call " + ", ".join(f"`{t}`" for t in sorted(STATE_CHANGING_TOOLS)) + ".",
+        [],
+    ),
+    (
+        "a name that is called still counts as named",
+        "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
+        f"Never call {ALL_TWELVE}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
+        [],
+    ),
+]
+
+
 # A read-only recipe splitting the set across both markers. Completeness reads
 # the union and is satisfied; the write-guard, at `is_apply=False`, counts the
 # permitted name as a call. That asymmetry is the whole point of the marker
@@ -1139,6 +1227,16 @@ def run_self_test() -> int:
         print(f"\n{failures} of {len(COMPLETENESS_CASES)} completeness case(s) failed.")
         return 1
     print(f"OK — {len(COMPLETENESS_CASES)} completeness cases hold.")
+
+    for name, body, expected in SKILL_COMPLETENESS_CASES:
+        actual = skill_missing_tools(body)
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(SKILL_COMPLETENESS_CASES)} skill completeness case(s) failed.")
+        return 1
+    print(f"OK — {len(SKILL_COMPLETENESS_CASES)} skill completeness cases hold.")
 
     for name, prompt_body, instructions_body, required, forbidden in RECIPE_CASES:
         reported = "\n".join(recipe_case_findings(prompt_body, instructions_body))
