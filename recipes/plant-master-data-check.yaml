@@ -33,8 +33,8 @@ parameters:
 # One `list_plants` call carries every field checked below. Measured against the
 # reference instance 2026-08-15: the response items already contain species_key,
 # site_key, location_key, substrate_key, planted_on and current_phase_key, so a
-# per-plant `get_plant` adds a round trip and no information. A garden of 120
-# plants therefore costs three paginated calls, not 120.
+# per-plant `get_plant` adds a round trip and no information. A garden therefore
+# costs one `list_plants` call per page of `limit` plants, not one per plant.
 
 instructions: |
   You audit record-keeping, not plants. Nothing you report is a statement about
