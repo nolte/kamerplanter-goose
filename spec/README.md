@@ -9,6 +9,7 @@ Specifications for this repository. The canonical language is `en`; `de.md` is a
 | goose | [recipe-project-pattern](goose/recipe-project-pattern/en.md) | Goose Recipe Project Pattern | [Goose-Rezept-Projektmuster](goose/recipe-project-pattern/de.md) | draft | local | 2026-08-12 |
 | mcp | [home-assistant-mcp-server](mcp/home-assistant-mcp-server/en.md) | Home Assistant MCP Server | [Home Assistant MCP Server](mcp/home-assistant-mcp-server/de.md) | draft | local | 2026-08-04 |
 | mcp | [kamerplanter-mcp-server](mcp/kamerplanter-mcp-server/en.md) | Kamerplanter MCP Server | [Kamerplanter MCP Server](mcp/kamerplanter-mcp-server/de.md) | draft | local | 2026-08-16 |
+| process | [garden-decision-policy](process/garden-decision-policy/en.md) | Garden Decision Policy | [Entscheidungsregeln für den Garten](process/garden-decision-policy/de.md) | draft | local | unversioned |
 | process | [grower-persona-review](process/grower-persona-review/en.md) | Grower Persona Review | [Persona-Review aus Anbausicht](process/grower-persona-review/de.md) | draft | local | 2026-08-09 |
 | process | [nutrient-imbalance-detection](process/nutrient-imbalance-detection/en.md) | Nutrient Imbalance Detection | [Erkennung von Nährstoff-Ungleichgewichten](process/nutrient-imbalance-detection/de.md) | draft | local | 2026-08-10 |
 | process | [pest-pressure-assessment](process/pest-pressure-assessment/en.md) | Pest Pressure Assessment | [Beurteilung des Schädlingsdrucks](process/pest-pressure-assessment/de.md) | draft | local | 2026-08-09 |
