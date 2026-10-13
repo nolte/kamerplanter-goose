@@ -44,7 +44,7 @@ Eleven fields, each reported `present` or `absent`.
 | Planting runs | the planting-runs list |
 | Growth stage | the phase key on each plant |
 | Soil and substrate | the substrate each plant references, matched against the substrate list |
-| Watering and fertilisation state | the care tasks that are due |
+| Watering and fertilisation state | the care tasks that are due, and only those: an empty list is not evidence of recent care, because the care log is read per plant |
 | Beds and containers | **no source measured** |
 | Weather | **no source measured** |
 | Current measurements, historical observations | per-plant evidence, collected for the plants you name, not at garden level |
@@ -54,12 +54,12 @@ A due care task is carried as a request from the schedule, not as a measurement 
 
 ## Read the outcome
 
-The report is a table of the eleven fields with their status and source or reason, followed by the plant count, the distinct species and cultivars, and any tool error reported verbatim.
+The report is a table of the eleven fields with their status, retrieval time, and source or reason, followed by the plant count, the species list, whether the garden slug was given or discovered, and any tool error reported verbatim.
 
 | Closing line | Means |
 |--------------|-------|
 | `GARDEN CONTEXT: <n> of 11 present — <tenant>` | how much of the context the server could supply |
-| `ABSENT: <fields>` | the fields to narrow any later analysis around |
+| `ABSENT: <fields>` | the fields to narrow any later analysis around, each marked `no source` (the measured catalog offers none) or `not collected` (a source exists but is read per plant) |
 
 A low count is not a failure of the run. It is a statement about what the garden and the server hold, and the later step should narrow its question to match.
 

@@ -44,7 +44,7 @@ Elf Felder, jedes als `present` oder `absent` gemeldet.
 | Pflanzdurchläufe | die Liste der Pflanzdurchläufe |
 | Wachstumsstadium | der Phasenschlüssel an jeder Pflanze |
 | Boden und Substrat | das Substrat, auf das jede Pflanze verweist, abgeglichen mit der Substratliste |
-| Gieß- und Düngezustand | die fälligen Pflegeaufgaben |
+| Gieß- und Düngezustand | die fälligen Pflegeaufgaben, und nur diese: eine leere Liste ist kein Beleg für kürzliche Pflege, weil das Pflegeprotokoll je Pflanze gelesen wird |
 | Beete und Gefäße | **keine Quelle gemessen** |
 | Wetter | **keine Quelle gemessen** |
 | Aktuelle Messungen, historische Beobachtungen | Belege je Pflanze, für die von Ihnen genannten Pflanzen gesammelt, nicht auf Gartenebene |
@@ -54,12 +54,12 @@ Eine fällige Pflegeaufgabe wird als Anforderung des Plans geführt, nicht als M
 
 ## Das Ergebnis lesen
 
-Der Bericht ist eine Tabelle der elf Felder mit Status und Quelle oder Grund, gefolgt von der Pflanzenzahl, den verschiedenen Arten und Sorten und jedem Werkzeugfehler wörtlich.
+Der Bericht ist eine Tabelle der elf Felder mit Status, Abrufzeitpunkt und Quelle oder Grund, gefolgt von der Pflanzenzahl, der Artenliste, der Angabe, ob der Garten-Slug vorgegeben oder ermittelt wurde, und jedem Werkzeugfehler wörtlich.
 
 | Schlusszeile | Bedeutet |
 |--------------|----------|
 | `GARDEN CONTEXT: <n> of 11 present — <tenant>` | wie viel vom Kontext der Server liefern konnte |
-| `ABSENT: <Felder>` | die Felder, um die jede spätere Analyse herum eingegrenzt wird |
+| `ABSENT: <Felder>` | die Felder, um die jede spätere Analyse herum eingegrenzt wird, je mit `no source` (der gemessene Katalog bietet keine Quelle) oder `not collected` (eine Quelle existiert, wird aber je Pflanze gelesen) |
 
 Eine niedrige Zahl ist kein Fehlschlag des Laufs. Sie ist eine Aussage darüber, was der Garten und der Server enthalten, und der spätere Schritt grenzt seine Frage entsprechend ein.
 

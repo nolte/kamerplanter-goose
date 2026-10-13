@@ -67,23 +67,25 @@ prompt: |
 
   ## Garden Context — {{ tenant }}
 
-  | Field | Status | Source or reason |
-  |-------|--------|------------------|
-  | Site and location | present / absent | tool, or why absent |
-  | Beds and containers | present / absent | tool, or why absent |
-  | Crops and cultivars | present / absent | tool, or why absent |
-  | Planting runs | present / absent | tool, or why absent |
-  | Growth stage | present / absent | tool, or why absent |
-  | Current measurements | present / absent | tool, or why absent |
-  | Historical observations | present / absent | tool, or why absent |
-  | Weather | present / absent | tool, or why absent |
-  | Soil and substrate | present / absent | tool, or why absent |
-  | Watering and fertilisation state | present / absent | tool, or why absent |
-  | User goals and constraints | present / absent | caller, or why absent |
+  | Field | Status | Retrieved | Source or reason |
+  |-------|--------|-----------|------------------|
+  | Site and location | present / absent | time, or - | tool, or kind and reason |
+  | Beds and containers | present / absent | time, or - | tool, or kind and reason |
+  | Crops and cultivars | present / absent | time, or - | tool, or kind and reason |
+  | Planting runs | present / absent | time, or - | tool, or kind and reason |
+  | Growth stage | present / absent | time, or - | tool, or kind and reason |
+  | Current measurements | present / absent | time, or - | tool, or kind and reason |
+  | Historical observations | present / absent | time, or - | tool, or kind and reason |
+  | Weather | present / absent | time, or - | tool, or kind and reason |
+  | Soil and substrate | present / absent | time, or - | tool, or kind and reason |
+  | Watering and fertilisation state | present / absent | time, or - | tool, or kind and reason |
+  | User goals and constraints | present / absent | time, or - | caller, or kind and reason |
 
-  Then, in order: how many plants the garden holds (`matched`, not
-  `total_in_tenant`), the distinct species and cultivars found, and any tool
-  error reported verbatim.
+  Then, in order: the plant count and the species list exactly as the skill
+  returned them (`PLANTS`, `SPECIES`; never re-query to produce them), whether
+  the garden slug was given or discovered, and any tool error reported
+  verbatim. Use the slug the skill resolved in the heading and in the closing
+  line; never leave it empty.
 
   Close with one line, `GARDEN CONTEXT: <n> of 11 present — <tenant>`, and a
-  second line, `ABSENT: <the absent fields, comma-separated>`.
+  second line, `ABSENT: <the absent fields with their kind, comma-separated>`.
