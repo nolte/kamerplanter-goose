@@ -76,6 +76,7 @@ plugins:
             Guides: Anleitungen
             References: Referenzen
             Connectivity check: Verbindungsprüfung
+            Garden context check: Gartenkontext-Prüfung
             Plant master data check: Pflanzenstammdaten-Prüfung
             Nutrient imbalance check: Nährstoffbilanz-Prüfung
             Pest pressure check: Schädlingsdruck-Prüfung
@@ -142,6 +143,7 @@ nav:
   - Guides:
       - en/guides/index.md
       - Connectivity check: en/guides/connectivity-check.md
+      - Garden context check: en/guides/garden-context-check.md
       - Plant master data check: en/guides/plant-master-data-check.md
       - Nutrient imbalance check: en/guides/nutrient-imbalance-check.md
       - Pest pressure check: en/guides/pest-pressure-check.md
