@@ -15,18 +15,18 @@ Ein Kandidat gilt nie als geeignet auf einem Parameter, den niemand geliefert ha
 Dieser Lauf **liest nur**. Er plant keine Pflanzung und ändert keinen Datensatz.
 
 !!! note "Noch nicht an einer laufenden Instanz ausgeführt"
-    Das Rezept und seine drei Skills wurden geschrieben, während der Kamerplanter-MCP-Server nicht erreichbar war. Werkzeugnamen und Artfelder stammen aus der [Server-Spezifikation](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/de.md) und der [Spezifikation zur Artdaten-Prüfung](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/de.md), am 2026-08-07 an zwei Arten gemessen. Behandeln Sie den ersten echten Lauf als die Messung.
+    Das Rezept und seine vier Skills wurden geschrieben, während der Kamerplanter-MCP-Server nicht erreichbar war. Werkzeugnamen und Artfelder stammen aus der [Server-Spezifikation](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/de.md) und der [Spezifikation zur Artdaten-Prüfung](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/de.md), am 2026-08-07 an zwei Arten gemessen. Behandeln Sie den ersten echten Lauf als die Messung.
 
 ## Bevor Sie anfangen
 
-- **Starten Sie den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `site-analysis` und `crop-selection` aus `.claude/skills/`, und die Skill-Auffindung ist relativ zum Arbeitsverzeichnis des Goose-Prozesses. Anderswo gestartet, gehen die Skills still verloren, und der Lauf liefert trotzdem eine plausible Antwort.
+- **Starten Sie den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `site-analysis`, `crop-selection` und `decision-policy` aus `.claude/skills/`, und die Skill-Auffindung ist relativ zum Arbeitsverzeichnis des Goose-Prozesses. Anderswo gestartet, gehen die Skills still verloren, und der Lauf liefert trotzdem eine plausible Antwort.
 
 ## Ausführen
 
 ```sh
 goose run --recipe crop-selection \
   --params tenant=my-garden \
-  --params crops="allium-porrum,solanum-lycopersicum" \
+  --params crops="allium-porrum" \
   --params light="south-facing, about six hours of sun" \
   --params hardiness_zone=7b
 ```
@@ -34,7 +34,7 @@ goose run --recipe crop-selection \
 | Parameter | Wirkung, wenn weggelassen |
 |-----------|---------------------------|
 | `tenant` | der Lauf ermittelt den Garten-Slug aus `list_tenants`; ein Schlüssel, der mehrere Gärten abdeckt, braucht ihn |
-| `crops` | eine begrenzte Stichprobe des Artenkatalogs wird beurteilt, und der Bericht sagt, dass es eine Stichprobe ist |
+| `crops` | der Saatkalender kann nicht durch eine Ihrer Arten eingegrenzt werden, die Frostdaten stammen also von einer Pflanze des Gartens oder sind unbekannt; eine begrenzte Stichprobe des Artenkatalogs wird beurteilt, und der Bericht sagt, dass es eine Stichprobe ist |
 | `goals` | kein Ziel wird beurteilt; keines wird als erfüllt gemeldet |
 | `harvest_window` | der Zeitpunkt wird als unbekannt gemeldet |
 | `light`, `area_or_volume`, `water`, `constraints` | der zugehörige Standortparameter wird als unbekannt gemeldet: Der Server hat dafür kein Feld |

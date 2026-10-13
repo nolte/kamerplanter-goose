@@ -15,18 +15,18 @@ A candidate is never called suitable on a parameter nobody supplied. An unknown 
 This run **only reads**. It plans no planting and changes no record.
 
 !!! note "Not yet run against a live instance"
-    The recipe and its three skills were written while the Kamerplanter MCP server was unreachable. Tool names and species fields come from the [server spec](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/en.md) and the [species baseline spec](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/en.md), measured on 2026-08-07 on two species. Treat the first real run as the measurement.
+    The recipe and its four skills were written while the Kamerplanter MCP server was unreachable. Tool names and species fields come from the [server spec](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/en.md) and the [species baseline spec](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/en.md), measured on 2026-08-07 on two species. Treat the first real run as the measurement.
 
 ## Before you start
 
-- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `site-analysis` and `crop-selection` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
+- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `site-analysis`, `crop-selection` and `decision-policy` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
 
 ## Run it
 
 ```sh
 goose run --recipe crop-selection \
   --params tenant=my-garden \
-  --params crops="allium-porrum,solanum-lycopersicum" \
+  --params crops="allium-porrum" \
   --params light="south-facing, about six hours of sun" \
   --params hardiness_zone=7b
 ```
@@ -34,7 +34,7 @@ goose run --recipe crop-selection \
 | Parameter | Effect when omitted |
 |-----------|---------------------|
 | `tenant` | the run discovers the garden slug from `list_tenants`; a key that covers several gardens needs it set |
-| `crops` | a bounded sample of the species catalog is judged, and the report says it is a sample |
+| `crops` | the sowing calendar cannot be narrowed by a species of yours, so the frost dates come from a plant of the garden, or are unknown; a bounded sample of the species catalog is judged, and the report says it is a sample |
 | `goals` | no goal is judged; none is reported met |
 | `harvest_window` | timing is reported unknown |
 | `light`, `area_or_volume`, `water`, `constraints` | the matching site parameter is reported unknown: the server has no field for them |

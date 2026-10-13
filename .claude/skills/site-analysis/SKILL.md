@@ -29,7 +29,7 @@ Light and exposure, area or container volume, water availability and environment
 
 Call `mcp__kamerplanter__get_sowing_calendar` with `tenant` and a `query` naming the species from the input. Without a `query` the server refuses the call, so with no species to narrow it by, climate is unknown with that as the reason. Record the frost dates exactly as the response gives them and rename nothing. The response also carries per-species bars; read the frost dates only. That frost dates are the garden's and not the species' is the documented reading of this tool, not a measurement made here.
 
-Call `mcp__kamerplanter__list_hardiness_zones` once. It lists zones; it does not say which one the garden is in. The garden's zone is the caller's value when given, and unknown otherwise. When the caller gave a zone that is not among the zones listed, report that mismatch and keep the caller's value marked `caller`.
+Call `mcp__kamerplanter__list_hardiness_zones` once. It lists zones; it does not say which one the garden is in. The garden's zone is the caller's value when given, and unknown otherwise. When the caller gave a zone that is not among the zones listed, report that mismatch and treat the zone as unknown (kind `error`: not a listed zone), showing the caller's text in the reason. A zone that cannot be validated is not used to reject a crop.
 
 ### 4. Existing observations and measurements
 

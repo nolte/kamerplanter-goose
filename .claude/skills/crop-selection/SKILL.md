@@ -13,7 +13,7 @@ The profile comes from `site-analysis`; the weight a claim carries and the shape
 
 - **The site profile block** from `site-analysis`. Without it, stop and say `site-analysis` must run first.
 - **The garden context block** from `garden-context`, for the crops already in the garden (companion fit).
-- **The candidate pool**: `species_key` values, optionally with a cultivar key each. Names instead of keys are resolved in step 2.
+- **The candidate pool**: entries separated by commas, each a `species_key`, or a `species_key` and a `cultivar_key` joined by a colon (`<species_key>:<cultivar_key>`). Split the string at the commas and at the first colon of each entry, and pass the parts to the tools one by one, never the joined text. An entry that is a name and not a key is resolved in step 2.
 - **Goals and a harvest window**, both optional and taken from the caller verbatim.
 
 ## Procedure
