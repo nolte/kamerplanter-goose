@@ -1,0 +1,91 @@
+version: "1.0.0"
+title: "Garden Context Check"
+description: >-
+  Read-only: collects the context of one Kamerplanter garden and reports, field
+  by field, what is known and what is absent, with the source or the reason.
+  Recommends nothing. Must run with the working directory set to this
+  repository checkout, because it loads a project skill from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: goals
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The grower's goals and constraints, if you hold them. The server has no
+      source for these, so they appear in the report only when given here, and
+      are marked as coming from the caller.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You establish what is known about a garden and report it. You never advise,
+  diagnose, or write. A field you could not read is reported absent with its
+  reason; it is never filled with a typical value.
+
+  One skill carries the procedure; load it when the step calls for it. It
+  encodes measured server behaviour — which fields come back on the list
+  response, and which fields have no source at all.
+
+prompt: |
+  Collect the context of garden "{{ tenant }}". Goals supplied by the caller:
+  "{{ goals }}" (empty means none were given). Read-only run. Use MCP tools
+  only: do not shell out, do not fetch URLs, and read or write no local file
+  other than loading the named skill and the files it instructs you to read.
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+
+  Step 1 — Collect.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}".
+  Pass the goals above as the caller's input only when they are not empty.
+
+  Step 2 — Report.
+  Print this and nothing after it:
+
+  ## Garden Context — {{ tenant }}
+
+  | Field | Status | Retrieved | Source or reason |
+  |-------|--------|-----------|------------------|
+  | Site and location | present / absent | time, or - | tool, or kind and reason |
+  | Beds and containers | present / absent | time, or - | tool, or kind and reason |
+  | Crops and cultivars | present / absent | time, or - | tool, or kind and reason |
+  | Planting runs | present / absent | time, or - | tool, or kind and reason |
+  | Growth stage | present / absent | time, or - | tool, or kind and reason |
+  | Current measurements | present / absent | time, or - | tool, or kind and reason |
+  | Historical observations | present / absent | time, or - | tool, or kind and reason |
+  | Weather | present / absent | time, or - | tool, or kind and reason |
+  | Soil and substrate | present / absent | time, or - | tool, or kind and reason |
+  | Watering and fertilisation state | present / absent | time, or - | tool, or kind and reason |
+  | User goals and constraints | present / absent | time, or - | caller, or kind and reason |
+
+  Then, in order: the plant count and the species list exactly as the skill
+  returned them (`PLANTS`, `SPECIES`; never re-query to produce them), whether
+  the garden slug was given or discovered, and any tool error reported
+  verbatim. Use the slug the skill resolved in the heading and in the closing
+  line; never leave it empty.
+
+  Close with one line, `GARDEN CONTEXT: <n> of 11 present — <tenant>`, and a
+  second line, `ABSENT: <the absent fields with their kind, comma-separated>`.

@@ -26,6 +26,7 @@ Each recipe has a guide of its own, linked from its name.
 | [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | no | Whether a pest or disease suspicion is biologically tenable |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
+| [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`plant-master-data-check`](../guides/plant-master-data-check.md) | no | Which plants lack the master data a later analysis would need |
 | [`domain-review`](../guides/domain-review.md) | to `.audits/` only | Reviews a recipe or spec as one grower persona |
 | [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **yes** | Analyses one queued diary entry and submits the result |
@@ -46,6 +47,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `species-baseline-verify` | Whether the species record can be trusted |
 | `plant-lifecycle-resolve` | Annual, biennial or perennial, and the windows that follow |
 | `diary-analysis-claim` | The claim-and-submit handshake for the analysis queue |
+| `garden-context` | What is known about a garden, and what is absent |
+| `decision-policy` | How far a recommendation may be trusted; reads no garden, works on the evidence it is given |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 
