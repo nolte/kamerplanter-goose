@@ -27,6 +27,7 @@ Each recipe has a guide of its own, linked from its name.
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | no | Whether a pest or disease suspicion is biologically tenable |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
+| [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
 | [`plant-master-data-check`](../guides/plant-master-data-check.md) | no | Which plants lack the master data a later analysis would need |
 | [`domain-review`](../guides/domain-review.md) | to `.audits/` only | Reviews a recipe or spec as one grower persona |
 | [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **yes** | Analyses one queued diary entry and submits the result |
@@ -49,6 +50,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `diary-analysis-claim` | The claim-and-submit handshake for the analysis queue |
 | `garden-context` | What is known about a garden, and what is absent |
 | `decision-policy` | How far a recommendation may be trusted; reads no garden, works on the evidence it is given |
+| `site-analysis` | What is known about a site, parameter by parameter, and what is not |
+| `crop-selection` | Which candidate crops a site supports, with reasons and failed constraints |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 
