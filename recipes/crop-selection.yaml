@@ -1,0 +1,174 @@
+version: "1.0.0"
+title: "Crop Selection"
+description: >-
+  Read-only: builds the site profile of one Kamerplanter garden and judges
+  candidate species and cultivars against it, reporting for each a verdict, the
+  reasons, and the hard constraints it failed. Light, area, volume and water have
+  no source in the catalog and count only when you supply them. Recommends no
+  planting plan. Must run with the working directory set to this repository
+  checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: crops
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Candidate species keys, comma-separated, each optionally followed by a
+      cultivar key after a colon. Leave empty to judge a bounded sample of the
+      species catalog, which the report labels as a sample.
+
+  - key: goals
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you want from the crops, in your words. A goal no species field speaks
+      to is reported unknown, never met.
+
+  - key: harvest_window
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "When you want to harvest, in your words, for example months."
+
+  - key: light
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Light and exposure of the site, in your words. The server holds no field
+      for it; it is taken as written and marked as coming from you.
+
+  - key: area_or_volume
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Available area or container volume, in your words. No source in the
+      catalog; taken as written.
+
+  - key: water
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "Water availability, in your words. No source in the catalog."
+
+  - key: constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "Environmental constraints of the site, free text."
+
+  - key: hardiness_zone
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The garden's hardiness zone. No tool says which zone a garden is in, so a
+      hardiness check runs only when you give it here.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You judge crops against what is known about a site and report. You never plan
+  a planting, advise beyond the verdicts, or write. An unknown site parameter or
+  an absent species field leaves a constraint undetermined; it is never counted
+  as met and never as failed. A hard constraint rejects; a preference only ranks.
+
+  Three skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — which fields have no source, and which
+  species fields were measured absent.
+
+prompt: |
+  Select crops for garden "{{ tenant }}". Read-only run. Use MCP tools only: do
+  not shell out, do not fetch URLs, and read or write no local file other than
+  loading the named skills and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - candidate crops: "{{ crops }}"
+  - goals: "{{ goals }}"
+  - harvest window: "{{ harvest_window }}"
+  - light and exposure: "{{ light }}"
+  - area or container volume: "{{ area_or_volume }}"
+  - water availability: "{{ water }}"
+  - environmental constraints: "{{ constraints }}"
+  - hardiness zone of the garden: "{{ hardiness_zone }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never fill an unknown site parameter or an absent species field. Report it
+    unknown.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
+  the block it returns, with its absent-fields line.
+
+  Step 2 — Site.
+  Load the skill `site-analysis` and follow it with that block and the caller's
+  site facts above, passing only the ones that are not empty. Keep the site
+  profile it returns.
+
+  Step 3 — Candidates.
+  Load the skill `crop-selection` and follow it with the site profile, the
+  garden context, the candidate crops, the goals and the harvest window. It
+  applies the garden decision policy to each verdict.
+
+  Step 4 — Report.
+  Build the report only from what those skills returned. Do not call a tool to
+  produce a number or a row they did not give you. Print this and nothing after
+  it:
+
+  ## Crop Selection — <the slug the skills resolved, given or discovered>
+
+  Site profile (the seven parameters, in the order the skill returned them):
+
+  | Parameter | Status | Retrieved | Source or reason |
+  |-----------|--------|-----------|------------------|
+  | Light and exposure | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Area and container volume | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Soil and substrate | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Climate and season | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Water availability | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Environmental constraints | known / unknown | time, or - | tool or caller, or kind and reason |
+  | Existing observations and measurements | known / unknown | time, or - | tool or caller, or kind and reason |
+
+  Pool: whether the candidates came from the caller or are a sample, and how
+  many were judged and how many were not considered.
+
+  Then one table row per candidate:
+
+  | Candidate | Verdict | Failed hard constraints | Undetermined constraints | Confidence |
+  |-----------|---------|-------------------------|--------------------------|------------|
+  | species key / cultivar key or none | eligible / rejected / undetermined | constraint, values, source, level | constraint and what is missing | level and what it rests on |
+
+  Then, per candidate, the reasons and the preferences met, unmet or unknown,
+  and which attributes came from the cultivar and which from the species. Close
+  with any tool error reported verbatim.
+
+  Close with one line,
+  `CROP SELECTION: <e> eligible, <r> rejected, <u> undetermined — <slug>`, and a
+  second line, `UNKNOWN SITE PARAMETERS: <the unknown parameters with their kind,
+  comma-separated>`.
