@@ -73,12 +73,12 @@ Ein Fenster ist ein Anfang und ein Ende für einen Schritt einer Anbauweise eine
 
 ### C. Der Plan
 
-- **MUSS [MUST]** einen Pflanzdurchlauf nur für einen Kandidaten erzeugen, dessen Urteil `eligible` ist und dessen Aussaatfenster bekannt ist
+- **MUSS [MUST]** einen Pflanzdurchlauf nur für einen Kandidaten erzeugen, dessen Urteil `eligible` ist und der eine Anbauweise mit bekanntem Aussaatfenster hat: ein bekanntes Direktsaatfenster oder, bei der Vorkultur, ein bekanntes Datum der Vorkultur
 - **MUSS [MUST]** jeden anderen Kandidaten unter „nicht geplant“ mit genau einem Grund auflisten: `rejected` und die verfehlte harte Bedingung, `undetermined` und die fehlende Eingabe, oder `window unknown` und die fehlende Eingabe
 - **MUSS [MUST]** jedem Durchlauf eine Kennung aus Artschlüssel, Sortenschlüssel oder keinem, Anbauweise und Wachstumsperiode geben, wobei die Periode über die Monate bestimmt wird, die sie trägt, und nicht über ihre Position, und **DARF NICHT [MUST NOT]** sie aus der Reihenfolge der Eingabe oder aus der Zeit bilden
 - **MUSS [MUST]** jedem Durchlauf seine Anbauweise, seine Fenster mit ihren Regeln, einen Ort, der ein vom Aufrufer genanntes Beet oder `unassigned` ist, einen Hinweis zur Folgesaat, einen Hinweis zur Fruchtfolge und je Datum eine Begründung, eine aus der höchsten stützenden Belegstufe abgeleitete Konfidenz, eine Unsicherheitsaussage und eine Liste fehlender Daten mitgeben, gemäß den [Entscheidungsregeln für den Garten](../garden-decision-policy/de.md)
 - **MUSS [MUST]** die Fruchtfolge als unbekannt melden und **DARF NICHT [MUST NOT]** `compatible_companions[]` als Fruchtfolgebedingung lesen
-- **MUSS [MUST]** eine Folgesaat nur nennen, wo die eigenen Daten des Kalenders zwei Fenster aufeinander folgen lassen, und **DARF NICHT [MUST NOT]** eine erfinden
+- **MUSS [MUST]** eine Folgesaat nur nennen, wo die eigenen Daten des Kalenders zwei Fenster aufeinander folgen lassen, **MUSS [MUST]** sie an beiden Durchläufen des Paares nennen (`precedes <Durchlaufkennung>` am früheren, `follows <Durchlaufkennung>` am späteren) und **DARF NICHT [MUST NOT]** eine erfinden
 - **DARF NICHT [MUST NOT]** eine Konfidenz für ein Datum angeben, das auf einem vom Aufrufer gelieferten Fakt ruht, ohne das zu sagen
 
 Das Plandokument hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen: `PLAN HEADER` (der Garten, vorgegeben oder ermittelt, und die Eingabeblöcke, aus denen er entstand), `PLANTING RUNS`, `NOT PLANNED` und `APPLY CONTRACT`.
@@ -97,7 +97,7 @@ Das Plandokument hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen:
 
 ### E. Determinismus
 
-- **MUSS [MUST]** den Plan zu einer Funktion der gelieferten Eingabeblöcke und der Regeln machen, sodass zwei Läufe über dieselben Blöcke dieselben Plan-Fakten ergeben: die Durchlaufkennungen, die Anbauweisen, die Fenster, die Orte, die Gründe für „nicht geplant“ und die Konfidenzstufen
+- **MUSS [MUST]** den Plan zu einer Funktion der gelieferten Eingabeblöcke und der Regeln machen, sodass zwei Läufe über dieselben Blöcke dieselben Plan-Fakten ergeben: die Durchlaufkennungen, die Anbauweisen, die Fenster, die Orte, ob eine Folgesaat genannt ist, die Hinweise zur Fruchtfolge, die Gründe für „nicht geplant“ und die Konfidenzstufen
 - **MUSS [MUST]** die Durchläufe nach Inhalt ordnen (Artschlüssel, Sortenschlüssel, Anbauweise, Periode) und **DARF NICHT [MUST NOT]** sie nach der Reihenfolge der Eingabe ordnen
 - **DARF NICHT [MUST NOT]** das aktuelle Datum innerhalb der Plan-Fakten lesen; Abrufzeitpunkte werden neben den Fakten gemeldet und nicht verglichen
 - **MUSS [MUST]** angeben, dass byte-identischer Fließtext außerhalb der Plan-Fakten nicht behauptet wird und dass die Eigenschaft an einem festen Beispiel aus Eingabeblöcken geprüft wird und nicht an einem laufenden Garten
@@ -114,7 +114,7 @@ Das Plandokument hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen:
 - [ ] Jedes Fenster in einem Plan nennt seine Regel, seine Felder, seine Quelle, seinen Abrufzeitpunkt und seine Belegstufe, und ein Fenster, das sich nicht berechnen lässt, ist unbekannt mit der fehlenden Eingabe
 - [ ] Kein Fenster entsteht aus einem typischen Datum, einer typischen Dauer oder einem Versatz, und kein Erntedatum aus `days_to_maturity`
 - [ ] Die verwendete Wachstumsperiode ist für jeden Kandidaten mit Perioden benannt
-- [ ] Nur `eligible`-Kandidaten mit bekanntem Aussaatfenster haben einen Durchlauf; jeder andere Kandidat ist mit einem Grund aufgelistet
+- [ ] Nur `eligible`-Kandidaten mit bekanntem Aussaatfenster oder Datum der Vorkultur haben einen Durchlauf; jeder andere Kandidat ist mit einem Grund aufgelistet
 - [ ] Eine Durchlaufkennung ändert sich nicht, wenn sich die Reihenfolge der Eingabe ändert
 - [ ] Ein Durchlauf wird einem Beet nur zugeordnet, wenn der Aufrufer es genannt hat; sonst ist er `unassigned`
 - [ ] Die Fruchtfolge ist in jedem Durchlauf unbekannt, und `compatible_companions[]` wird nicht als Fruchtfolgebedingung verwendet

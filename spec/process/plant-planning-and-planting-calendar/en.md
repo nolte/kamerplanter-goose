@@ -73,12 +73,12 @@ A window is a start and an end for one step of one planting method of one growin
 
 ### C. The plan
 
-- **MUST** produce a planting run only for a candidate whose verdict is `eligible` and whose sowing window is known
+- **MUST** produce a planting run only for a candidate whose verdict is `eligible` and who has a method with a known sowing window: a known direct sowing window, or for indoor sowing a known indoor sowing date
 - **MUST** list every other candidate under not planned, with one reason: `rejected` and the failed hard constraint, `undetermined` and the input that is missing, or `window unknown` and the missing input
 - **MUST** give each run an identifier built from the species key, the cultivar key or none, the planting method and the growing period, the period identified by the months it carries and not by its position, and **MUST NOT** build it from the order of the input or from the time
 - **MUST** give each run its method, its windows with their rules, a location that is a bed the caller named or `unassigned`, a succession note, a rotation note, and for each date a rationale, a confidence derived from the highest evidence level that supports it, an uncertainty statement and a missing-data list, per [the garden decision policy](../garden-decision-policy/en.md)
 - **MUST** report rotation as unknown, and **MUST NOT** read `compatible_companions[]` as a rotation constraint
-- **MUST** name a succession opportunity only where the calendar's own dates make two windows follow each other, and **MUST NOT** invent one
+- **MUST** name a succession opportunity only where the calendar's own dates make two windows follow each other, **MUST** name it on both runs of the pair (`precedes <run identifier>` on the earlier, `follows <run identifier>` on the later), and **MUST NOT** invent one
 - **MUST NOT** state a confidence for a date that rests on a caller-supplied fact without saying so
 
 The plan document has four blocks, in this order and under these names: `PLAN HEADER` (the garden, given or discovered, and the input blocks it was made from), `PLANTING RUNS`, `NOT PLANNED` and `APPLY CONTRACT`.
@@ -97,7 +97,7 @@ The plan document has four blocks, in this order and under these names: `PLAN HE
 
 ### E. Determinism
 
-- **MUST** make the plan a function of the supplied input blocks and the policy, so that two runs over the same blocks give the same plan facts: the run identifiers, the methods, the windows, the locations, the not-planned reasons and the confidence levels
+- **MUST** make the plan a function of the supplied input blocks and the policy, so that two runs over the same blocks give the same plan facts: the run identifiers, the methods, the windows, the locations, whether a succession is named, the rotation notes, the not-planned reasons and the confidence levels
 - **MUST** order the runs by content (species key, cultivar key, method, period), and **MUST NOT** order them by the order of the input
 - **MUST NOT** read the current date inside the plan facts; retrieval times are reported beside the facts and are not compared
 - **MUST** state that byte-identical prose outside the plan facts is not claimed, and that the property is checked on a fixed fixture of input blocks and not on a live garden
@@ -114,7 +114,7 @@ The plan document has four blocks, in this order and under these names: `PLAN HE
 - [ ] Every window in a plan names its rule, its fields, its source, its retrieval time and its evidence level, and a window that cannot be computed is unknown with the missing input
 - [ ] No window is built from a typical date, duration or offset, and no harvest date from `days_to_maturity`
 - [ ] The growing period used is named for every candidate that has periods
-- [ ] Only `eligible` candidates with a known sowing window have a run; every other candidate is listed with one reason
+- [ ] Only `eligible` candidates with a known sowing window or indoor sowing date have a run; every other candidate is listed with one reason
 - [ ] A run identifier does not change when the order of the input changes
 - [ ] A run is assigned to a bed only when the caller named it; otherwise it is `unassigned`
 - [ ] Rotation is unknown in every run and `compatible_companions[]` is not used as a rotation constraint

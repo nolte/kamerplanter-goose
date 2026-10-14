@@ -27,7 +27,7 @@ For each candidate, in this order:
 
 1. verdict `rejected`: not planned, reason `rejected` and the failed hard constraint with its source and level;
 2. verdict `undetermined`, or none given: not planned, reason `undetermined` and the input that is missing;
-3. verdict `eligible` with no known sowing window in the calendar block: not planned, reason `window unknown` and the missing input the calendar named;
+3. verdict `eligible` with no method that has a known sowing window, that is neither a known direct sowing window nor a known indoor sowing date in any growing period: not planned, reason `window unknown` and the missing input the calendar named;
 4. otherwise: planned (step 2).
 
 ### 2. Make the runs
@@ -39,7 +39,7 @@ A run's **identifier** is the species key, the cultivar key or `none`, the metho
 Each run carries, copied from the calendar block and not recomputed: the method, the sowing window, the indoor sowing date, the transplant window, the harvest window, and for each one its rule, fields, source, retrieval time and level. Add per run:
 
 - **location**: `unassigned`. Assigning plants to beds is bed layout's work; the beds the caller supplied are listed in the plan header and not used here.
-- **succession note**: a succession is named only where the calendar's own dates make two windows of one candidate follow each other: the last harvest month of one period before the first sowing month of the next. Months that cannot be compared are no succession. Never name one that the dates do not show.
+- **succession note**: a succession is named only where the calendar's own dates make two windows of one candidate follow each other: the last harvest month of one period before the first sowing month of another period. Name it on **both** runs of the pair: the earlier run says `precedes <run id>`, the later run says `follows <run id>`. A run in no such pair says `none`. Months that cannot be compared are no succession. Never name one that the dates do not show.
 - **rotation note**: `unknown`. `compatible_companions` is not a rotation constraint, and rotation is not built yet.
 - **rationale, confidence, uncertainty, missing data**: apply `decision-policy` to each date. The confidence comes from the highest evidence level that supports it, and a date resting on a caller-supplied fact says so.
 
@@ -61,7 +61,7 @@ PLANTING RUNS
   RUN <run_id>
     method / sowing_window / indoor_sowing / transplant_window / harvest_window   (each with rule, fields, source, retrieved, level, or unknown and why)
     location:     unassigned
-    succession:   <named by the calendar's dates | none>
+    succession:   precedes <run id> | follows <run id> | none
     rotation:     unknown
     harvest_preference: met | unmet | unknown
     confidence / uncertainty / missing_data
@@ -78,7 +78,7 @@ Return no field that was not read; list an unread field as absent with its reaso
 ## Hard rules
 
 - Never call a tool. Everything is in the blocks.
-- Never plan a candidate that is not `eligible` with a known sowing window.
+- Never plan a candidate that is not `eligible` with a known sowing window or indoor sowing date.
 - Never assign a run to a bed.
 - Never name a succession the calendar's dates do not show, and never read `compatible_companions` as a rotation constraint.
 - Never use a typical date, duration or offset; every date is copied from the calendar block.
