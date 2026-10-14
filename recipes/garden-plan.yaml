@@ -1,0 +1,192 @@
+version: "1.0.0"
+title: "Garden Plan"
+description: >-
+  Read-only: from chosen crops to planting-run proposals for one Kamerplanter garden, each with a stable identifier, method, windows, rationale and confidence, and a list of what was not planned and why. The plan is a document for review; it applies nothing, and the measured catalog has no tool that could. Light, area, volume, water, beds, the hardiness zone and a method preference count only when you supply them. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: crops
+    input_type: string
+    requirement: required
+    description: >-
+      Candidate crops, comma-separated: each a species key, or a species key and a
+      cultivar key joined by a colon (species_key:cultivar_key). Required: a plan
+      is made from chosen crops.
+
+  - key: goals
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you want from the crops, in your words. A goal no species field speaks
+      to is reported unknown, never met.
+
+  - key: harvest_window
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      When you want to harvest, in your words, for example months. A preference:
+      it ranks and never drops a crop.
+
+  - key: light
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Light and exposure of the site, in your words. The server holds no field for
+      it; it is taken as written and marked as coming from you.
+
+  - key: area_or_volume
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Available area or container volume, in your words. No source in the
+      catalog; taken as written.
+
+  - key: water
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Water availability, in your words. No source in the catalog.
+
+  - key: constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Environmental constraints of the site, free text.
+
+  - key: hardiness_zone
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The garden's hardiness zone. No tool says which zone a garden is in, so a
+      hardiness check runs only when you give it here.
+
+  - key: beds
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Beds and containers, comma-separated, each name:area_or_volume (for example
+      bed-1:2m2,tub-1:10l). No source in the catalog. They are listed in the plan
+      for bed layout; this recipe assigns no plant to a bed.
+
+  - key: planting_method
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A preference: direct_sow or indoor_then_transplant. Any other text is not a
+      preference. Empty offers every method that has a known sowing window.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You turn chosen crops into a reviewable planting plan and report it. You never
+  apply the plan, advise beyond it, or write. Only candidates that are eligible
+  and have a known sowing window or indoor sowing date become runs; every other
+  candidate is listed with its reason. A bed is never assigned, and rotation is
+  unknown.
+
+  Six skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — which fields have no source, which species
+  fields were measured absent, and what the sowing calendar returns.
+
+prompt: |
+  Make a planting plan for garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
+  local file other than loading the named skills (`garden-context`, `site-analysis`, `crop-selection`, `planting-calendar`, `plant-planning`, `decision-policy`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - candidate crops: "{{ crops }}"
+  - goals: "{{ goals }}"
+  - harvest window: "{{ harvest_window }}"
+  - light and exposure: "{{ light }}"
+  - area or container volume: "{{ area_or_volume }}"
+  - water availability: "{{ water }}"
+  - environmental constraints: "{{ constraints }}"
+  - hardiness zone of the garden: "{{ hardiness_zone }}"
+  - beds and containers: "{{ beds }}"
+  - planting method preference: "{{ planting_method }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run plans; it applies nothing.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never fill an unknown site parameter, an absent species field or a window
+    that no recorded field supports. Report it unknown, with the missing input.
+  - Never use a typical date, duration or offset from general knowledge.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
+  the block it returns.
+
+  Step 2 — Site.
+  Load the skill `site-analysis` and follow it with that block, the caller's
+  site facts above (only the ones that are not empty), and the candidate crops,
+  so that it can narrow the sowing calendar by a species. Keep the site profile.
+
+  Step 3 — Crops.
+  Load the skill `crop-selection` and follow it with the site profile, the
+  garden context, the candidate crops, the goals and the harvest window. Keep
+  the candidate records with their verdicts.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next two steps: apply it
+  to every date.
+
+  Step 5 — Calendar.
+  Load the skill `planting-calendar` and follow it with the site profile, the
+  candidate records and the harvest window.
+
+  Step 6 — Plan.
+  Load the skill `plant-planning` and follow it with the calendar, the candidate
+  records, the garden context, the beds, the harvest window and the method
+  preference above, passing only the ones that are not empty.
+  Step 7 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Garden Plan — <the slug the skills resolved, given or discovered>
+
+  Planting runs, one row each, in the order the skill returned them:
+
+  | Run | Method | Sowing | Indoor sowing | Transplanting | Harvest | Succession | Rotation | Location | Confidence |
+  |-----|--------|--------|---------------|---------------|---------|------------|----------|----------|------------|
+  | the run identifier | direct_sow / indoor_then_transplant | known: value, or unknown: reason | known: date, or unknown: reason | known: start, or unknown: reason | known: months, or unknown: reason | precedes / follows run, or none | unknown | unassigned | level and what it rests on |
+
+  Then the candidates that were not planned, one row each with the reason
+  (rejected and the failed constraint, undetermined and the missing input, or
+  window unknown and the missing input). Then the plan header the skill
+  returned (beds supplied, existing runs) and, per run, the rationale, the
+  rule, source, retrieval time and evidence level of each date. Then the apply
+  contract exactly as the skill returned it, including that the measured
+  catalog has no tool that creates a planting run, and any tool error reported
+  verbatim.
+
+  Close with one line, `PLAN: <r> runs, <n> not planned — <slug>`, and a second
+  line, `APPLY: no write tool measured (nolte/kamerplanter-goose#59)`.
