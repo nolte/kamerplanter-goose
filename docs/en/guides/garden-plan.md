@@ -55,7 +55,7 @@ goose run --recipe garden-plan \
 
 ## How far "deterministic" goes
 
-The plan facts are a function of what you supply: the run identifiers, methods, windows, locations, whether a succession is named, the rotation notes, the reasons for *not planned* and the confidence levels. Two runs over the same inputs give the same plan facts; the wording around them can differ. This was checked on one fixed example of input blocks, written out as text, not on a live garden: ten runs gave the same plan facts, and no two gave the same text.
+The plan facts are a function of what you supply: the run identifiers, methods, windows, locations, whether a succession is named, the rotation notes, the reasons for *not planned* and the confidence levels. Two runs over the same inputs give the same plan facts; the wording around them can differ. This was checked once, on one invented example of input blocks written out as text, not on a live garden; that example is not kept in this repository, so the check cannot be repeated from here.
 
 ## Read the outcome
 

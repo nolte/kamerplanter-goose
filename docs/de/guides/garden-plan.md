@@ -55,7 +55,7 @@ goose run --recipe garden-plan \
 
 ## Wie weit „deterministisch“ reicht
 
-Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Durchlaufkennungen, Anbauweisen, Fenster, Orte, ob eine Folgesaat genannt ist, die Hinweise zur Fruchtfolge, die Gründe für *nicht geplant* und die Konfidenzstufen. Zwei Läufe über dieselben Eingaben ergeben dieselben Plan-Fakten; der Text drumherum kann abweichen. Geprüft wurde das an einem festen Beispiel aus als Text ausgeschriebenen Eingabeblöcken, nicht an einem laufenden Garten: Zehn Läufe ergaben dieselben Plan-Fakten, und keine zwei ergaben denselben Text.
+Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Durchlaufkennungen, Anbauweisen, Fenster, Orte, ob eine Folgesaat genannt ist, die Hinweise zur Fruchtfolge, die Gründe für *nicht geplant* und die Konfidenzstufen. Zwei Läufe über dieselben Eingaben ergeben dieselben Plan-Fakten; der Text drumherum kann abweichen. Geprüft wurde das einmalig an einem erfundenen Beispiel aus als Text ausgeschriebenen Eingabeblöcken, nicht an einem laufenden Garten; dieses Beispiel liegt nicht in diesem Repository, die Prüfung lässt sich von hier aus also nicht wiederholen.
 
 ## Das Ergebnis lesen
 
