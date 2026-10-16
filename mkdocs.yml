@@ -78,6 +78,9 @@ plugins:
             Connectivity check: Verbindungsprüfung
             Garden context check: Gartenkontext-Prüfung
             Crop selection: Kulturwahl
+            Planting calendar: Pflanzkalender
+            Garden plan: Gartenplan
+            Season plan: Saisonplan
             Plant master data check: Pflanzenstammdaten-Prüfung
             Nutrient imbalance check: Nährstoffbilanz-Prüfung
             Pest pressure check: Schädlingsdruck-Prüfung
@@ -146,6 +149,9 @@ nav:
       - Connectivity check: en/guides/connectivity-check.md
       - Garden context check: en/guides/garden-context-check.md
       - Crop selection: en/guides/crop-selection.md
+      - Planting calendar: en/guides/planting-calendar.md
+      - Garden plan: en/guides/garden-plan.md
+      - Season plan: en/guides/season-plan.md
       - Plant master data check: en/guides/plant-master-data-check.md
       - Nutrient imbalance check: en/guides/nutrient-imbalance-check.md
       - Pest pressure check: en/guides/pest-pressure-check.md

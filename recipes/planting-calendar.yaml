@@ -1,0 +1,104 @@
+version: "1.0.0"
+title: "Planting Calendar"
+description: >-
+  Read-only: computes, for each candidate crop and growing period, the windows in which it can be sown, sown indoors, transplanted and harvested at one Kamerplanter garden, and says which rule and field gave each. A window no recorded field supports is reported unknown. Proposes no planting run. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: crops
+    input_type: string
+    requirement: required
+    description: >-
+      Candidate crops, comma-separated: each a species key, or a species key and a
+      cultivar key joined by a colon (species_key:cultivar_key). Required: a plan
+      is made from chosen crops.
+
+  - key: harvest_window
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      When you want to harvest, in your words, for example months. A preference:
+      it ranks and never drops a crop.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You compute planting windows and report them. You never plan a run, advise,
+  or write. A window that no recorded field supports is unknown with the missing
+  input; it is never filled with a typical date.
+
+  Four skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — which fields come back, which are not
+  recorded, and what the sowing calendar returns.
+
+prompt: |
+  Compute the planting calendar for garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
+  local file other than loading the named skills (`garden-context`, `site-analysis`, `planting-calendar`, `decision-policy`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - candidate crops: "{{ crops }}"
+  - harvest window: "{{ harvest_window }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run plans; it applies nothing.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never fill an unknown site parameter, an absent species field or a window
+    that no recorded field supports. Report it unknown, with the missing input.
+  - Never use a typical date, duration or offset from general knowledge.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
+  the block it returns.
+
+  Step 2 — Site.
+  Load the skill `site-analysis` and follow it with that block and the
+  candidate crops, so that it can narrow the sowing calendar by a species. Keep
+  the site profile it returns, with the frost dates exactly as it gives them.
+
+  Step 3 — Calendar.
+  Load the skill `planting-calendar` and follow it with the site profile, the
+  candidate crops and the harvest window. Then load the skill `decision-policy`
+  and apply it to every known window, so that the evidence, confidence,
+  uncertainty and missing data are returned in the shape it defines.
+  Step 4 — Report.
+  Build the report only from what those skills returned. Do not call a tool to
+  produce a date or a row they did not give you. Print this and nothing after
+  it:
+
+  ## Planting Calendar — <the slug the skills resolved, given or discovered>
+
+  | Candidate / period | Sowing | Indoor sowing | Transplanting | Harvest | Harvest preference | Confidence |
+  |--------------------|--------|---------------|---------------|---------|--------------------|------------|
+  | species / cultivar or none, and the period's months | known: value, or unknown: reason | known: date, or unknown: reason | known: start, or unknown: reason | known: months, or unknown: reason | met / unmet / unknown | level and what it rests on |
+
+  Then, per candidate and period: the rule and the fields behind each known
+  window, its source, its retrieval time and its evidence level, and which
+  attributes came from the cultivar and which from the species. Then the
+  candidates that were not computed, with the reason, and any tool error
+  reported verbatim.
+
+  Close with one line, `CALENDAR: <k> windows known, <u> unknown — <slug>`, and a
+  second line, `UNKNOWN WINDOWS: <candidate / period / window with its reason,
+  comma-separated>`.

@@ -18,6 +18,9 @@ Task-oriented how-tos: one page per shipped recipe, naming the command it takes,
 
 - [Garden context check](garden-context-check.md) — what is known about a garden and what is absent, field by field, with the reason
 - [Crop selection](crop-selection.md) — which candidate crops a site supports, which it rules out and why, and what is not known well enough to decide
+- [Planting calendar](planting-calendar.md) — when each chosen crop can be sown, sown indoors, transplanted and harvested at this garden, and which rule gave each window
+- [Garden plan](garden-plan.md) — planting-run proposals for chosen crops, for review before anything is applied
+- [Season plan](season-plan.md) — the plan laid on twelve months, with the successions it names
 - [Plant master data check](plant-master-data-check.md) — which plants lack the master data a later analysis would need, and what each gap prevents
 - [Nutrient imbalance check](nutrient-imbalance-check.md) — under- or oversupplied, or unable to take up what is there, for one plant
 - [Pest pressure check](pest-pressure-check.md) — whether a pest or disease suspicion survives the record
