@@ -87,13 +87,18 @@ Filled during implementation.
 
 | Member | Specialist | Check | Actual output |
 |---|---|---|---|
-| | | | |
+| #53 | no matching specialist — generalist (prose edits to spec/skill/docs; no skill/agent in the registry owns spec text for this repository) | `python tests/validate_recipes.py` (the command behind `task test`) | `OK — 7 skill completeness cases hold.` / `OK — 8 recipe-level cases hold.` / `OK — 15 recipe(s) match the house pattern.` rc=0 |
+| #53 | same | `mkdocs build --strict` (the command behind `task docs`) | rc=0, `Documentation built in 2.21 seconds`; Material's 2.0 banner printed, no strict warning |
+| #53 | same | `grep -rn "collapses to tier 3" .claude spec docs` | no output, rc=1 |
+| #54 | deferred | — | not run: bundle closes #53 only, `Refs #54` |
 
 ## Deviations
 
 | Member | Kind | What changed |
 |---|---|---|
-| | | |
+| #53 | local adaptation | `task worktree:add` exited 1 with no message; the same steps run directly (`git worktree add -b docs/2026-11-02-tier2-evidence …/tier2-evidence origin/develop`) succeeded, so the plan stub `.resume/<slug>/plan.md` was not seeded — this artifact is the plan. Upstream tracking to `origin/develop` was unset. |
+| #53 | local adaptation | `task test` / `task docs` in the worktree stopped at "Taskfile … not trusted by user" (the remote-include trust env is not loaded there), so the commands behind them were run directly with the primary checkout's `.venv`. |
+| #53 | local adaptation | The matrix put the `:64`/`:69` guide rewording in the same cells as the decision; the DE spec/guide mirrors were edited in the same commit. No structural regression: admission, mode and order held. |
 
 ## Requirement coverage
 

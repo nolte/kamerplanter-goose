@@ -74,7 +74,7 @@ Claims are ranked by what they rest on, and the rank travels with the claim into
 | Tier | Evidence | Weight |
 |------|----------|--------|
 | 1 | A measured value from a diary entry — EC, pH, runoff reading — with a recognisable unit | Decides direction on its own when recent enough |
-| 2 | Plan target versus reconstructed supply: phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline | Decides direction when tier 1 is absent, at reduced confidence |
+| 2 | Plan target versus reconstructed supply: phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline. Frequency alone can establish undersupply; oversupply additionally needs recorded dose amounts and stays tier 3 without them | Decides direction when tier 1 is absent, at reduced confidence |
 | 3 | Care-log pattern alone — feeding confirmed often, rarely, or snoozed; repotting overdue | Supports a direction, never establishes one |
 | 4 | Visible symptoms from the image process | Localises which nutrient and how advanced, never the direction |
 | 5 | Species `nutrient_demand_level` and phase expectation | Sets the prior only; a `heavy_feeder` in fruit is not thereby deficient |
@@ -87,7 +87,7 @@ Three states must be distinguished, because their corrections differ and two of 
 
 **Undersupply.** Symptoms consistent with a specific nutrient, supply below the phase target — low measured EC, feeding intervals longer than the plan, or a medium with low CEC that retains nothing — and no evidence of uptake blockage. Correction moves toward the phase target.
 
-**Oversupply.** Measured EC above the phase target, or a supply frequency exceeding the plan in a medium that buffers little, typically with marginal or tip necrosis on older and newer leaves alike, crust or deposit visible on the medium surface, and no improvement after feeding. Correction reduces concentration or flushes; feeding is contraindicated.
+**Oversupply.** Measured EC above the phase target, or, with recorded dose amounts, a supply above the plan in a medium that buffers little (a feeding frequency above the plan without amounts is a tier 3 suspicion and does not establish this state), typically with marginal or tip necrosis on older and newer leaves alike, crust or deposit visible on the medium surface, and no improvement after feeding. Correction reduces concentration or flushes; feeding is contraindicated.
 
 **Unavailability at adequate supply.** Deficiency symptoms while supply meets the phase target. The candidates are pH outside the range the substrate's `ph_base` and `buffer_capacity` would predict, an EC high enough to impede uptake despite adequate ratios, or antagonism where one ion in surplus suppresses another. **The correction here is not more of the missing nutrient.** A run that cannot separate this state from undersupply says so and proposes no feeding.
 
@@ -160,7 +160,6 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 - Whether Home Assistant carries soil moisture or conductivity sensors that could supply tier-1 evidence per plant, and how a sensor would be bound to a plant instance. `GetLiveContext` exposes entity state, but no plant-to-entity mapping was found.
 - Whether the antagonism cases worth naming (which ion suppresses which) belong in this spec, in the backend's glossary reachable via `search_glossary`, or in the knowledge base. Encoding them here risks the same drift this repository avoids for species data.
 - How to weigh a plan whose `is_global_template` is true and whose `tags` name a different crop than the plant's species — measured, the reference instance's plans are largely cannabis-specific templates, while its plants are not.
-- Whether "supply above target" can be reconstructed at all without dosage records, or whether tier 2 collapses to tier 3 in practice for growers who confirm reminders but log no amounts.
 
 ## Source
 
