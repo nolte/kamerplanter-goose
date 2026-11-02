@@ -66,7 +66,7 @@ Der Bericht beginnt mit einer Feldtabelle — Richtung, Belegstufe, zugewiesene 
 Zwei Dinge holen dieselbe Pflanze da heraus, und beide passieren außerhalb dieses Laufs:
 
 - **Halte einen EC- oder pH-Wert in einem Tagebucheintrag fest.** Das ist ein Stufe-1-Wert und legt die Richtung allein fest.
-- **Protokolliere die Düngung selbst mit `record_feeding_event`**, das Menge sowie EC und pH vor und nach der Gabe trägt. Dieses Rezept darf es nicht aufrufen — es schreibt —, und es ist noch nicht gemessen, ob ein Lese-Tool diese Ereignisse zurückgibt; das Erfassen speist diese Prüfung also nicht von selbst.
+- **Protokolliere die Düngung selbst mit `record_feeding_event`**, das Menge sowie EC und pH vor und nach der Gabe trägt. Dieses Rezept darf es nicht aufrufen — es schreibt —, und es ist noch nicht gemessen, ob ein Lese-Tool diese Ereignisse zurückgibt; das Erfassen speist diese Prüfung also womöglich nicht von selbst.
 
 ## Quellen
 

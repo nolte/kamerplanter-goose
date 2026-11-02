@@ -108,4 +108,7 @@ Not applicable — no group requirement artifact.
 
 | Finding | Source | Outcome | Reproduction | Issue |
 |---|---|---|---|---|
-| | | | | |
+| `SKILL.md:59` still let frequency alone establish oversupply | independent review (fresh context) | fixed directly | `sed -n 59p` showed the old row, reproduced | — |
+| `SKILL.md:19` tier-2 row lacked the undersupply/oversupply qualifier | independent review | fixed directly | `sed -n 19p` reproduced | — |
+| `spec/process/garden-decision-policy/{en,de}.md:145` pointed at the deleted Open Question | independent review | fixed directly (surface widened by these two files) | `sed -n 145p` reproduced; `grep "open question about tier 2"` now empty | — |
+| guide `:69` concluded "does not feed this check" from an unmeasured fact | independent review | fixed directly: "may not … by itself" / "womöglich" | `sed -n 69p` reproduced | — |
