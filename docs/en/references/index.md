@@ -26,6 +26,10 @@ Each recipe has a guide of its own, linked from its name.
 | [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | no | Whether a pest or disease suspicion is biologically tenable |
 | [`daily-garden-check`](../guides/daily-garden-check.md) | no | What deserves attention in a garden today, ordered by urgency; applies nothing |
+| [`watering-decision`](../guides/watering-decision.md) | no | Water now, wait, or not enough evidence, for one plant; waters nothing |
+| [`watering-decision-apply`](../guides/watering-decision.md) | **yes** | Confirms one care reminder a person says they acted on |
+| [`fertilization-decision`](../guides/fertilization-decision.md) | no | Feed, do not feed, or not enough evidence, for one plant; feeds nothing |
+| [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **yes** | Records one feeding a person carried out |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
@@ -60,6 +64,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `plant-planning` | Planting-run proposals with identifiers, rationale and confidence; calls no tool |
 | `diary-measurements-read` | The recorded measurements of one plant's diary, with a report of how much was read |
 | `care-planning` | The domain results put into one list ordered by urgency, with what has no action; calls no tool |
+| `watering-decision` | Water now, wait, or insufficient evidence, from the plant's present state; calls no tool |
+| `fertilization-decision` | Feed, do not feed, or insufficient evidence, from the nutrient assessment; calls no tool |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 

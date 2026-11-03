@@ -1,7 +1,7 @@
 version: "1.0.0"
 title: "Daily Garden Check"
 description: >-
-  Read-only: the daily look at one Kamerplanter garden. It reads the garden's context, runs the nutrient and pest checks for the plants you name (at most five), and puts the results into one list ordered by urgency, each item an observation or a recommendation with its evidence, confidence, uncertainty and missing data, plus what has no action because the evidence is missing. It applies nothing and the check has no apply recipe. The watering, fertilisation, plant health and weather domains are not built yet and are reported as not available. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+  Read-only: the daily look at one Kamerplanter garden. It reads the garden's context, runs the nutrient, pest, watering and fertilisation checks for the plants you name (at most five), and puts the results into one list ordered by urgency, each item an observation or a recommendation with its evidence, confidence, uncertainty and missing data, plus what has no action because the evidence is missing. It applies nothing and the check has no apply recipe. The plant health and weather domains are not built yet and are reported as not available. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
 
 parameters:
   - key: tenant
@@ -17,8 +17,8 @@ parameters:
     requirement: optional
     default: ""
     description: >-
-      Plant instance keys, comma-separated, to run the nutrient and pest checks
-      for. Empty runs the garden level only (due tasks and planting runs). At
+      Plant instance keys, comma-separated, to run the nutrient, pest, watering
+      and fertilisation checks for. Empty runs the garden level only (due tasks and planting runs). At
       most five are checked, in the order given; the rest are reported as not
       checked.
 
@@ -39,8 +39,9 @@ prompt: |
   Look over garden "{{ tenant }}". Use MCP tools only: do not shell out, do not
   fetch URLs, and read or write no local file other than loading the named
   skills (`garden-context`, `plant-context-collect`, `diary-measurements-read`,
-  `nutrient-imbalance-assess`, `pest-pressure-assess`, `decision-policy`,
-  `care-planning`) and the files they instruct you to read.
+  `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`,
+  `fertilization-decision`, `decision-policy`, `care-planning`) and the files
+  they instruct you to read.
 
   What the caller supplied (empty means not given):
   - plant keys to check: "{{ plants }}"
@@ -78,8 +79,8 @@ prompt: |
   Split "{{ plants }}" at the commas, trim each key, drop empty entries and
   duplicates, and keep the order given. The first five are checked; every
   further key is `not checked (limit of five)`. If the list is empty, no plant
-  is checked and the nutrient and pest domains are `not checked (no plants
-  given)`. Never call a per-plant tool for a plant that is not on the list.
+  is checked and the nutrient, pest, watering and fertilisation domains are
+  `not checked (no plants given)`. Never call a per-plant tool for a plant that is not on the list.
 
   Step 3 — Per plant.
   For each plant to check, in order:
@@ -91,15 +92,19 @@ prompt: |
      context and those measurements. Keep its report as it returned it.
   4. Load the skill `pest-pressure-assess` and follow it against that context.
      Keep its report as it returned it.
+  5. Load the skill `watering-decision` and follow it with that context and
+     those measurements. Keep its decision and its finding as it returned them.
+     It makes no tool call.
+  6. Load the skill `fertilization-decision` and follow it with that context,
+     those measurements and the nutrient report of item 3. Keep its decision and
+     its finding as it returned them. It makes no tool call.
   A plant that does not exist or cannot be read is reported with the tool error
   verbatim and skipped; the other plants are still checked.
 
   Step 4 — Domains.
   Prepare one status per domain, to hand to the care plan:
-  - nutrient and pest: `checked` for the plants that were run, `not checked
-    (<why>)` for the others;
-  - watering: `not available (watering-decision, nolte/kamerplanter-goose#44)`;
-  - fertilisation: `not available (fertilization-decision, nolte/kamerplanter-goose#45)`;
+  - nutrient, pest, watering and fertilisation: `checked` for the plants that
+    were run, `not checked (<why>)` for the others;
   - plant health and pest management: `not available (plant-health-assessment
     and pest-ipm-planning, nolte/kamerplanter-goose#48)`;
   - growth stage and weather: `not available (growth-stage-assessment and
@@ -112,7 +117,7 @@ prompt: |
 
   Step 6 — Care plan.
   Load the skill `care-planning` and follow it with the garden context block,
-  the reports of step 3, the statuses of step 4 and no plan document. It makes
+  the reports and findings of step 3, the statuses of step 4 and no plan document. It makes
   no tool call.
 
   Step 7 — Report.

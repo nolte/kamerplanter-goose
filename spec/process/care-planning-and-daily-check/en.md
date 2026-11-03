@@ -9,7 +9,7 @@ A garden holds many small questions at once: which plants are due something, whi
 
 The layer decides nothing about a plant. It reads what the garden context and the domain processes already returned, keeps observation, recommendation and mutation apart, orders the recommendations, and refuses to produce an action where the evidence about the present state is missing. A person reads the result; nothing is applied.
 
-Everything about the tool surface is quoted from [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md), measured against the reference instance on 2026-08-16 and not re-measured for this spec: the Kamerplanter MCP server was unreachable (`INVALID_CONFIG`) when this spec was written. The shapes of the existing domain reports were read from `.claude/skills/nutrient-imbalance-assess/SKILL.md` (§5 Report) and `.claude/skills/pest-pressure-assess/SKILL.md` (§5 Report); neither returns a structured finding today, which is why section C maps them. No spec in this repository records the response fields of `get_due_care_tasks` (a search of `spec/`, `docs/` and `recipes/` finds the tool's name and no field), which is why section D computes no overdue interval.
+Everything about the tool surface is quoted from [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md), measured against the reference instance on 2026-08-16 and not re-measured for this spec: the Kamerplanter MCP server was unreachable (`INVALID_CONFIG`) when this spec was written. The shapes of the existing domain reports were read from `.claude/skills/nutrient-imbalance-assess/SKILL.md` (§5 Report) and `.claude/skills/pest-pressure-assess/SKILL.md` (§5 Report); neither returns a structured finding today, which is why section C maps them. The watering and fertilisation decisions return findings in this shape themselves ([their spec](../watering-and-fertilization-decisions/en.md), section F). No spec in this repository records the response fields of `get_due_care_tasks` (a search of `spec/`, `docs/` and `recipes/` finds the tool's name and no field), which is why section D computes no overdue interval.
 
 Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the evidence levels, the six rules and the shape of a recommendation, and the garden context block; this spec applies them and states no level of its own. [The plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the plan this layer may read (its consumer table names care planning). [The nutrient](../nutrient-imbalance-detection/en.md) and [pest](../pest-pressure-assessment/en.md) processes keep their own ladders and refusal thresholds; this layer does not re-rank them.
 
@@ -25,7 +25,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 
 ## Non-Goals
 
-- The domains themselves: watering (nolte/kamerplanter-goose#44), fertilisation (#45), plant health and pest management (#48), growth stage and weather (#49)
+- The domains themselves: plant health and pest management (nolte/kamerplanter-goose#48), growth stage and weather (#49). Watering and fertilisation are specified in [the watering and fertilisation decisions spec](../watering-and-fertilization-decisions/en.md)
 - Applying anything: no `-apply` recipe, no apply contract. The issue asks for none, and "no mutation occurs without explicit apply steps" is met by shipping none
 - Measuring the tool surface live. Claims about it cite the server spec and say they are not re-measured
 - Computing an overdue interval for a care task. The response shape of `get_due_care_tasks` is not recorded (section D)
@@ -49,7 +49,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 
 - **MUST** define a finding as: the domain, the subject (a plant key or the garden), the kind (observation or recommendation), the statement, the evidence entries (level, source, retrieved-at), the confidence, what would change it, the missing data, and, optionally, the consequence (what happens if nothing is done, in the domain's own words)
 - **MUST NOT** add to a finding a field the domain did not return, and **MUST** leave the consequence absent unless the domain stated one
-- **MUST** map the reports of the two domains that exist, `nutrient-imbalance-assess` and `pest-pressure-assess`, into findings, because neither returns this shape today, **MUST** read their evidence levels from the table "How the existing ladders relate" in the decision policy, and **MUST NOT** assign a level where that table gives none (the nutrient tier 2 and symptoms read from an image)
+- **MUST** map the reports of the two domains that do not return this shape, `nutrient-imbalance-assess` and `pest-pressure-assess`, into findings, **MUST** take the findings of the watering and fertilisation decisions as they return them, **MUST** read the evidence levels of the mapped reports from the table "How the existing ladders relate" in the decision policy, and **MUST NOT** assign a level where that table gives none (the nutrient tier 2 and symptoms read from an image)
 - **MUST** treat a nutrient or pest result that its owning process leaves with an undetermined direction, as a suspicion or below its refusal threshold, as an observation and not as a recommendation
 - **MUST** report each domain named in the Non-Goals as not available, naming the skill that would provide it, until that skill exists, and **MUST NOT** substitute another domain's result
 
@@ -69,7 +69,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 ### F. The daily check
 
 - **MUST** be an orchestration entry point that runs the garden context, then each domain that is available, then the decision policy and the care layer, and **MUST NOT** duplicate a domain's logic in the recipe
-- **MUST** take a `plants` parameter, comma-separated plant keys, empty by default: empty runs the garden level only (due tasks and planting runs from the garden context), and given runs the nutrient and pest checks for those plants
+- **MUST** take a `plants` parameter, comma-separated plant keys, empty by default: empty runs the garden level only (due tasks and planting runs from the garden context), and given runs the nutrient, pest, watering and fertilisation checks for those plants
 - **MUST** check at most five plants and report the rest as not checked with the reason, and **MUST NOT** call a per-plant tool for every plant of the garden
 - **MUST** list each domain with a status of checked, not available (naming the skill) or not checked (naming why), and **MUST NOT** leave a domain out
 - **MUST** report a tool error verbatim and continue with the rest
@@ -93,7 +93,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 - [ ] Every item of a care plan has exactly one kind, and no mutation is called, scheduled or phrased as an instruction
 - [ ] Every recommendation carries evidence, confidence, uncertainty and missing data, and none is returned without them
 - [ ] A finding has the fields of section C and no field the domain did not return; the consequence is absent unless the domain stated one
-- [ ] The nutrient and pest reports are mapped into findings with levels taken from the decision policy's table, and no level is assigned where the table gives none
+- [ ] The nutrient and pest reports are mapped into findings with levels taken from the decision policy's table, and no level is assigned where the table gives none, and the watering and fertilisation decisions are taken as the findings they return
 - [ ] A suspicion or an undetermined direction is an observation, not a recommendation
 - [ ] Each domain named in the Non-Goals is reported as not available with the skill that would provide it, and none is replaced by another
 - [ ] The order is urgency, then confidence, then subject key, then domain, and does not change when the order of the input changes
@@ -116,11 +116,12 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 - [The pest pressure assessment spec](../pest-pressure-assessment/en.md) — the pest ladder and its falsification tests
 - [The Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) — the tool catalog and the state-changing tools, measured 2026-08-16
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md) — how a recipe is built here, including the forbidden-by-name rule
+- [The watering and fertilisation decisions spec](../watering-and-fertilization-decisions/en.md) — the two domains that return findings in this shape
 - Issue nolte/kamerplanter-goose#43 — the scope and the five acceptance criteria are taken from its body; #44, #45, #48 and #49 — the domains that plug in; #39 — the audit
 
 ## Open Questions
 
-- **Whether the domain skills need an explicit urgency field in the plug-in contract.** Urgency is derived here from the stated consequence. Whether the watering and fertilisation domains (nolte/kamerplanter-goose#44 and #45) can state a consequence in one shape is open until the first of them exists.
+- **Whether the domain skills need an explicit urgency field in the plug-in contract.** Urgency is derived here from the stated consequence. The watering and fertilisation decisions leave the consequence absent unless an input states one, and no input does today, so their recommendations rank `routine`; whether a consequence can be stated for them in one shape is open until a domain does.
 - **How the nutrient tier 2 rule shows up as confidence in a care item.** Tier 2 needs recorded dose amounts and carries no decision-policy level (section C), so a care item resting on it says that no level applies. Whether that is the right place for it is open.
 - **Where the audit, nolte/kamerplanter-goose#39, places care planning relative to the garden context.** Whether the layer stays one skill is the audit's decision.
 - **The response fields of `get_due_care_tasks`.** No spec here records whether a task carries a due date or an interval, so no overdue computation is specified and a due task is `routine` at most. A measurement against a reachable instance would settle it.

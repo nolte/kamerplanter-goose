@@ -18,5 +18,6 @@ Specifications for this repository. The canonical language is `en`; `de.md` is a
 | process | [plant-planning-and-planting-calendar](process/plant-planning-and-planting-calendar/en.md) | Plant Planning and Planting Calendar | [Pflanzplanung und Pflanzkalender](process/plant-planning-and-planting-calendar/de.md) | draft | local | 2026-10-14 |
 | process | [site-analysis-and-crop-selection](process/site-analysis-and-crop-selection/en.md) | Site Analysis and Crop Selection | [Standortanalyse und Kulturwahl](process/site-analysis-and-crop-selection/de.md) | draft | local | 2026-10-13 |
 | process | [species-baseline-verification](process/species-baseline-verification/en.md) | Species Baseline Verification | [Überprüfung der Speziesbaseline](process/species-baseline-verification/de.md) | draft | local | 2026-08-09 |
+| process | [watering-and-fertilization-decisions](process/watering-and-fertilization-decisions/en.md) | Watering and Fertilisation Decisions | [Entscheidungen zu Bewässerung und Düngung](process/watering-and-fertilization-decisions/de.md) | draft | local | 2026-11-03 |
 
 <!-- Regenerate with the `spec` skill (operation 4). Do not edit by hand. -->

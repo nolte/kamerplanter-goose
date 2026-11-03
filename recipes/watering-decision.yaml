@@ -1,0 +1,128 @@
+version: "1.0.0"
+title: "Watering Decision"
+description: >-
+  Read-only: decides whether one plant should be watered now (water now, wait, or insufficient evidence) from what is recorded about its present state, and says what the decision rests on, how sure it is and what is missing. It never waters because a reminder is due or an interval has elapsed; with no moisture reading of the plant, the answer is insufficient evidence, which is the ordinary result. It waters nothing and records nothing: confirming a reminder after a person has watered is the separate recipe watering-decision-apply. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to decide for."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Weather and forecast, in your words. The server has no source for them;
+      they are taken as written and marked as coming from you.
+
+  - key: container
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The container or bed the plant stands in, in your words. The server has
+      no field for it.
+
+  - key: constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Irrigation and user constraints, and the moisture target you want the
+      plant kept to, in your words and unit. Without a target, a moisture
+      reading has nothing to be compared with.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You decide whether one plant should be watered now and report. You never
+  water, schedule, or actuate anything, and you do not confirm a reminder.
+
+  Skills carry the procedure; load each when its step calls for it. They encode
+  measured server behaviour: what the record can say about a plant's present
+  state and what it cannot. Do not repeat their logic here.
+
+  "Insufficient evidence" is a legitimate outcome and usually the correct one.
+  A due reminder is a request from the schedule, not a reading of the plant.
+  Do not manufacture a watering to look useful.
+
+prompt: |
+  Decide whether plant "{{ plant_key }}" in garden "{{ tenant }}" should be
+  watered now. Read-only run. Use MCP tools only: do not shell out, do not
+  fetch URLs, and read or write no local file other than loading the named
+  skills (`plant-context-collect`, `diary-measurements-read`, `decision-policy`,
+  `watering-decision`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - weather and forecast: "{{ weather }}"
+  - container or bed: "{{ container }}"
+  - constraints and moisture target: "{{ constraints }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never recommend watering because a reminder is due, an interval has
+    elapsed or the plant is expected to be dry, and never invent a measurement
+    or a moisture target.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Recorded measurements.
+  Load the skill `diary-measurements-read` and follow it for plant
+  "{{ plant_key }}" in garden "{{ tenant }}", or in the garden step 1 resolved
+  when that parameter is empty. Keep the measurements it returns and its read
+  report line.
+
+  Step 3 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 4 — Decide.
+  Load the skill `watering-decision` and follow it with the context of step 1,
+  the measurements and read report of step 2 and the caller facts above,
+  passing only the ones that are not empty. It makes no tool call.
+
+  Step 5 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Watering Decision — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the decision block exactly as the skill returned it (the
+  decision, the present state it rests on or `unknown`, evidence, priors,
+  confidence, uncertainty, missing data) and the finding. Then the diary read
+  report line, and any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `WATERING: <water now | wait | insufficient evidence> — {{ plant_key }}`
+  If a step failed and no decision could be reached, close instead with
+  `WATERING: not decided — {{ plant_key }}`.
