@@ -58,7 +58,7 @@ Eine nicht verfügbare Domäne wird im Bericht genannt und nie durch eine andere
 
 ## Das Ergebnis lesen
 
-Der Bericht beginnt mit der Domänentabelle, dann folgt der Pflegeplan in vier Blöcken: der Kopf, die Einträge, die benannten Mutationen und die Einträge ohne Handlung. Danach je Pflanze eine Zeile, die sagt, wie viele Tagebucheinträge aufgelistet, geöffnet und ohne Messwerte gefunden wurden; diese Zeile zeigt dir, ob das Tagebuch überhaupt gelesen wurde.
+Der Bericht ist der Pflegeplan in fünf Blöcken: der Kopf, die Einträge, die benannten Mutationen, die Einträge ohne Handlung und der Status jeder Domäne. Danach je Pflanze eine Zeile, die sagt, wie viele Tagebucheinträge aufgelistet, geöffnet und ohne Messwerte gefunden wurden; diese Zeile zeigt dir, ob das Tagebuch überhaupt gelesen wurde.
 
 | Schlusszeile | Bedeutung |
 |--------------|-----------|

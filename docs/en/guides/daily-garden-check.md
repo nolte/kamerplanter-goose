@@ -58,7 +58,7 @@ A domain that is not available is named in the report and never replaced by anot
 
 ## Read the outcome
 
-The report starts with the domain table, then the care plan in four blocks: the header, the items, the named mutations, and the entries with no action. Then, per plant, one line saying how many diary entries were listed, opened and found without measurements; that line is what tells you the diary was read at all.
+The report is the care plan in five blocks: the header, the items, the named mutations, the entries with no action, and the status of every domain. Then, per plant, one line saying how many diary entries were listed, opened and found without measurements; that line is what tells you the diary was read at all.
 
 | Closing line | Means |
 |--------------|-------|

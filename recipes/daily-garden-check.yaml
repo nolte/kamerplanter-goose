@@ -121,22 +121,16 @@ prompt: |
 
   ## Daily Garden Check — <the slug the skills resolved, given or discovered>
 
-  | Domain | Status |
-  |--------|--------|
-  | nutrient | checked / not checked (reason) |
-  | pest | checked / not checked (reason) |
-  | watering | not available (skill) |
-  | fertilisation | not available (skill) |
-  | plant health and pest management | not available (skills) |
-  | growth stage and weather | not available (skills) |
-
-  Then the care plan exactly as the skill returned it, in its four blocks in
-  order: the header, the items (urgency, kind, statement, evidence, confidence,
-  uncertainty, missing data), the named mutations (named, never called) and
-  `NO ACTION, EVIDENCE INSUFFICIENT`. Then, per plant checked, its read report
+  The care plan exactly as the skill returned it, in its five blocks in order:
+  the header, the items (urgency, kind, statement, evidence, confidence,
+  uncertainty, missing data), the named mutations (named, never called),
+  `NO ACTION, EVIDENCE INSUFFICIENT` and `DOMAINS` (one status per domain:
+  nutrient, pest, watering, fertilisation, plant health and pest management,
+  growth stage and weather). Then, per plant checked, its read report
   line from `diary-measurements-read`, and any tool error reported verbatim.
 
-  Close with the line `APPLY: none — this check reports and applies nothing`,
-  and, as the very last line of the output, `CARE: <a> actions, <n> no action —
-  <slug>`, where `<a>` is the number of items of kind recommendation and `<n>`
-  the number of entries under `NO ACTION, EVIDENCE INSUFFICIENT`.
+  Close with the line `APPLY: none — this check reports and applies nothing`.
+  The very last line of the output is this one, on a single line:
+  `CARE: <a> actions, <n> no action — <slug>`
+  where `<a>` is the number of items of kind recommendation, `<n>` the number
+  of entries under `NO ACTION, EVIDENCE INSUFFICIENT` and `<slug>` the garden.
