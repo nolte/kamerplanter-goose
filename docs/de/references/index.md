@@ -25,6 +25,7 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`provider-plugin-check`](../guides/provider-plugin-check.md) | nein | Ob Plugin-Skills, Plugin-Agents und Projekt-Agents aus einem Lauf erreichbar sind |
 | [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
+| [`daily-garden-check`](../guides/daily-garden-check.md) | nein | Was in einem Garten heute Aufmerksamkeit verdient, nach Dringlichkeit geordnet; wendet nichts an |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
@@ -57,6 +58,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `crop-selection` | Welche Kandidaten ein Standort trägt, mit Gründen und verfehlten Bedingungen |
 | `planting-calendar` | Die Fenster für Aussaat, Umpflanzen und Ernte je Kultur und Wachstumsperiode, mit der Regel dahinter |
 | `plant-planning` | Vorschläge für Pflanzdurchläufe mit Kennungen, Begründung und Konfidenz; ruft kein Werkzeug auf |
+| `diary-measurements-read` | Die erfassten Messwerte aus dem Tagebuch einer Pflanze, mit einem Bericht, wie viel gelesen wurde |
+| `care-planning` | Die Domänenergebnisse in einer nach Dringlichkeit geordneten Liste, mit dem, was keine Handlung ergibt; ruft kein Werkzeug auf |
 
 **Prüfperspektiven** — lesen dieses Checkout, nie einen Garten. Eine je Lauf; sie sollen sich uneinig sein:
 

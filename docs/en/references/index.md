@@ -25,6 +25,7 @@ Each recipe has a guide of its own, linked from its name.
 | [`provider-plugin-check`](../guides/provider-plugin-check.md) | no | Whether plugin skills, plugin agents, and project agents are reachable from a run |
 | [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | no | Undersupply, oversupply, or unavailability at adequate supply, for one plant |
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | no | Whether a pest or disease suspicion is biologically tenable |
+| [`daily-garden-check`](../guides/daily-garden-check.md) | no | What deserves attention in a garden today, ordered by urgency; applies nothing |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
@@ -57,6 +58,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `crop-selection` | Which candidate crops a site supports, with reasons and failed constraints |
 | `planting-calendar` | The sowing, transplanting and harvest windows per crop and growing period, with the rule behind each |
 | `plant-planning` | Planting-run proposals with identifiers, rationale and confidence; calls no tool |
+| `diary-measurements-read` | The recorded measurements of one plant's diary, with a report of how much was read |
+| `care-planning` | The domain results put into one list ordered by urgency, with what has no action; calls no tool |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 

@@ -16,7 +16,7 @@ This run **only reads** your garden. `calculate_mixing_protocol` is the one exce
 
 ## Before you start
 
-- **Start the run from this repository checkout.** The recipe loads the project skills `plant-context-collect` and `nutrient-imbalance-assess` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. A run started elsewhere loses the skill silently and still produces a plausible answer.
+- **Start the run from this repository checkout.** The recipe loads the project skills `plant-context-collect`, `diary-measurements-read` and `nutrient-imbalance-assess` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. A run started elsewhere loses the skill silently and still produces a plausible answer.
 - **You need the plant's `plant_key`** — the numeric key, not the readable `instance_id`. [plant-master-data-check](plant-master-data-check.md) prints both side by side.
 
 ## Run it
