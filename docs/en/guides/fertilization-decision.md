@@ -76,7 +76,7 @@ goose run --recipe fertilization-decision-apply \
 | `run_id` | yes | makes a retry traceable and keeps it from writing twice |
 | `tenant` | no | the garden slug; needed when your key covers several gardens |
 
-- **It refuses without an approved `feed` decision or without an amount**, and says which. It does not guess a unit or a number, and it does not write a record that contradicts the decision.
+- **It refuses without an approved `feed` decision, without an amount, or with an amount that is not a plain number**, and says which. A value with a unit such as ml is refused, never converted. The amount is the feeding you carried out: it is recorded as you give it, and the run cannot check it. It does not write a record that contradicts the decision.
 - **It calls a dry run first**, reports what would be written, and only then writes, with an idempotency key built from the plant and the `run_id`. A dry run that succeeds does not prove that the write will; the result of the real call is reported as returned.
 - **What is written is a record.** The run fed nothing, and it does not claim that anything was fed. **It is not measured whether any read tool returns recorded feeding events** ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)), so a recorded feeding may not reach the nutrient check at all.
 - It calls no tool other than the one that records a feeding, and no Home Assistant tool.

@@ -76,7 +76,7 @@ goose run --recipe fertilization-decision-apply \
 | `run_id` | ja | macht einen Wiederholungslauf nachvollziehbar und verhindert doppeltes Schreiben |
 | `tenant` | nein | der Garten-Slug; nötig, wenn dein Schlüssel mehrere Gärten abdeckt |
 
-- **Es verweigert ohne genehmigte `feed`-Entscheidung oder ohne Menge** und sagt, welches von beiden. Es rät keine Einheit und keine Zahl und schreibt keinen Eintrag, der der Entscheidung widerspricht.
+- **Es verweigert ohne genehmigte `feed`-Entscheidung, ohne Menge oder mit einer Menge, die keine schlichte Zahl ist**, und sagt, was davon zutrifft. Ein Wert mit Einheit wie ml wird verweigert und nie umgerechnet. Die Menge ist die Düngung, die du ausgeführt hast: Sie wird so festgehalten, wie du sie angibst, und der Lauf kann sie nicht prüfen. Es schreibt keinen Eintrag, der der Entscheidung widerspricht.
 - **Es ruft zuerst einen Probelauf auf**, meldet, was geschrieben würde, und schreibt erst dann, mit einem Idempotenzschlüssel aus der Pflanze und der `run_id`. Ein erfolgreicher Probelauf beweist nicht, dass das Schreiben gelingt; das Ergebnis des echten Aufrufs wird so gemeldet, wie es zurückkam.
 - **Geschrieben wird ein Eintrag.** Der Lauf hat nichts gedüngt und behauptet das auch nicht. **Es ist nicht gemessen, ob irgendein Lese-Tool erfasste Düngeereignisse zurückgibt** ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)), sodass eine festgehaltene Düngung die Nährstoffprüfung womöglich gar nicht erreicht.
 - Es ruft kein anderes Tool auf als das, das eine Düngung festhält, und kein Home-Assistant-Tool.

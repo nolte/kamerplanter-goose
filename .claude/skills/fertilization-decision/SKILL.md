@@ -25,7 +25,7 @@ Take the direction and the tier from the nutrient report exactly as it states th
 | The nutrient report says | Decision | Rests on |
 |--------------------------|----------|----------|
 | undersupply, established as a direction, and no environmental cause named | `feed` | insufficient nutrition |
-| oversupply | `do not feed` | insufficient nutrition is ruled out by the direction |
+| oversupply | `do not feed` | insufficient nutrition ruled out (oversupply) |
 | unavailability at adequate supply, or any environmental cause named (a pH outside the range, an EC that impedes uptake, exhausted substrate shown by repeated snoozed repotting, antagonism) | `do not feed` | an environmental cause: correct it before treating the plant |
 | direction undetermined, a suspicion, or the highest tier is 3 or below | `insufficient evidence` | an uncertain diagnosis |
 
@@ -47,7 +47,7 @@ Return, in this order:
 FERTILIZATION DECISION
   plant:       <plant key>
   decision:    feed | do not feed | insufficient evidence
-  rests on:    insufficient nutrition | an environmental cause | an uncertain diagnosis
+  rests on:    insufficient nutrition | insufficient nutrition ruled out (oversupply) | an environmental cause | an uncertain diagnosis
   nutrient:    <direction> (tier <n>), as the nutrient report stated it
   dose:        <the mixing protocol result, with its base-water assumption> | unknown
   evidence:    <level, source, retrieved-at, one entry each>

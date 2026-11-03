@@ -18,7 +18,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ## Ziele
 
 - Ein Bewässerungsergebnis sagt, worauf es zum gegenwärtigen Zustand der Pflanze ruht, und sagt offen, wenn es nichts gibt
-- Ein Düngeergebnis sagt, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose es ruht, und „nicht düngen“ ist eine gewöhnliche Antwort
+- Ein Düngeergebnis sagt, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose es ruht, oder dass unzureichende Ernährung ausgeschlossen ist, und „nicht düngen“ ist eine gewöhnliche Antwort
 - Es erscheint keine Konzentration, Dosis, Mischreihenfolge und Messung, die kein Tool geliefert hat
 - Eine fällige Erinnerung ist nie ein Grund zu gießen
 - Ein `-apply`-Rezept hält fest, was eine Person getan hat, und lässt sich nicht mit etwas verwechseln, das gießt oder düngt
@@ -57,7 +57,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **MUSS [MUST]** `feed` nur liefern, wenn der Nährstoffprozess Unterversorgung als Richtung festgestellt hat und keine Umweltursache genannt ist
 - **MUSS [MUST]** `do not feed` liefern, wenn die Richtung Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung ist oder eine Umweltursache genannt ist (Regel 5 der Entscheidungsrichtlinie), und **MUSS [MUST]** es als gewöhnliches Ergebnis behandeln
 - **MUSS [MUST]** `insufficient evidence` liefern, wenn der Nährstoffprozess die Richtung unbestimmt oder bei einem Verdacht lässt
-- **MUSS [MUST]** sagen, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose das Ergebnis ruht
+- **MUSS [MUST]** sagen, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose das Ergebnis ruht, oder dass unzureichende Ernährung ausgeschlossen ist (Überversorgung)
 - **MUSS [MUST]** die jüngste Düngung aus dem Pflegeprotokoll als bestätigte Erinnerungen nehmen, die keine Menge tragen, und **DARF NICHT [MUST NOT]** eine Menge nennen, die der Datenbestand nicht hält
 - **MUSS [MUST]** das konservative Ergebnis bevorzugen, wenn der Beleg unvollständig ist
 
@@ -102,7 +102,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Jedes Ergebnis trägt Beleg, Konfidenz, Unsicherheit und fehlende Daten
 - [ ] Die Düngeentscheidung übernimmt den Nährstoffbericht so, wie er ist, und leitet weder seine Richtung noch seine Stufenregel neu ab
 - [ ] `feed` erscheint nur bei festgestellter Unterversorgung ohne genannte Umweltursache, und `do not feed` wird bei Überversorgung, Nichtverfügbarkeit und genannter Umweltursache geliefert
-- [ ] Das Ergebnis sagt, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose es ruht
+- [ ] Das Ergebnis sagt, auf welchem von unzureichender Ernährung, einer Umweltursache und einer unsicheren Diagnose es ruht, oder dass unzureichende Ernährung ausgeschlossen ist
 - [ ] Keine Konzentration, Dosis oder Mischreihenfolge erscheint außer aus `calculate_mixing_protocol`, mit genannter Basiswasser-Annahme, und ein fehlendes Ergebnis ergibt eine unbekannte Dosis
 - [ ] Kein Home-Assistant-Sensor wird als Beleg verwendet, und keine Eingabe ohne Quelle wird aufgefüllt
 - [ ] Die Entscheidungs-Skills und die lesenden Rezepte rufen kein zustandsänderndes Tool und kein Home-Assistant-Tool auf

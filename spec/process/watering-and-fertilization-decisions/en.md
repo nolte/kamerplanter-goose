@@ -18,7 +18,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 ## Goals
 
 - A watering result says what it rests on about the plant's present state, and says plainly when there is nothing
-- A fertilisation result says which of insufficient nutrition, an environmental cause and an uncertain diagnosis it rests on, and "do not feed" is an ordinary answer
+- A fertilisation result says which of insufficient nutrition, an environmental cause and an uncertain diagnosis it rests on, or that insufficient nutrition is ruled out, and "do not feed" is an ordinary answer
 - No concentration, dose, mixing order or measurement appears that no tool returned
 - A due reminder is never a reason to water
 - An `-apply` recipe records what a person did and cannot be mistaken for something that waters or feeds
@@ -57,7 +57,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - **MUST** return `feed` only when the nutrient process has established undersupply as a direction and no environmental cause is named
 - **MUST** return `do not feed` when the direction is oversupply or unavailability at adequate supply, or when an environmental cause is named (rule 5 of the decision policy), and **MUST** treat it as an ordinary result
 - **MUST** return `insufficient evidence` when the nutrient process leaves the direction undetermined or at a suspicion
-- **MUST** say which of insufficient nutrition, an environmental cause and an uncertain diagnosis the result rests on
+- **MUST** say which of insufficient nutrition, an environmental cause and an uncertain diagnosis the result rests on, or that insufficient nutrition is ruled out (oversupply)
 - **MUST** take recent fertilisation from the care log as confirmed reminders, which carry no amount, and **MUST NOT** state an amount the record does not hold
 - **MUST** prefer the conservative result when the evidence is incomplete
 
@@ -102,7 +102,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - [ ] Every result carries evidence, confidence, uncertainty and missing data
 - [ ] The fertilisation decision takes the nutrient report as given and does not re-derive its direction or its tier rule
 - [ ] `feed` appears only with an established undersupply and no named environmental cause, and `do not feed` is returned for oversupply, unavailability and a named environmental cause
-- [ ] The result says which of insufficient nutrition, an environmental cause and an uncertain diagnosis it rests on
+- [ ] The result says which of insufficient nutrition, an environmental cause and an uncertain diagnosis it rests on, or that insufficient nutrition is ruled out
 - [ ] No concentration, dose or mixing order appears except from `calculate_mixing_protocol`, with the base-water assumption stated, and an absent result gives an unknown dose
 - [ ] No Home Assistant sensor is used as evidence, and no input without a source is filled
 - [ ] The decision skills and the read-only recipes call no state-changing tool and no Home Assistant tool
