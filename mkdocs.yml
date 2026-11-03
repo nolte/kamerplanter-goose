@@ -84,6 +84,7 @@ plugins:
             Plant master data check: Pflanzenstammdaten-Prüfung
             Nutrient imbalance check: Nährstoffbilanz-Prüfung
             Pest pressure check: Schädlingsdruck-Prüfung
+            Daily garden check: Tägliche Gartenprüfung
             Species baseline check: Artdaten-Prüfung
             Diary analysis queue: Tagebuch-Analyse-Queue
             Domain review: Persona-Review
@@ -155,6 +156,7 @@ nav:
       - Plant master data check: en/guides/plant-master-data-check.md
       - Nutrient imbalance check: en/guides/nutrient-imbalance-check.md
       - Pest pressure check: en/guides/pest-pressure-check.md
+      - Daily garden check: en/guides/daily-garden-check.md
       - Species baseline check: en/guides/species-baseline-check.md
       - Diary analysis queue: en/guides/diary-analysis-queue.md
       - Domain review: en/guides/domain-review.md

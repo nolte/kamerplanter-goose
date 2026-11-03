@@ -16,7 +16,7 @@ Dieser Lauf **liest** deinen Garten **nur**. `calculate_mixing_protocol` ist die
 
 ## Bevor du startest
 
-- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `plant-context-collect` und `nutrient-imbalance-assess` aus `.claude/skills/`, und die Skill-Auffindung erfolgt relativ zum Arbeitsverzeichnis des Goose-Prozesses. Ein anderswo gestarteter Lauf verliert den Skill stillschweigend und liefert trotzdem eine plausible Antwort.
+- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `plant-context-collect`, `diary-measurements-read` und `nutrient-imbalance-assess` aus `.claude/skills/`, und die Skill-Auffindung erfolgt relativ zum Arbeitsverzeichnis des Goose-Prozesses. Ein anderswo gestarteter Lauf verliert den Skill stillschweigend und liefert trotzdem eine plausible Antwort.
 - **Du brauchst den `plant_key` der Pflanze** — den numerischen Schlüssel, nicht die lesbare `instance_id`. Die [Pflanzenstammdaten-Prüfung](plant-master-data-check.md) druckt beide nebeneinander.
 
 ## Ausführen

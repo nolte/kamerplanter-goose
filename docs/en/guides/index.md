@@ -24,6 +24,7 @@ Task-oriented how-tos: one page per shipped recipe, naming the command it takes,
 - [Plant master data check](plant-master-data-check.md) — which plants lack the master data a later analysis would need, and what each gap prevents
 - [Nutrient imbalance check](nutrient-imbalance-check.md) — under- or oversupplied, or unable to take up what is there, for one plant
 - [Pest pressure check](pest-pressure-check.md) — whether a pest or disease suspicion survives the record
+- [Daily garden check](daily-garden-check.md) — what deserves attention in a garden today, ordered by urgency, with what rests on what and what has no action for lack of evidence
 - [Species baseline check](species-baseline-check.md) — whether the species record a plant depends on is plausible, and what its lifecycle is
 - [Diary analysis queue](diary-analysis-queue.md) — analyse one waiting diary entry, work through the queue, or run it on a schedule
 

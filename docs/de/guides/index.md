@@ -24,6 +24,7 @@ Aufgabenorientierte Anleitungen: eine Seite je mitgeliefertem Rezept, mit dem Be
 - [Pflanzenstammdaten-Prüfung](plant-master-data-check.md) — welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht, und was jede Lücke verhindert
 - [Nährstoffbilanz-Prüfung](nutrient-imbalance-check.md) — unter- oder überversorgt, oder unfähig aufzunehmen, was da ist, für eine Pflanze
 - [Schädlingsdruck-Prüfung](pest-pressure-check.md) — ob ein Schädlings- oder Krankheitsverdacht dem Datenbestand standhält
+- [Tägliche Gartenprüfung](daily-garden-check.md) — was in einem Garten heute Aufmerksamkeit verdient, nach Dringlichkeit geordnet, mit dem, worauf es ruht, und dem, was mangels Beleg keine Handlung ergibt
 - [Artdaten-Prüfung](species-baseline-check.md) — ob der Artdatensatz, auf dem eine Pflanze steht, plausibel ist, und wie sein Lebenszyklus aussieht
 - [Tagebuch-Analyse-Queue](diary-analysis-queue.md) — einen wartenden Tagebucheintrag analysieren, die Warteschlange abarbeiten oder beides nach Zeitplan laufen lassen
 
