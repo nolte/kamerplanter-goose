@@ -45,7 +45,7 @@ Readers: authors of the nutrient recipe in this repository, and anyone reviewing
 
 ### The actual side, and its limits
 
-Three sources describe what the plant actually received, and none of them is a dosage record:
+Three measured sources describe what the plant actually received, and none of them is a dosage record. Feeding events written by `record_feeding_event` are a fourth candidate; whether any tool reads them back is open (see Open Questions). Until it is measured, tier 2 is reachable only where a diary entry or a care-log note carries an amount:
 
 | Source | What it gives | What it does not give |
 |--------|---------------|------------------------|
@@ -74,7 +74,7 @@ Claims are ranked by what they rest on, and the rank travels with the claim into
 | Tier | Evidence | Weight |
 |------|----------|--------|
 | 1 | A measured value from a diary entry — EC, pH, runoff reading — with a recognisable unit | Decides direction on its own when recent enough |
-| 2 | Plan target versus reconstructed supply: phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline | Decides direction when tier 1 is absent, at reduced confidence |
+| 2 | Plan target versus reconstructed supply: phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency with recorded dose amounts, and substrate baseline; frequency without amounts is tier 3 | Decides direction when tier 1 is absent, at reduced confidence |
 | 3 | Care-log pattern alone — feeding confirmed often, rarely, or snoozed; repotting overdue | Supports a direction, never establishes one |
 | 4 | Visible symptoms from the image process | Localises which nutrient and how advanced, never the direction |
 | 5 | Species `nutrient_demand_level` and phase expectation | Sets the prior only; a `heavy_feeder` in fruit is not thereby deficient |
@@ -160,7 +160,7 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 - Whether Home Assistant carries soil moisture or conductivity sensors that could supply tier-1 evidence per plant, and how a sensor would be bound to a plant instance. `GetLiveContext` exposes entity state, but no plant-to-entity mapping was found.
 - Whether the antagonism cases worth naming (which ion suppresses which) belong in this spec, in the backend's glossary reachable via `search_glossary`, or in the knowledge base. Encoding them here risks the same drift this repository avoids for species data.
 - How to weigh a plan whose `is_global_template` is true and whose `tags` name a different crop than the plant's species — measured, the reference instance's plans are largely cannabis-specific templates, while its plants are not.
-- Whether "supply above target" can be reconstructed at all without dosage records, or whether tier 2 collapses to tier 3 in practice for growers who confirm reminders but log no amounts.
+- Whether any read tool returns the feeding events written by `record_feeding_event` (tracked in #54). Until that is measured, confirmed feeding frequency without recorded dose amounts is tier 3, not tier 2, and "supply above target" is not reconstructed from frequency alone.
 
 ## Source
 

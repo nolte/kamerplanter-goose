@@ -16,7 +16,7 @@ Rank every claim by what it rests on. A lower tier corroborates or contradicts a
 | Tier | Evidence | Weight |
 |------|----------|--------|
 | 1 | A measured value with a recognisable unit — EC, pH, runoff reading — from a diary entry | Decides direction on its own when recent enough |
-| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline | Decides direction when tier 1 is absent, at reduced confidence |
+| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency with recorded dose amounts, and substrate baseline; frequency without amounts is tier 3 | Decides direction when tier 1 is absent, at reduced confidence |
 | 3 | Care-log pattern alone — feeding frequent, rare, or snoozed; repotting overdue | Supports a direction, never establishes one |
 | 4 | Visible symptoms | Localises which nutrient and how far advanced, never the direction |
 | 5 | Species `nutrient_demand_level` and phase expectation | Sets the prior only |
@@ -80,8 +80,8 @@ State the direction, the tier that established it, and — when a correction is 
 - `mcp__kamerplanter__get_plant_nutrient_plan` returning `plan: null` is the normal state for a plant never put on a programme — not an error and not a reason to stop.
 - Most plans on this instance are global templates whose `tags` name a specific crop. A template tagged for one crop applied to another is a weaker target than a plant-specific plan; weigh it accordingly and say that you did.
 - Repeated `snoozed` repotting in the care log points at exhausted substrate, which mimics undersupply and is not fixed by feeding.
-- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. For growers who confirm reminders but log no quantities, tier 2 collapses to tier 3 and the honest output is a refusal plus a request to measure.
+- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. Whether any read tool returns recorded feeding events is not measured (#54), so do not assume they exist; count a dose amount only where the diary or care log actually holds one. Confirmed reminders give a feeding frequency, which without amounts is tier 3, and the honest output at tier 3 is a refusal plus a request to measure.
 
 ## Source
 
-Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-08-16; `spec/process/` predates `record_feeding_event` and names it nowhere.
+Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-08-16; `spec/process/` predates `record_feeding_event`; it now names it only as an unmeasured fourth source of dose amounts (see its Open Questions).
