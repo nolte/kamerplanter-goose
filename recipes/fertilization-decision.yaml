@@ -1,0 +1,129 @@
+version: "1.0.0"
+title: "Fertilization Decision"
+description: >-
+  Read-only: decides whether one plant should be fed (feed, do not feed, or insufficient evidence) from its nutrient assessment, and says what the decision rests on, how sure it is and what is missing. It reuses the nutrient check and never re-derives its direction; "do not feed" is an ordinary result, and a dose appears only when the mixing protocol returned one. It feeds nothing and records nothing: recording a feeding a person carried out is the separate recipe fertilization-decision-apply. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to decide for."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: water_source_ec
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The EC of the water the nutrient solution is made with, in your words and
+      unit. The server holds no field for it; it is taken as written and marked
+      as coming from you. Without it the dose is stated for an unknown base
+      water, or not at all.
+
+  - key: tank_state
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The state of the tank and the dosing, in your words. The server holds no
+      field for it; it is taken as written and marked as coming from you.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You decide whether one plant should be fed and report. You never feed, dose,
+  or actuate anything, and you do not write a record of a feeding.
+
+  Skills carry the procedure; load each when its step calls for it. They encode
+  measured server behaviour, including which fields are frequently absent and
+  what that absence means. The direction of a nutrient problem is not yours to
+  decide: it comes from the nutrient assessment, and you decide only what a
+  person should do with it.
+
+  "Do not feed" and "insufficient evidence" are legitimate outcomes and often
+  the correct ones. Do not manufacture a feeding to look useful.
+
+prompt: |
+  Decide whether plant "{{ plant_key }}" in garden "{{ tenant }}" should be fed.
+  Read-only run. Use MCP tools only: do not shell out, do not fetch URLs, and
+  read or write no local file other than loading the named skills
+  (`plant-context-collect`, `diary-measurements-read`,
+  `nutrient-imbalance-assess`, `decision-policy`, `fertilization-decision`) and
+  the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - water source EC: "{{ water_source_ec }}"
+  - tank and dosing state: "{{ tank_state }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - `mcp__kamerplanter__calculate_mixing_protocol` is permitted: it only
+    calculates and persists nothing.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never state a concentration, a dose or a mixing order that the mixing
+    protocol did not return, and never invent a measurement.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Recorded measurements.
+  Load the skill `diary-measurements-read` and follow it for plant
+  "{{ plant_key }}" in garden "{{ tenant }}", or in the garden step 1 resolved
+  when that parameter is empty. Keep the measurements it returns and its read
+  report line: that line is what tells step 3 the diary was read.
+
+  Step 3 — Nutrient assessment.
+  Load the skill `nutrient-imbalance-assess` and follow it against that
+  context and those measurements. Establish the evidence tier first, then the
+  direction. Keep its report as it returned it, including what it assumed about
+  the base water and any mixing protocol result. If the caller gave the water
+  source EC above, use it as `base_water_ec` and say so.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 5 — Decide.
+  Load the skill `fertilization-decision` and follow it with the nutrient
+  report of step 3, the context of step 1, the diary read report of step 2 and
+  the caller facts above, passing only the ones that are not empty. It makes no
+  tool call.
+
+  Step 6 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Fertilization Decision — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the decision block exactly as the skill returned it (the
+  decision, what it rests on, the nutrient direction and tier, the dose or
+  `unknown`, evidence, confidence, uncertainty, missing data) and the finding.
+  Then the diary read report line, and any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `FERTILIZATION: <feed | do not feed | insufficient evidence> — {{ plant_key }}`
