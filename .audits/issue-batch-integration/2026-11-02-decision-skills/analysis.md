@@ -125,3 +125,9 @@ Not applicable — no group requirement artifact (cluster shape "neither").
 | Finding | Source | Outcome | Reproduction | Issue |
 |---|---|---|---|---|
 | | | | | |
+
+## Dispatch log
+
+2026-11-03 G0 dispatched to `nolte-shared:spec` — `spec/process/watering-and-fertilization-decisions/{en,de}.md` written. Parity measured: 16 headings each at identical levels, 36 requirement bullets each, 19 acceptance checkboxes each, every relative link resolves. `spec/README.md` not regenerated (G2). One citation in `de.md` corrected after the check: the German server spec's section is "Schreibtools", not "Schreib-Tools" (`spec/mcp/kamerplanter-mcp-server/de.md:128`).
+  - **Hypothesis refined (recorded as a result):** the brief had no source for a watering prior. The phase definition carries `watering_interval_days` (`spec/process/species-baseline-verification/en.md` table of `list_phase_definitions`; `.claude/skills/plant-context-collect/SKILL.md` §4). Spec section B reads it as a level 4 prior that decides nothing alone; what it counts and whether the species carries a water demand stay an Open Question. `spec/process/garden-decision-policy/en.md:30` already names "a watering interval" as a question the owning process decides, which this spec now is.
+  - Duplicate check: no existing spec covers either decision; hits in nutrient, care-planning, decision-policy, MCP and species-baseline specs are references.
