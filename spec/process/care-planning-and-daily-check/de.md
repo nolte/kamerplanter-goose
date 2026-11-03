@@ -9,7 +9,7 @@ Ein Garten hält viele kleine Fragen zugleich: Welche Pflanzen sind fällig, wel
 
 Die Schicht entscheidet nichts über eine Pflanze. Sie liest, was der Gartenkontext und die Domänenprozesse bereits geliefert haben, hält Beobachtung, Empfehlung und Mutation auseinander, ordnet die Empfehlungen und weigert sich, eine Handlung zu erzeugen, wo der Beleg zum gegenwärtigen Zustand fehlt. Eine Person liest das Ergebnis; nichts wird angewendet.
 
-Alles zur Tool-Oberfläche stammt aus der [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md), gemessen an der Referenzinstanz am 2026-08-16 und für diese Spezifikation nicht neu gemessen: Der Kamerplanter-MCP-Server war beim Schreiben nicht erreichbar (`INVALID_CONFIG`). Die Formen der bestehenden Domänenberichte wurden aus `.claude/skills/nutrient-imbalance-assess/SKILL.md` (§5 Report) und `.claude/skills/pest-pressure-assess/SKILL.md` (§5 Report) gelesen; keiner liefert heute einen strukturierten Befund, deshalb bildet Abschnitt C sie ab. Keine Spezifikation in diesem Repository hält die Antwortfelder von `get_due_care_tasks` fest (eine Suche in `spec/`, `docs/` und `recipes/` findet den Namen des Tools und kein Feld), deshalb berechnet Abschnitt D kein Überfälligkeitsintervall.
+Alles zur Tool-Oberfläche stammt aus der [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md), gemessen an der Referenzinstanz am 2026-08-16 und für diese Spezifikation nicht neu gemessen: Der Kamerplanter-MCP-Server war beim Schreiben nicht erreichbar (`INVALID_CONFIG`). Die Formen der bestehenden Domänenberichte wurden aus `.claude/skills/nutrient-imbalance-assess/SKILL.md` (§5 Report) und `.claude/skills/pest-pressure-assess/SKILL.md` (§5 Report) gelesen; keiner liefert heute einen strukturierten Befund, deshalb bildet Abschnitt C sie ab. Die Bewässerungs- und die Düngeentscheidung liefern Befunde selbst in dieser Form ([ihre Spezifikation](../watering-and-fertilization-decisions/de.md), Abschnitt F). Keine Spezifikation in diesem Repository hält die Antwortfelder von `get_due_care_tasks` fest (eine Suche in `spec/`, `docs/` und `recipes/` findet den Namen des Tools und kein Feld), deshalb berechnet Abschnitt D kein Überfälligkeitsintervall.
 
 Grenzen: Die [Entscheidungsrichtlinie für den Garten](../garden-decision-policy/de.md) besitzt die Belegstufen, die sechs Regeln, die Form einer Empfehlung und den Gartenkontext-Block; diese Spezifikation wendet sie an und nennt keine eigene Stufe. Die [Spezifikation zu Pflanzplanung und Pflanzkalender](../plant-planning-and-planting-calendar/de.md) besitzt den Plan, den diese Schicht lesen darf (ihre Verbrauchertabelle nennt die Pflegeplanung). Der [Nährstoff-](../nutrient-imbalance-detection/de.md) und der [Schädlingsprozess](../pest-pressure-assessment/de.md) behalten ihre eigenen Leitern und Verweigerungsschwellen; diese Schicht ordnet sie nicht neu.
 
@@ -25,7 +25,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 ## Nicht-Ziele
 
-- Die Domänen selbst: Bewässerung (nolte/kamerplanter-goose#44), Düngung (#45), Pflanzengesundheit und Schädlingsmanagement (#48), Wachstumsstadium und Wetter (#49)
+- Die Domänen selbst: Pflanzengesundheit und Schädlingsmanagement (nolte/kamerplanter-goose#48), Wachstumsstadium und Wetter (#49). Bewässerung und Düngung sind in der [Spezifikation zu den Entscheidungen zu Bewässerung und Düngung](../watering-and-fertilization-decisions/de.md) festgelegt
 - Etwas anwenden: kein `-apply`-Rezept, kein Anwendungsvertrag. Das Issue verlangt keinen, und „keine Mutation ohne ausdrückliche Anwendungsschritte“ ist erfüllt, indem keiner geliefert wird
 - Die Tool-Oberfläche live messen. Aussagen darüber zitieren die Server-Spezifikation und sagen, dass sie nicht neu gemessen wurden
 - Ein Überfälligkeitsintervall für eine Pflegeaufgabe berechnen. Die Antwortform von `get_due_care_tasks` ist nicht festgehalten (Abschnitt D)
@@ -49,7 +49,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **MUSS [MUST]** einen Befund definieren als: die Domäne, das Subjekt (ein Pflanzenschlüssel oder der Garten), die Art (Beobachtung oder Empfehlung), die Aussage, die Belegeinträge (Stufe, Quelle, Abrufzeit), die Konfidenz, was sie ändern würde, die fehlenden Daten und optional die Folge (was geschieht, wenn nichts getan wird, in den Worten der Domäne)
 - **DARF NICHT [MUST NOT]** einem Befund ein Feld hinzufügen, das die Domäne nicht geliefert hat, und **MUSS [MUST]** die Folge fehlen lassen, wenn die Domäne keine genannt hat
-- **MUSS [MUST]** die Berichte der beiden vorhandenen Domänen, `nutrient-imbalance-assess` und `pest-pressure-assess`, in Befunde abbilden, weil keiner heute diese Form liefert, **MUSS [MUST]** ihre Belegstufen aus der Tabelle „Wie sich die bestehenden Leitern verhalten“ der Entscheidungsrichtlinie lesen und **DARF NICHT [MUST NOT]** eine Stufe vergeben, wo diese Tabelle keine nennt (die Nährstoff-Stufe 2 und aus einem Bild gelesene Symptome)
+- **MUSS [MUST]** die Berichte der beiden Domänen, die diese Form nicht liefern, `nutrient-imbalance-assess` und `pest-pressure-assess`, in Befunde abbilden, **MUSS [MUST]** die Befunde der Bewässerungs- und der Düngeentscheidung so übernehmen, wie sie sie liefern, **MUSS [MUST]** die Belegstufen der abgebildeten Berichte aus der Tabelle „Wie sich die bestehenden Leitern verhalten“ der Entscheidungsrichtlinie lesen und **DARF NICHT [MUST NOT]** eine Stufe vergeben, wo diese Tabelle keine nennt (die Nährstoff-Stufe 2 und aus einem Bild gelesene Symptome)
 - **MUSS [MUST]** ein Nährstoff- oder Schädlingsergebnis, das sein besitzender Prozess mit unbestimmter Richtung lässt, als Verdacht oder unterhalb seiner Verweigerungsschwelle, als Beobachtung behandeln und nicht als Empfehlung
 - **MUSS [MUST]** jede in den Nicht-Zielen genannte Domäne als nicht verfügbar melden und den Skill nennen, der sie liefern würde, bis dieser Skill existiert, und **DARF NICHT [MUST NOT]** das Ergebnis einer anderen Domäne einsetzen
 
@@ -93,7 +93,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Jeder Eintrag eines Pflegeplans hat genau eine Art, und keine Mutation wird aufgerufen, eingeplant oder als Anweisung formuliert
 - [ ] Jede Empfehlung trägt Beleg, Konfidenz, Unsicherheit und fehlende Daten, und keine wird ohne sie geliefert
 - [ ] Ein Befund hat die Felder aus Abschnitt C und kein Feld, das die Domäne nicht geliefert hat; die Folge fehlt, wenn die Domäne keine genannt hat
-- [ ] Die Nährstoff- und Schädlingsberichte werden in Befunde abgebildet, mit Stufen aus der Tabelle der Entscheidungsrichtlinie, und wo die Tabelle keine nennt, wird keine vergeben
+- [ ] Die Nährstoff- und Schädlingsberichte werden in Befunde abgebildet, mit Stufen aus der Tabelle der Entscheidungsrichtlinie, und wo die Tabelle keine nennt, wird keine vergeben, und die Befunde der Bewässerungs- und der Düngeentscheidung werden so übernommen, wie sie sie liefern
 - [ ] Ein Verdacht oder eine unbestimmte Richtung ist eine Beobachtung, keine Empfehlung
 - [ ] Jede in den Nicht-Zielen genannte Domäne wird als nicht verfügbar mit dem Skill gemeldet, der sie liefern würde, und keine wird durch eine andere ersetzt
 - [ ] Die Ordnung ist Dringlichkeit, dann Konfidenz, dann Subjektschlüssel, dann Domäne und ändert sich nicht, wenn sich die Reihenfolge der Eingabe ändert
@@ -116,11 +116,12 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [Die Spezifikation zur Schädlingsdruck-Bewertung](../pest-pressure-assessment/de.md) — die Schädlings-Leiter und ihre Falsifikationstests
 - [Die Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md) — der Tool-Katalog und die zustandsändernden Tools, gemessen 2026-08-16
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md) — wie ein Rezept hier gebaut wird, einschließlich der Regel, verbotene Tools namentlich zu nennen
+- [Die Spezifikation zu den Entscheidungen zu Bewässerung und Düngung](../watering-and-fertilization-decisions/de.md) — die beiden Domänen, die Befunde in dieser Form liefern
 - Issue nolte/kamerplanter-goose#43 — der Umfang und die fünf Akzeptanzkriterien stammen aus seinem Text; #44, #45, #48 und #49 — die Domänen, die sich einklinken; #39 — das Audit
 
 ## Offene Fragen
 
-- **Ob die Domänen-Skills ein ausdrückliches Dringlichkeitsfeld im Einklinkvertrag brauchen.** Die Dringlichkeit wird hier aus der genannten Folge abgeleitet. Ob die Bewässerungs- und Düngungsdomäne (nolte/kamerplanter-goose#44 und #45) eine Folge in einer Form nennen können, bleibt offen, bis die erste existiert.
+- **Ob die Domänen-Skills ein ausdrückliches Dringlichkeitsfeld im Einklinkvertrag brauchen.** Die Dringlichkeit wird hier aus der genannten Folge abgeleitet. Die Bewässerungs- und die Düngeentscheidung lassen die Folge fehlen, wenn keine Eingabe eine nennt, und heute nennt keine eine, sodass ihre Empfehlungen `routine` einstufen; ob für sie eine Folge in einer Form genannt werden kann, bleibt offen, bis eine Domäne es tut.
 - **Wie sich die Regel zu Nährstoff-Stufe 2 als Konfidenz in einem Pflegeeintrag zeigt.** Stufe 2 braucht erfasste Dosismengen und trägt keine Stufe der Entscheidungsrichtlinie (Abschnitt C), also sagt ein Pflegeeintrag, der darauf ruht, dass keine Stufe gilt. Ob das der richtige Ort dafür ist, bleibt offen.
 - **Wo das Audit nolte/kamerplanter-goose#39 die Pflegeplanung relativ zum Gartenkontext einordnet.** Ob die Schicht ein Skill bleibt, entscheidet das Audit.
 - **Die Antwortfelder von `get_due_care_tasks`.** Keine Spezifikation hier hält fest, ob eine Aufgabe ein Fälligkeitsdatum oder ein Intervall trägt, also ist keine Überfälligkeitsberechnung festgelegt, und eine fällige Aufgabe ist höchstens `routine`. Eine Messung an einer erreichbaren Instanz würde das klären.

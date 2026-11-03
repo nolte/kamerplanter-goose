@@ -10,8 +10,8 @@ Turns what the domain checks returned into one ordered list a person can act on,
 ## Input
 
 - **The garden context block** from `garden-context`: the due tasks, the planting runs, and the list of absent fields.
-- **Domain reports**, one per plant per domain that ran: the reports of `nutrient-imbalance-assess` and `pest-pressure-assess`, as they returned them.
-- **Domain statuses**, from the caller, one per domain: `checked`, `not available` (with the skill that would provide it) or `not checked` (with why). The domains not yet built are watering (nolte/kamerplanter-goose#44), fertilisation (#45), plant health and pest management (#48), growth stage and weather (#49).
+- **Domain reports**, one per plant per domain that ran: the reports of `nutrient-imbalance-assess` and `pest-pressure-assess`, as they returned them, and the findings of `watering-decision` and `fertilization-decision`, which already have the shape of step 1.
+- **Domain statuses**, from the caller, one per domain: `checked`, `not available` (with the skill that would provide it) or `not checked` (with why). The domains not yet built are plant health and pest management (nolte/kamerplanter-goose#48) and growth stage and weather (#49).
 - **The plan document** from `plant-planning`, optional. Read per run: the run identifier, the species and cultivar key, the method, the windows and the confidence.
 
 Without the garden context block, stop and say that `garden-context` must run first. A plan that was not supplied is absent, which is not the same as having no planting runs.
@@ -24,6 +24,7 @@ Map each domain report into a finding with exactly these fields: the domain, the
 
 - **Levels** come from the table "How the existing ladders relate" in `decision-policy`. Where it gives none, write `no level`: the nutrient tier 2 (a plan target against reconstructed supply, which needs recorded dose amounts) and symptoms read from an image.
 - **A report that leaves the direction undetermined**, names a suspicion, or stays below its process's refusal threshold is an **observation**. Only a result that proposes an action is a **recommendation**.
+- **The watering and fertilisation decisions** return findings in this shape themselves: take them as they return them, and map nothing. Their recommendations carry no stated consequence today, so they rank `routine`.
 - A domain that returned nothing is absent, with the reason. Never fill it from general knowledge and never take another domain's result in its place.
 
 ### 2. Carry the due tasks

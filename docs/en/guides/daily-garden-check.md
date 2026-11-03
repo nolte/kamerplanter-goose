@@ -8,7 +8,7 @@ last_updated: 2026-11-03
 
 # Daily garden check
 
-A garden holds many small questions at once: what is due, what looks wrong, what needs nothing. `daily-garden-check` is the daily look. It reads one Kamerplanter garden, runs the nutrient and pest checks for the plants you name, and puts everything into one list ordered by what deserves attention first. Each item says whether it is an observation or a recommendation, what it rests on, how sure it is, and what would change it. What has no action because the evidence is missing is listed too, with the observation that would supply it.
+A garden holds many small questions at once: what is due, what looks wrong, what needs nothing. `daily-garden-check` is the daily look. It reads one Kamerplanter garden, runs the nutrient, pest, watering and fertilisation checks for the plants you name, and puts everything into one list ordered by what deserves attention first. Each item says whether it is an observation or a recommendation, what it rests on, how sure it is, and what would change it. What has no action because the evidence is missing is listed too, with the observation that would supply it.
 
 This run **only reads**. It changes no record, schedules nothing, and has no apply recipe. "Nothing to do" is a legitimate result, and the check does not pad the list to look useful.
 
@@ -17,7 +17,7 @@ This run **only reads**. It changes no record, schedules nothing, and has no app
 
 ## Before you start
 
-- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `decision-policy` and `care-planning` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
+- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `decision-policy` and `care-planning` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
 - Run [`connectivity-check`](connectivity-check.md) first against a new environment.
 
 ## Run it
@@ -31,7 +31,7 @@ goose run --recipe daily-garden-check \
 | Parameter | Required | Effect when omitted |
 |-----------|:--------:|---------------------|
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
-| `plants` | no | the garden level only: due tasks and planting runs. The nutrient and pest checks are not run |
+| `plants` | no | the garden level only: due tasks and planting runs. The per-plant checks are not run |
 
 `plants` is a comma-separated list of plant instance keys. **At most five are checked**, in the order you give them; every further key is reported as not checked. The limit keeps the number of per-plant calls bounded: the check never reads every plant of a garden.
 
@@ -41,12 +41,12 @@ goose run --recipe daily-garden-check \
 |--------|--------|
 | nutrient | checked for the plants you name |
 | pest | checked for the plants you name |
-| watering | **not available** (`watering-decision`, [#44](https://github.com/nolte/kamerplanter-goose/issues/44)) |
-| fertilisation | **not available** (`fertilization-decision`, [#45](https://github.com/nolte/kamerplanter-goose/issues/45)) |
+| watering | checked for the plants you name |
+| fertilisation | checked for the plants you name |
 | plant health and pest management | **not available** (`plant-health-assessment`, `pest-ipm-planning`, [#48](https://github.com/nolte/kamerplanter-goose/issues/48)) |
 | growth stage and weather | **not available** (`growth-stage-assessment`, `weather-impact-analysis`, [#49](https://github.com/nolte/kamerplanter-goose/issues/49)) |
 
-A domain that is not available is named in the report and never replaced by another. When one of those skills exists, it plugs in here without a change to the care plan's rules.
+The watering and fertilisation checks add no calls of their own: they work on what the other checks already collected, and they return their findings in the care plan's own shape. **Expect watering to end at "insufficient evidence"** for a plant with no moisture reading, which is the ordinary result (see the [watering decision](watering-decision.md) and the [fertilization decision](fertilization-decision.md)). A domain that is not available is named in the report and never replaced by another. When one of those skills exists, it plugs in here without a change to the care plan's rules.
 
 ## What the list means
 

@@ -8,7 +8,7 @@ last_updated: 2026-11-03
 
 # Tägliche Gartenprüfung
 
-Ein Garten hält viele kleine Fragen zugleich: Was ist fällig, was sieht falsch aus, was braucht nichts. `daily-garden-check` ist der tägliche Blick. Er liest einen Kamerplanter-Garten, führt die Nährstoff- und die Schädlingsprüfung für die Pflanzen aus, die du nennst, und ordnet alles in einer Liste danach, was zuerst Aufmerksamkeit verdient. Jeder Eintrag sagt, ob er eine Beobachtung oder eine Empfehlung ist, worauf er ruht, wie sicher er ist und was ihn ändern würde. Was keine Handlung ergibt, weil der Beleg fehlt, steht ebenfalls dabei, mit der Beobachtung, die ihn liefern würde.
+Ein Garten hält viele kleine Fragen zugleich: Was ist fällig, was sieht falsch aus, was braucht nichts. `daily-garden-check` ist der tägliche Blick. Er liest einen Kamerplanter-Garten, führt die Nährstoff-, Schädlings-, Bewässerungs- und Düngeprüfung für die Pflanzen aus, die du nennst, und ordnet alles in einer Liste danach, was zuerst Aufmerksamkeit verdient. Jeder Eintrag sagt, ob er eine Beobachtung oder eine Empfehlung ist, worauf er ruht, wie sicher er ist und was ihn ändern würde. Was keine Handlung ergibt, weil der Beleg fehlt, steht ebenfalls dabei, mit der Beobachtung, die ihn liefern würde.
 
 Dieser Lauf **liest nur**. Er ändert keinen Datensatz, plant nichts ein und hat kein Anwendungsrezept. „Nichts zu tun“ ist ein zulässiges Ergebnis, und die Prüfung füllt die Liste nicht auf, damit sie nützlich aussieht.
 
@@ -17,7 +17,7 @@ Dieser Lauf **liest nur**. Er ändert keinen Datensatz, plant nichts ein und hat
 
 ## Bevor du beginnst
 
-- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `decision-policy` und `care-planning` aus `.claude/skills/`, und die Skill-Erkennung hängt vom Arbeitsverzeichnis des Goose-Prozesses ab. Aus einem anderen Verzeichnis gestartet, gehen die Skills stillschweigend verloren, und der Lauf liefert trotzdem eine plausible Antwort.
+- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `decision-policy` und `care-planning` aus `.claude/skills/`, und die Skill-Erkennung hängt vom Arbeitsverzeichnis des Goose-Prozesses ab. Aus einem anderen Verzeichnis gestartet, gehen die Skills stillschweigend verloren, und der Lauf liefert trotzdem eine plausible Antwort.
 - Führe bei einer neuen Umgebung zuerst die [`connectivity-check`](connectivity-check.md) aus.
 
 ## Ausführen
@@ -31,7 +31,7 @@ goose run --recipe daily-garden-check \
 | Parameter | Pflicht | Wirkung, wenn weggelassen |
 |-----------|:-------:|---------------------------|
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug über `list_tenants` |
-| `plants` | nein | nur die Gartenebene: fällige Aufgaben und Pflanzdurchläufe. Die Nährstoff- und die Schädlingsprüfung laufen nicht |
+| `plants` | nein | nur die Gartenebene: fällige Aufgaben und Pflanzdurchläufe. Die Prüfungen je Pflanze laufen nicht |
 
 `plants` ist eine durch Kommas getrennte Liste von Pflanzenschlüsseln. **Höchstens fünf werden geprüft**, in der Reihenfolge, in der du sie nennst; jeder weitere Schlüssel wird als nicht geprüft gemeldet. Die Grenze hält die Zahl der Aufrufe je Pflanze klein: Die Prüfung liest nie jede Pflanze eines Gartens.
 
@@ -41,12 +41,12 @@ goose run --recipe daily-garden-check \
 |--------|--------|
 | Nährstoffe | für die genannten Pflanzen geprüft |
 | Schädlinge | für die genannten Pflanzen geprüft |
-| Bewässerung | **nicht verfügbar** (`watering-decision`, [#44](https://github.com/nolte/kamerplanter-goose/issues/44)) |
-| Düngung | **nicht verfügbar** (`fertilization-decision`, [#45](https://github.com/nolte/kamerplanter-goose/issues/45)) |
+| Bewässerung | für die genannten Pflanzen geprüft |
+| Düngung | für die genannten Pflanzen geprüft |
 | Pflanzengesundheit und Schädlingsmanagement | **nicht verfügbar** (`plant-health-assessment`, `pest-ipm-planning`, [#48](https://github.com/nolte/kamerplanter-goose/issues/48)) |
 | Wachstumsstadium und Wetter | **nicht verfügbar** (`growth-stage-assessment`, `weather-impact-analysis`, [#49](https://github.com/nolte/kamerplanter-goose/issues/49)) |
 
-Eine nicht verfügbare Domäne wird im Bericht genannt und nie durch eine andere ersetzt. Sobald einer dieser Skills existiert, klinkt er sich hier ein, ohne dass sich die Regeln des Pflegeplans ändern.
+Die Bewässerungs- und die Düngeprüfung fügen keine eigenen Aufrufe hinzu: Sie arbeiten auf dem, was die anderen Prüfungen schon gesammelt haben, und liefern ihre Befunde in der eigenen Form des Pflegeplans. **Rechne damit, dass die Bewässerung bei `insufficient evidence` endet**, wenn für eine Pflanze kein Feuchtewert vorliegt; das ist das gewöhnliche Ergebnis (siehe die [Bewässerungsentscheidung](watering-decision.md) und die [Düngeentscheidung](fertilization-decision.md)). Eine nicht verfügbare Domäne wird im Bericht genannt und nie durch eine andere ersetzt. Sobald einer dieser Skills existiert, klinkt er sich hier ein, ohne dass sich die Regeln des Pflegeplans ändern.
 
 ## Was die Liste bedeutet
 
