@@ -42,7 +42,7 @@ goose run --recipe watering-decision \
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug über `list_tenants` |
 | `weather` | nein | Wetter und Vorhersage sind unbekannt; der Server hat dafür keine Quelle |
 | `container` | nein | das Gefäß oder Beet ist unbekannt; der Server hat dafür kein Feld |
-| `constraints` | nein | kein Feuchte-Zielwert ist genannt, ein Messwert hat also nichts zum Vergleichen, außer der Datenbestand trägt einen |
+| `constraints` | nein | kein Feuchte-Zielwert ist genannt, ein Messwert hat also nichts zum Vergleichen, (der gemessene Datenbestand trägt keinen) |
 
 ## Was es entscheidet
 
@@ -65,7 +65,7 @@ Wenn du gegossen hast, kannst du die Erinnerung bestätigen lassen:
 goose run --recipe watering-decision-apply \
   --params plant_key=42 \
   --params decision="water now" \
-  --params reminder_type=<der Typ, wie dein Pflegeprotokoll ihn nennt> \
+  --params reminder_type=<der Typ, wie dein Pflegeprotokoll ihn festhält> \
   --params run_id=2026-11-03-a
 ```
 
@@ -73,14 +73,14 @@ goose run --recipe watering-decision-apply \
 |-----------|:-------:|-----------|
 | `plant_key` | ja | die Pflanze, deren Erinnerung du befolgt hast |
 | `decision` | ja | die Entscheidung, die du genehmigt hast; nur `water now` wird angenommen |
-| `reminder_type` | ja | der Typ der zu bestätigenden Erinnerung, genau wie dein Pflegeprotokoll ihn nennt |
+| `reminder_type` | ja | der Typ der zu bestätigenden Erinnerung, genau wie dein Pflegeprotokoll ihn für eine bestätigte Erinnerung festhält |
 | `run_id` | ja | macht einen Wiederholungslauf nachvollziehbar und verhindert doppeltes Schreiben |
 | `tenant` | nein | der Garten-Slug; nötig, wenn dein Schlüssel mehrere Gärten abdeckt |
 
 - **Du nennst den Erinnerungstyp.** In diesem Repository ist keine Liste der Erinnerungstypen festgehalten, also rät oder setzt das Rezept nie einen.
 - **Es verweigert ohne genehmigte `water now`-Entscheidung oder ohne Erinnerungstyp** und sagt, welches von beiden. Es schreibt keine Bestätigung, die der Entscheidung widerspricht. Der Erinnerungstyp wird so festgehalten, wie du ihn angibst, und der Lauf kann ihn nicht prüfen.
 - **Es ruft zuerst einen Probelauf auf**, meldet, was geschrieben würde, und schreibt erst dann, mit einem Idempotenzschlüssel aus der Pflanze und der `run_id`. Ein erfolgreicher Probelauf beweist nicht, dass das Schreiben gelingt; das Ergebnis des echten Aufrufs wird so gemeldet, wie es zurückkam.
-- **Geschrieben wird eine Bestätigung.** Der Lauf hat nichts gegossen und nicht geprüft, ob die Pflanze gegossen wurde.
+- **Geschrieben wird ein Eintrag: die Bestätigung einer Pflegeerinnerung.** Der Lauf hat nichts gegossen und nicht geprüft, ob die Pflanze gegossen wurde.
 - Es ruft kein anderes Tool auf als das, das eine Pflegeerinnerung bestätigt, und kein Home-Assistant-Tool.
 
 ## Das Ergebnis lesen
@@ -90,6 +90,7 @@ goose run --recipe watering-decision-apply \
 | `WATERING: <decision> — <plant_key>` | das Ergebnis des Entscheidungsrezepts |
 | `CONFIRMED: care task for <plant_key>` | die Bestätigung wurde geschrieben |
 | `NOT CONFIRMED: <reason>` | nichts wurde geschrieben, und warum |
+| `WATERING: not decided — <plant_key>` | ein Schritt ist fehlgeschlagen, und es kam keine Entscheidung zustande |
 
 Der Entscheidungsbericht trägt die Entscheidung, den gegenwärtigen Zustand, auf dem sie ruht, oder `unknown`, den Beleg, die Vorannahmen, die Konfidenz, was sie ändern würde und was fehlt. Die Tagebuch-Lesezeile sagt, wie viele Einträge aufgelistet, geöffnet und ohne Messwerte gefunden wurden.
 

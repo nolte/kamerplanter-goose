@@ -12,7 +12,7 @@ Turns the facts already collected into a decision a person can act on, or into a
 - **The plant context block** from `plant-context-collect`: species, the resolved phase and its definition (which carries `watering_interval_days`), the care log summary (the most recent confirmed reminder per type, the snoozed entries), inspections, the gaps list.
 - **The diary read report and measurements** from `diary-measurements-read`.
 - **The garden context block** from `garden-context`, optional.
-- **Caller facts**, each optional, taken as written and marked `caller`: weather and forecast, the container or bed, irrigation constraints, user constraints, and the moisture target the caller wants the plant kept to. The server has no source for them; absent ones are absent, never filled.
+- **Caller facts**, each optional, taken as written and marked `caller`: weather and forecast, the container or bed, irrigation constraints, and user constraints (the moisture target the caller wants the plant kept to is one). The server has no source for them; absent ones are absent, never filled.
 
 Without the plant context block, stop and say that `plant-context-collect` must run first.
 
@@ -20,7 +20,7 @@ Without the plant context block, stop and say that `plant-context-collect` must 
 
 ### 1. Find what is known about the plant's present state
 
-The measured catalog has one source for it: a measurement in a diary entry of this plant. Take a soil or substrate moisture value only from a `measurements` key whose meaning and unit are unambiguous, and discard an ambiguous one, saying that you did. A measurement recent enough for the question is level 1; an older one is level 2 and describes the past, not the present.
+The measured catalog has one source for it: a measurement in a diary entry of this plant. Take a soil or substrate moisture value only from a `measurements` key whose meaning and unit are unambiguous, and discard an ambiguous one, saying that you did. A measurement recent enough for the question is level 1; an older one is level 2 and describes the past, not the present. "Recent enough" is not defined (the decision policy leaves it open, and the decision facts never read today's date): report the measurement's recorded date and the basis on which you judged it current, for example the caller saying the reading is from today. A reading you cannot judge is level 2.
 
 Everything else is context, not present state:
 
@@ -33,12 +33,12 @@ Everything else is context, not present state:
 
 | What is known about the present state | Decision |
 |---------------------------------------|----------|
-| a recent, unambiguous moisture measurement of this plant on the dry side of a target the record or the caller states | `water now` |
+| a recent, unambiguous moisture measurement of this plant on the dry side of a target the caller states | `water now` |
 | a recent, unambiguous moisture measurement within that target, or on the wet side | `wait` |
 | a measurement with no target to compare it with, an ambiguous key or unit, or one too old for the question | `insufficient evidence` |
 | no measurement at all | `insufficient evidence` |
 
-A target comes from a field of the plant context block or from the caller. The record often carries none, and then a measurement alone is a number with nothing to compare it to. That ends at `insufficient evidence`, and the result says which target is missing.
+A target comes from the caller, as a user constraint: no field of the plant context block carries a moisture target in the measured record. **This skill adds that rule; the spec does not state it** (its Open Questions name it). Without a target, a measurement alone is a number with nothing to compare it to. That ends at `insufficient evidence`, and the result says which target is missing.
 
 **Never** return `water now` because a reminder is due, because a schedule or the phase's interval has elapsed, or because the plant is expected to be dry: that is rule 2 of `decision-policy`, and none of them is a reading of the plant. `insufficient evidence` is the ordinary result of this skill, not a failure: say what would supply the missing evidence, for example one moisture reading recorded in a diary entry, and say that it is the person's observation that is missing.
 

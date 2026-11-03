@@ -127,3 +127,5 @@ prompt: |
 
   Close with one line, on a single line:
   `FERTILIZATION: <feed | do not feed | insufficient evidence> — {{ plant_key }}`
+  If a step failed and no decision could be reached, close instead with
+  `FERTILIZATION: not decided — {{ plant_key }}`.

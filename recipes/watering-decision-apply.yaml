@@ -30,8 +30,8 @@ parameters:
     requirement: required
     description: >-
       The type of the care reminder to confirm, exactly as the plant's care
-      log or reminder names it. No list of values is recorded in this
-      repository, so the run never guesses or defaults one.
+      log records it for a confirmed reminder. No list of values is recorded in
+      this repository, so the run never guesses or defaults one.
 
   - key: run_id
     input_type: string
@@ -92,9 +92,10 @@ prompt: |
   acted on: record it as given, you cannot check it.
 
   Step 2 — Garden and permission.
-  Call `mcp__kamerplanter__list_tenants`. Use "{{ tenant }}" if it is not empty
-  and is among the slugs returned, otherwise the single slug returned; with
-  several slugs and no given slug, refuse with `NOT CONFIRMED: garden not
+  Call `mcp__kamerplanter__list_tenants`. If "{{ tenant }}" is not empty, it must
+  be among the slugs returned; otherwise refuse with `NOT CONFIRMED: garden not
+  found`, and never write to another garden. If it is empty, use the single
+  slug returned; with several slugs, refuse with `NOT CONFIRMED: garden not
   given`. If the key lacks `mcp.write`, refuse with `NOT CONFIRMED: key lacks
   mcp.write`.
 
@@ -111,7 +112,7 @@ prompt: |
   the tool returned it, including whether it was an idempotent replay.
 
   Step 5 — Report.
-  Print this and nothing after it:
+  Print this, ending with the closing line:
 
   ## Watering Decision Apply — {{ plant_key }}
 
@@ -120,9 +121,10 @@ prompt: |
 
   One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
   one line. Then the values that were passed, one per line, and the tool result
-  verbatim. Then this statement: this run confirmed a care reminder that a
-  person says they acted on; it watered nothing and it did not check that the
-  plant was watered.
+  verbatim. Then this statement: this run wrote a record, the confirmation of a
+  care reminder that a person says they acted on; it watered nothing and it
+  did not check that the plant was watered.
 
   Close with the line `CONFIRMED: care task for {{ plant_key }}` or, if nothing
-  was written, `NOT CONFIRMED: <reason>`, as the very last line.
+  was written, `NOT CONFIRMED: <reason>`, as the very last line, on a single
+  line.

@@ -42,7 +42,7 @@ goose run --recipe watering-decision \
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `weather` | no | weather and forecast are unknown; the server has no source for them |
 | `container` | no | the container or bed is unknown; the server has no field for it |
-| `constraints` | no | no moisture target is stated, so a reading has nothing to be compared with unless the record carries one |
+| `constraints` | no | no moisture target is stated, so a reading has nothing to be compared with (the measured record carries none) |
 
 ## What it decides
 
@@ -65,7 +65,7 @@ Once you have watered, you can have the reminder confirmed:
 goose run --recipe watering-decision-apply \
   --params plant_key=42 \
   --params decision="water now" \
-  --params reminder_type=<the type as your care log names it> \
+  --params reminder_type=<the type as your care log records it> \
   --params run_id=2026-11-03-a
 ```
 
@@ -73,14 +73,14 @@ goose run --recipe watering-decision-apply \
 |-----------|:--------:|---------|
 | `plant_key` | yes | the plant whose reminder you acted on |
 | `decision` | yes | the decision you approved; only `water now` is accepted |
-| `reminder_type` | yes | the type of the reminder to confirm, exactly as your care log names it |
+| `reminder_type` | yes | the type of the reminder to confirm, exactly as your care log records it for a confirmed reminder |
 | `run_id` | yes | makes a retry traceable and keeps it from writing twice |
 | `tenant` | no | the garden slug; needed when your key covers several gardens |
 
 - **You name the reminder type.** No list of reminder types is recorded in this repository, so the run never guesses or defaults one.
 - **It refuses without an approved `water now` decision or without a reminder type**, and says which. It does not write a confirmation that contradicts the decision. The reminder type is recorded as you give it, and the run cannot check it.
 - **It calls a dry run first**, reports what would be written, and only then writes, with an idempotency key built from the plant and the `run_id`. A dry run that succeeds does not prove that the write will; the result of the real call is reported as returned.
-- **What is written is a confirmation.** The run watered nothing and did not check that the plant was watered.
+- **What is written is a record: the confirmation of a care reminder.** The run watered nothing and did not check that the plant was watered.
 - It calls no tool other than the one that confirms a care reminder, and no Home Assistant tool.
 
 ## Read the outcome
@@ -90,6 +90,7 @@ goose run --recipe watering-decision-apply \
 | `WATERING: <decision> — <plant_key>` | the decision recipe's result |
 | `CONFIRMED: care task for <plant_key>` | the confirmation was written |
 | `NOT CONFIRMED: <reason>` | nothing was written, and why |
+| `WATERING: not decided — <plant_key>` | a step failed and no decision could be reached |
 
 The decision report carries the decision, the present state it rests on or `unknown`, the evidence, the priors, the confidence, what would change it, and what is missing. The diary read line says how many entries were listed, opened and found without measurements.
 

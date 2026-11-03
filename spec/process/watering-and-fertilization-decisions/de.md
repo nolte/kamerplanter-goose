@@ -75,7 +75,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **MUSS [MUST]** `fertilization-decision-apply` nur `record_feeding_event` aufrufen lassen, mit dem `plant_key`, `volume_applied_liters` und nur den weiteren Werten, die die Person geliefert hat, und **MUSS [MUST]** die Namen der optionalen Eingaben zur Laufzeit aus dem Schema des Tools lesen und keine erfinden
 - **MUSS [MUST]** das Tool zuerst mit `dry_run` true aufrufen und die geplante Wirkung melden und es danach mit einem `idempotency_key` aufrufen
 - **MUSS [MUST]** genau sein eines Tool namentlich als erlaubt und jedes andere zustandsändernde Tool namentlich als verboten benennen und **DARF NICHT [MUST NOT]** ein Home-Assistant-Tool aufrufen
-- **DARF NICHT [MUST NOT]** behaupten, eine Pflanze sei gegossen oder gedüngt worden, **MUSS [MUST]** sagen, dass die Wirkung ein Eintrag ist, und **MUSS [MUST]** sagen, dass nicht gemessen ist, ob ein Lese-Tool erfasste Düngeereignisse zurückgibt (nolte/kamerplanter-goose#54)
+- **DARF NICHT [MUST NOT]** behaupten, eine Pflanze sei gegossen oder gedüngt worden, **MUSS [MUST]** sagen, dass die Wirkung ein Eintrag ist, und das Düngerezept **MUSS [MUST]** sagen, dass nicht gemessen ist, ob ein Lese-Tool erfasste Düngeereignisse zurückgibt (nolte/kamerplanter-goose#54)
 
 ### F. Die Einklinkform
 
@@ -109,7 +109,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Jedes `-apply`-Rezept nimmt eine genehmigte Entscheidung und die ausgeführte Handlung entgegen, verweigert ohne sie, schreibt nur den Eintrag seines einen Tools und benennt jedes andere zustandsändernde Tool als verboten
 - [ ] `watering-decision-apply` rät nie einen `reminder_type`, und `fertilization-decision-apply` übergibt keine Eingabe, die die Person nicht geliefert hat
 - [ ] Jedes `-apply`-Rezept ruft zuerst `dry_run` auf, meldet die geplante Wirkung und ruft dann mit einem `idempotency_key` auf
-- [ ] Kein `-apply`-Rezept behauptet, eine Pflanze sei gegossen oder gedüngt worden, und jedes sagt, dass die Wirkung ein Eintrag ist und das Zurücklesen von Düngeereignissen nicht gemessen ist
+- [ ] Kein `-apply`-Rezept behauptet, eine Pflanze sei gegossen oder gedüngt worden, und jedes sagt, dass die Wirkung ein Eintrag ist, und das Düngerezept ergänzt, dass das Zurücklesen von Düngeereignissen nicht gemessen ist
 - [ ] Jede Entscheidung liefert Befunde in der Einklinkform der Pflegeplanung, mit `water now` und `feed` als Empfehlungen und den übrigen Ergebnissen als Beobachtungen
 - [ ] Zwei Läufe über dieselben Eingabeblöcke ergeben an einer festen Vorlage dieselben Entscheidungsfakten, und das Ergebnis sagt, was nicht beansprucht wird
 - [ ] Jede Aussage zur Tool-Oberfläche zitiert eine Spezifikation in diesem Repository, und eine nicht neu gemessene Aussage sagt das
@@ -133,3 +133,5 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **Die Quelle für Wetter und Vorhersage.** Der gemessene Katalog hat keine; bis es eine gibt, kann nur der Aufrufer sie liefern.
 - **Welcher `measurements`-Schlüssel die Bodenfeuchte trägt.** Das Feld hat keinen festen Schlüsselsatz, und die Normalisierung der Nährstoff-Spezifikation gilt; hier ist kein Schlüssel festgestellt.
 - **Was `watering_interval_days` zählt und ob die Art einen Wasserbedarf trägt.** Die Phasendefinition trägt das Feld; diese Spezifikation stellt nicht fest, was es zählt, und kein Wasserbedarfsfeld der Art ist festgehalten. Es wird als Vorannahme der Stufe 4 gelesen und entscheidet nichts allein.
+- **Womit ein Feuchtewert verglichen wird.** Diese Spezifikation sagt es nicht, und kein Feld des Pflanzenkontext-Blocks trägt im gemessenen Datenbestand einen Feuchte-Zielwert. Die Bewässerungsentscheidung nimmt den Zielwert vom Aufrufer, als Nutzervorgabe, und endet ohne ihn bei `insufficient evidence`.
+- **Was „jung genug“ für einen Feuchtewert heißt.** Die Entscheidungsrichtlinie lässt es offen, und die Entscheidungsfakten lesen das aktuelle Datum nicht. Die Bewässerungsentscheidung meldet daher das erfasste Datum des Werts und die Grundlage, auf der sie ihn als aktuell beurteilt hat, und behandelt einen Wert, den sie nicht beurteilen kann, als Stufe 2.

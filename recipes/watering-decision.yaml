@@ -124,3 +124,5 @@ prompt: |
 
   Close with one line, on a single line:
   `WATERING: <water now | wait | insufficient evidence> — {{ plant_key }}`
+  If a step failed and no decision could be reached, close instead with
+  `WATERING: not decided — {{ plant_key }}`.

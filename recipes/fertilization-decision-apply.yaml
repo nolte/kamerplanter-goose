@@ -127,9 +127,10 @@ prompt: |
   out: record it as given, you cannot check it.
 
   Step 2 — Garden and permission.
-  Call `mcp__kamerplanter__list_tenants`. Use "{{ tenant }}" if it is not empty
-  and is among the slugs returned, otherwise the single slug returned; with
-  several slugs and no given slug, refuse with `NOT RECORDED: garden not
+  Call `mcp__kamerplanter__list_tenants`. If "{{ tenant }}" is not empty, it must
+  be among the slugs returned; otherwise refuse with `NOT RECORDED: garden not
+  found`, and never write to another garden. If it is empty, use the single
+  slug returned; with several slugs, refuse with `NOT RECORDED: garden not
   given`. If the key lacks `mcp.write`, refuse with `NOT RECORDED: key lacks
   mcp.write`.
 
@@ -148,7 +149,7 @@ prompt: |
   as the tool returned it, including whether it was an idempotent replay.
 
   Step 5 — Report.
-  Print this and nothing after it:
+  Print this, ending with the closing line:
 
   ## Fertilization Decision Apply — {{ plant_key }}
 
@@ -162,4 +163,5 @@ prompt: |
   any read tool returns recorded feeding events (nolte/kamerplanter-goose#54).
 
   Close with the line `RECORDED: feeding event for {{ plant_key }}` or, if
-  nothing was written, `NOT RECORDED: <reason>`, as the very last line.
+  nothing was written, `NOT RECORDED: <reason>`, as the very last line, on a
+  single line.

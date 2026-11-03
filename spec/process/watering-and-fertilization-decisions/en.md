@@ -75,7 +75,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - **MUST** have `fertilization-decision-apply` call only `record_feeding_event`, with the `plant_key`, `volume_applied_liters` and only the other values the person supplied, and **MUST** read the names of the optional inputs from the tool's own schema at run time and invent none
 - **MUST** call the tool with `dry_run` true first and report the planned effect, and then call it with an `idempotency_key`
 - **MUST** name exactly its one tool as permitted by name and every other state-changing tool as forbidden by name, and **MUST NOT** call a Home Assistant tool
-- **MUST NOT** claim that a plant was watered or fed, **MUST** state that the effect is a record, and **MUST** state that whether any read tool returns recorded feeding events is not measured (nolte/kamerplanter-goose#54)
+- **MUST NOT** claim that a plant was watered or fed, **MUST** state that the effect is a record, and the fertilisation recipe **MUST** state that whether any read tool returns recorded feeding events is not measured (nolte/kamerplanter-goose#54)
 
 ### F. The plug-in shape
 
@@ -109,7 +109,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - [ ] Each `-apply` recipe takes an approved decision and the action carried out, refuses without them, writes only its one tool's record and names every other state-changing tool as forbidden
 - [ ] `watering-decision-apply` never guesses a `reminder_type`, and `fertilization-decision-apply` passes no input the person did not supply
 - [ ] Each `-apply` recipe calls `dry_run` first, reports the planned effect, then calls with an `idempotency_key`
-- [ ] No `-apply` recipe claims that a plant was watered or fed, and each states that the effect is a record and that the read-back of feeding events is not measured
+- [ ] No `-apply` recipe claims that a plant was watered or fed, and each states that the effect is a record, and the fertilisation recipe adds that the read-back of feeding events is not measured
 - [ ] Each decision returns findings in the care planning plug-in shape, with `water now` and `feed` as recommendations and the other results as observations
 - [ ] Two runs over the same input blocks give the same decision facts on a fixed fixture, and the result says what is not claimed
 - [ ] Every claim about the tool surface cites a spec in this repository, and a claim not re-measured says so
@@ -133,3 +133,5 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - **The source of weather and forecast.** There is none in the measured catalog; until there is, only the caller can supply them.
 - **Which `measurements` key carries soil moisture.** The field has no fixed key set, and the nutrient spec's normalisation applies; no key is established here.
 - **What `watering_interval_days` counts and whether the species carries a water demand.** The phase definition carries the field; this spec does not establish what it counts, and no species water-demand field is recorded. It is read as a level 4 prior and decides nothing alone.
+- **What a moisture reading is compared with.** This spec does not say, and no field of the plant context block carries a moisture target in the measured record. The watering decision takes the target from the caller, as a user constraint, and ends at `insufficient evidence` without one.
+- **What "recent enough" means for a moisture reading.** The decision policy leaves it open, and the decision facts do not read the current date. The watering decision therefore reports the reading's recorded date and the basis on which it judged the reading current, and treats a reading it cannot judge as level 2.

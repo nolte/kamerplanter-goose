@@ -86,6 +86,7 @@ goose run --recipe fertilization-decision-apply \
 | Closing line | Means |
 |--------------|-------|
 | `FERTILIZATION: <decision> — <plant_key>` | the decision recipe's result |
+| `FERTILIZATION: not decided — <plant_key>` | a step failed and no decision could be reached |
 | `RECORDED: feeding event for <plant_key>` | the record was written |
 | `NOT RECORDED: <reason>` | nothing was written, and why |
 
