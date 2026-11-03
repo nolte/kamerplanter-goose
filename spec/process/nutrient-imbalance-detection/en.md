@@ -45,7 +45,7 @@ Readers: authors of the nutrient recipe in this repository, and anyone reviewing
 
 ### The actual side, and its limits
 
-Three measured sources describe what the plant actually received, and none of them is a dosage record. Feeding events written by `record_feeding_event` are a fourth candidate; whether any tool reads them back is open (see Open Questions):
+Three measured sources describe what the plant actually received, and none of them is a dosage record. Feeding events written by `record_feeding_event` are a fourth candidate; whether any tool reads them back is open (see Open Questions). Until it is measured, tier 2 is reachable only where a diary entry or a care-log note carries an amount:
 
 | Source | What it gives | What it does not give |
 |--------|---------------|------------------------|

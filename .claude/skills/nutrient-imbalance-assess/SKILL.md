@@ -84,4 +84,4 @@ State the direction, the tier that established it, and — when a correction is 
 
 ## Source
 
-Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-08-16; `spec/process/` predates `record_feeding_event` and names it nowhere.
+Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-08-16; `spec/process/` predates `record_feeding_event`; it now names it only as an unmeasured fourth source of dose amounts (see its Open Questions).

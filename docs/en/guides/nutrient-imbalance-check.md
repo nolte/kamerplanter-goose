@@ -66,6 +66,7 @@ The report opens with a field table — direction, evidence tier, the assigned p
 One thing lifts the same plant out of it, and it happens outside this run:
 
 - **Record one EC or pH reading in a diary entry.** That is a tier 1 value, and it settles the direction on its own.
+
 `record_feeding_event` carries the amount and the EC and pH before and after a feeding, but it is not a remedy yet: this recipe is forbidden from calling it — it writes — and it is not measured whether any read tool returns those events, so recording them may not feed this check by itself.
 
 ## Sources
