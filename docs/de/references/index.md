@@ -26,6 +26,10 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`nutrient-imbalance-check`](../guides/nutrient-imbalance-check.md) | nein | Unter-, Überversorgung oder Nichtverfügbarkeit bei ausreichender Versorgung, für eine Pflanze |
 | [`pest-pressure-check`](../guides/pest-pressure-check.md) | nein | Ob ein Schädlings- oder Krankheitsverdacht biologisch tragfähig ist |
 | [`daily-garden-check`](../guides/daily-garden-check.md) | nein | Was in einem Garten heute Aufmerksamkeit verdient, nach Dringlichkeit geordnet; wendet nichts an |
+| [`watering-decision`](../guides/watering-decision.md) | nein | Jetzt gießen, warten oder zu wenig Beleg, für eine Pflanze; gießt nichts |
+| [`watering-decision-apply`](../guides/watering-decision.md) | **ja** | Bestätigt eine Pflegeerinnerung, nach der eine Person gehandelt hat |
+| [`fertilization-decision`](../guides/fertilization-decision.md) | nein | Düngen, nicht düngen oder zu wenig Beleg, für eine Pflanze; düngt nichts |
+| [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **ja** | Hält eine Düngung fest, die eine Person ausgeführt hat |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
@@ -60,6 +64,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `plant-planning` | Vorschläge für Pflanzdurchläufe mit Kennungen, Begründung und Konfidenz; ruft kein Werkzeug auf |
 | `diary-measurements-read` | Die erfassten Messwerte aus dem Tagebuch einer Pflanze, mit einem Bericht, wie viel gelesen wurde |
 | `care-planning` | Die Domänenergebnisse in einer nach Dringlichkeit geordneten Liste, mit dem, was keine Handlung ergibt; ruft kein Werkzeug auf |
+| `watering-decision` | Jetzt gießen, warten oder unzureichender Beleg, aus dem gegenwärtigen Zustand der Pflanze; ruft kein Werkzeug auf |
+| `fertilization-decision` | Düngen, nicht düngen oder unzureichender Beleg, aus der Nährstoffprüfung; ruft kein Werkzeug auf |
 
 **Prüfperspektiven** — lesen dieses Checkout, nie einen Garten. Eine je Lauf; sie sollen sich uneinig sein:
 
