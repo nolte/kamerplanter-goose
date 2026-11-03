@@ -119,4 +119,5 @@ P1 → P2 ; P1 → P3 → P4 → P5 ; (P1, P2) → P6 ; P7 last. P2 and P3 may r
 
 ## Dispatch log
 
-<!-- Appended during operation 5. -->
+2026-11-03 P1+P2 dispatched to nolte-shared:spec — `spec/process/care-planning-and-daily-check/{en,de}.md` written; en/de parity: 16 headings each at identical levels, 31 requirement bullets each, 17 acceptance checkboxes each, all relative links resolve. `spec/README.md` not regenerated (P6).
+  - **Hypothesis refuted in part (recorded, first-class result):** (1) the existing plug-ins `nutrient-imbalance-assess` (`SKILL.md:64-67`) and `pest-pressure-assess` (`SKILL.md:83-88`) do NOT return findings in the contract shape; spec section C therefore requires the layer to map their reports into findings with levels from decision-policy's "How the existing ladders relate" table, assigning no level where the table gives none (nutrient tier 2, image symptoms). (2) "urgency from a due task past its own recorded interval" cannot be specified: no spec/docs/recipes file records the response fields of `get_due_care_tasks` (grep finds the tool name only); urgency is instead derived from an optional `consequence` field the domain itself states (`now`/`soon`), a due task is `routine` at most, an observation is `watch`. This adds one optional field (`consequence`) to the contract and one Open Question (due-task fields).
