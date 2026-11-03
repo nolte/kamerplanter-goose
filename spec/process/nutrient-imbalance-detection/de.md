@@ -45,7 +45,7 @@ Leserschaft: alle, die das Nährstoff-Rezept in diesem Repository schreiben, sow
 
 ### Die Ist-Seite und ihre Grenzen
 
-Drei Quellen beschreiben, was die Pflanze tatsächlich erhalten hat, und keine davon ist ein Dosierprotokoll:
+Drei gemessene Quellen beschreiben, was die Pflanze tatsächlich erhalten hat, und keine davon ist ein Dosierprotokoll. Von `record_feeding_event` geschriebene Düngeereignisse sind eine vierte Kandidatin; ob ein Tool sie zurückliest, ist offen (siehe Offene Fragen):
 
 | Quelle | Was sie gibt | Was sie nicht gibt |
 |--------|--------------|--------------------|

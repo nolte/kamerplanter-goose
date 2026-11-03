@@ -63,10 +63,10 @@ Der Bericht beginnt mit einer Feldtabelle — Richtung, Belegstufe, zugewiesene 
 
 `undetermined` auf Stufe 3 ist das gewöhnliche Ergebnis für eine Pflanze, deren Tagebuch keine Messung enthält — und es ist ehrlich, nicht faul. In einem Garten, in dem Erinnerungen bestätigt, aber nie Mengen protokolliert werden, steht Stufe 2 auf nichts: ein bestätigter Rhythmus ohne Mengen ist Stufe 3, und die Antwort ist die Bitte zu messen.
 
-Zwei Dinge holen dieselbe Pflanze da heraus, und beide passieren außerhalb dieses Laufs:
+Eines holt dieselbe Pflanze da heraus, und es passiert außerhalb dieses Laufs:
 
 - **Halte einen EC- oder pH-Wert in einem Tagebucheintrag fest.** Das ist ein Stufe-1-Wert und legt die Richtung allein fest.
-- **Protokolliere die Düngung selbst mit `record_feeding_event`**, das Menge sowie EC und pH vor und nach der Gabe trägt. Dieses Rezept darf es nicht aufrufen — es schreibt —, und es ist noch nicht gemessen, ob ein Lese-Tool diese Ereignisse zurückgibt; das Erfassen speist diese Prüfung also womöglich nicht von selbst.
+`record_feeding_event` trägt Menge sowie EC und pH vor und nach der Gabe, ist aber noch kein Ausweg: Dieses Rezept darf es nicht aufrufen — es schreibt —, und es ist nicht gemessen, ob ein Lese-Tool diese Ereignisse zurückgibt; das Erfassen speist diese Prüfung also womöglich nicht von selbst.
 
 ## Quellen
 

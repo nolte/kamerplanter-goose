@@ -45,7 +45,7 @@ Readers: authors of the nutrient recipe in this repository, and anyone reviewing
 
 ### The actual side, and its limits
 
-Three sources describe what the plant actually received, and none of them is a dosage record:
+Three measured sources describe what the plant actually received, and none of them is a dosage record. Feeding events written by `record_feeding_event` are a fourth candidate; whether any tool reads them back is open (see Open Questions):
 
 | Source | What it gives | What it does not give |
 |--------|---------------|------------------------|
