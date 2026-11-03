@@ -39,7 +39,7 @@ The run collects the plant's context, then reads its diary for a measured value,
 | Tier | Evidence | Weight |
 |:----:|----------|--------|
 | 1 | A measured value with a recognisable unit — EC, pH, a runoff reading — from a diary entry | Decides the direction on its own when recent enough |
-| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline; frequency alone can show undersupply, oversupply needs recorded dose amounts | Decides the direction when tier 1 is absent, at reduced confidence |
+| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency with recorded dose amounts, and substrate baseline; frequency without amounts is tier 3 | Decides the direction when tier 1 is absent, at reduced confidence |
 | 3 | Care-log pattern alone — feeding frequent, rare, or snoozed; repotting overdue | Supports a direction, never establishes one |
 | 4 | Visible symptoms | Localise which nutrient and how far advanced, never the direction |
 | 5 | Species `nutrient_demand_level` and phase expectation | Sets the prior only |
@@ -61,7 +61,7 @@ The report opens with a field table — direction, evidence tier, the assigned p
 
 ## When it says nothing useful
 
-`undetermined` at tier 3 is the ordinary outcome for a plant whose diary holds no measurement, and it is honest rather than lazy. In a garden where reminders get confirmed but quantities never get logged, tier 2 can still show undersupply from the feeding cadence, but for oversupply it has nothing to stand on and the answer is a request to measure.
+`undetermined` at tier 3 is the ordinary outcome for a plant whose diary holds no measurement, and it is honest rather than lazy. In a garden where reminders get confirmed but quantities never get logged, tier 2 has nothing to stand on: a confirmed cadence without amounts is tier 3, and the answer is a request to measure.
 
 Two things lift the same plant out of it, and both happen outside this run:
 

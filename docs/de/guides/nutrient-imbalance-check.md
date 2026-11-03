@@ -39,7 +39,7 @@ Der Lauf sammelt den Kontext der Pflanze, liest dann ihr Tagebuch nach einem gem
 | Stufe | Beleg | Gewicht |
 |:-----:|-------|---------|
 | 1 | Ein gemessener Wert mit erkennbarer Einheit — EC, pH, ein Drainagewert — aus einem Tagebucheintrag | Legt die Richtung allein fest, wenn er jung genug ist |
-| 2 | `target_ec_ms` und `npk_ratio` der Phase gegen bestätigte Düngefrequenz und Substrat-Basiswerte; die Frequenz allein kann Unterversorgung zeigen, Überversorgung braucht erfasste Dosismengen | Legt die Richtung fest, wenn Stufe 1 fehlt, mit geringerer Sicherheit |
+| 2 | `target_ec_ms` und `npk_ratio` der Phase gegen bestätigte Düngefrequenz mit erfassten Dosismengen und Substrat-Basiswerte; Frequenz ohne Mengen ist Stufe 3 | Legt die Richtung fest, wenn Stufe 1 fehlt, mit geringerer Sicherheit |
 | 3 | Nur das Muster im Pflegeprotokoll — häufig, selten oder verschoben gedüngt; Umtopfen überfällig | Stützt eine Richtung, begründet sie nie |
 | 4 | Sichtbare Symptome | Grenzen ein, welcher Nährstoff und wie weit fortgeschritten — nie die Richtung |
 | 5 | `nutrient_demand_level` der Art und Phasenerwartung | Setzt nur die Vorannahme |
@@ -61,7 +61,7 @@ Der Bericht beginnt mit einer Feldtabelle — Richtung, Belegstufe, zugewiesene 
 
 ## Wenn nichts Brauchbares herauskommt
 
-`undetermined` auf Stufe 3 ist das gewöhnliche Ergebnis für eine Pflanze, deren Tagebuch keine Messung enthält — und es ist ehrlich, nicht faul. In einem Garten, in dem Erinnerungen bestätigt, aber nie Mengen protokolliert werden, kann Stufe 2 aus dem Düngerhythmus noch Unterversorgung zeigen, bei Überversorgung steht sie aber auf nichts, und die Antwort ist die Bitte zu messen.
+`undetermined` auf Stufe 3 ist das gewöhnliche Ergebnis für eine Pflanze, deren Tagebuch keine Messung enthält — und es ist ehrlich, nicht faul. In einem Garten, in dem Erinnerungen bestätigt, aber nie Mengen protokolliert werden, steht Stufe 2 auf nichts: ein bestätigter Rhythmus ohne Mengen ist Stufe 3, und die Antwort ist die Bitte zu messen.
 
 Zwei Dinge holen dieselbe Pflanze da heraus, und beide passieren außerhalb dieses Laufs:
 

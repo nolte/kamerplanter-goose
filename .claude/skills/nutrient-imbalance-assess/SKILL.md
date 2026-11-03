@@ -16,7 +16,7 @@ Rank every claim by what it rests on. A lower tier corroborates or contradicts a
 | Tier | Evidence | Weight |
 |------|----------|--------|
 | 1 | A measured value with a recognisable unit — EC, pH, runoff reading — from a diary entry | Decides direction on its own when recent enough |
-| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency and substrate baseline; frequency alone can establish undersupply, oversupply needs recorded dose amounts | Decides direction when tier 1 is absent, at reduced confidence |
+| 2 | Phase `target_ec_ms` and `npk_ratio` against confirmed feeding frequency with recorded dose amounts, and substrate baseline; frequency without amounts is tier 3 | Decides direction when tier 1 is absent, at reduced confidence |
 | 3 | Care-log pattern alone — feeding frequent, rare, or snoozed; repotting overdue | Supports a direction, never establishes one |
 | 4 | Visible symptoms | Localises which nutrient and how far advanced, never the direction |
 | 5 | Species `nutrient_demand_level` and phase expectation | Sets the prior only |
@@ -56,7 +56,7 @@ The same weekly dose is unremarkable in a high-CEC, well-buffered medium and an 
 | State | Signature | Correction |
 |-------|-----------|------------|
 | **Undersupply** | Supply below the phase target — low measured EC, intervals longer than the plan, or a low-CEC medium retaining nothing — with no sign of blocked uptake | Move toward the phase target |
-| **Oversupply** | Measured EC above target, or, with recorded dose amounts, supply above the plan in a weakly buffering medium (frequency above the plan without amounts is a tier 3 suspicion); marginal or tip necrosis on old and new leaves alike; deposit on the medium surface; no improvement after feeding | Reduce concentration or flush. Feeding is contraindicated |
+| **Oversupply** | Measured EC above target, or frequency exceeding the plan in a weakly buffering medium; marginal or tip necrosis on old and new leaves alike; deposit on the medium surface; no improvement after feeding | Reduce concentration or flush. Feeding is contraindicated |
 | **Unavailability at adequate supply** | Deficiency symptoms while supply meets the target — pH outside what the substrate predicts, EC high enough to impede uptake, or ionic antagonism | **Not more of the missing nutrient.** Address availability |
 
 The separator between the first and third state is almost never the leaf. It is a pH or EC reading. Where none exists, obtaining one *is* the recommended action.
@@ -80,7 +80,7 @@ State the direction, the tier that established it, and — when a correction is 
 - `mcp__kamerplanter__get_plant_nutrient_plan` returning `plan: null` is the normal state for a plant never put on a programme — not an error and not a reason to stop.
 - Most plans on this instance are global templates whose `tags` name a specific crop. A template tagged for one crop applied to another is a weaker target than a plant-specific plan; weigh it accordingly and say that you did.
 - Repeated `snoozed` repotting in the care log points at exhausted substrate, which mimics undersupply and is not fixed by feeding.
-- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. Whether any read tool returns recorded feeding events is not measured (#54), so do not count on it. Confirmed reminders give a feeding frequency, which can establish undersupply at tier 2; oversupply needs recorded dose amounts, and without them it stays tier 3 and the honest output is a refusal plus a request to measure.
+- `mcp__kamerplanter__record_feeding_event` records a fertigation with its amount and the EC and pH before and after, but it writes, so a read-only run must not call it — the fertigation is recorded outside the run. Whether any read tool returns recorded feeding events is not measured (#54), so assume there are no dose amounts. Confirmed reminders give a feeding frequency, which without amounts is tier 3, and the honest output at tier 3 is a refusal plus a request to measure.
 
 ## Source
 

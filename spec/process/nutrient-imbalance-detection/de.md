@@ -74,7 +74,7 @@ Aussagen werden danach eingestuft, worauf sie ruhen, und die Stufe wandert mit d
 | Stufe | Beleg | Gewicht |
 |-------|-------|---------|
 | 1 | Ein Messwert aus einem Tagebucheintrag — EC, pH, Ablaufmessung — mit erkennbarer Einheit | Entscheidet die Richtung allein, sofern hinreichend aktuell |
-| 2 | Planziel gegen rekonstruierte Zufuhr: `target_ec_ms` und `npk_ratio` der Phase gegen bestätigte Düngehäufigkeit und Substratbasis. Die Häufigkeit allein kann Unterversorgung begründen; Überversorgung braucht zusätzlich erfasste Dosismengen und bleibt ohne sie auf Stufe 3 | Entscheidet die Richtung, wenn Stufe 1 fehlt, mit verringerter Konfidenz |
+| 2 | Planziel gegen rekonstruierte Zufuhr: `target_ec_ms` und `npk_ratio` der Phase gegen bestätigte Düngehäufigkeit mit erfassten Dosismengen und Substratbasis; Häufigkeit ohne Mengen ist Stufe 3 | Entscheidet die Richtung, wenn Stufe 1 fehlt, mit verringerter Konfidenz |
 | 3 | Muster im Pflegeprotokoll allein — häufig, selten oder verschoben bestätigte Düngung; überfälliges Umtopfen | Stützt eine Richtung, begründet sie nie |
 | 4 | Sichtbare Symptome aus dem Bildprozess | Verortet, welcher Nährstoff und wie weit fortgeschritten, nie die Richtung |
 | 5 | `nutrient_demand_level` der Art und Phasenerwartung | Setzt nur die Vorannahme; ein `heavy_feeder` im Fruchtansatz hat deshalb keinen Mangel |
@@ -87,7 +87,7 @@ Drei Zustände sind zu unterscheiden, denn ihre Korrekturen gehen auseinander un
 
 **Unterversorgung.** Symptome, die zu einem bestimmten Nährstoff passen, Zufuhr unterhalb des Phasenziels — niedriger gemessener EC, längere Düngeintervalle als im Plan oder ein Medium mit niedriger CEC, das nichts hält — und kein Hinweis auf eine Aufnahmeblockade. Die Korrektur bewegt sich auf das Phasenziel zu.
 
-**Überversorgung.** Gemessener EC oberhalb des Phasenziels oder, mit erfassten Dosismengen, eine Zufuhr über dem Plan in einem schwach puffernden Medium (eine Zufuhrhäufigkeit über dem Plan ohne Mengen ist ein Verdacht der Stufe 3 und begründet diesen Zustand nicht), typischerweise mit Rand- oder Spitzennekrose an älteren wie neueren Blättern, sichtbarer Kruste oder Ablagerung auf der Medienoberfläche und ausbleibender Besserung nach dem Düngen. Die Korrektur senkt die Konzentration oder spült; Düngen ist kontraindiziert.
+**Überversorgung.** Gemessener EC oberhalb des Phasenziels oder eine Zufuhrhäufigkeit über dem Plan in einem schwach puffernden Medium, typischerweise mit Rand- oder Spitzennekrose an älteren wie neueren Blättern, sichtbarer Kruste oder Ablagerung auf der Medienoberfläche und ausbleibender Besserung nach dem Düngen. Die Korrektur senkt die Konzentration oder spült; Düngen ist kontraindiziert.
 
 **Nichtverfügbarkeit bei ausreichender Versorgung.** Mangelsymptome, während die Zufuhr das Phasenziel erreicht. Als Ursachen kommen in Frage: ein pH außerhalb dessen, was `ph_base` und `buffer_capacity` des Substrats erwarten ließen, ein EC, der trotz passender Verhältnisse die Aufnahme behindert, oder Antagonismus, bei dem ein im Überschuss vorliegendes Ion ein anderes unterdrückt. **Die Korrektur ist hier nicht mehr vom fehlenden Nährstoff.** Ein Lauf, der diesen Zustand nicht von Unterversorgung trennen kann, sagt das und schlägt keine Düngung vor.
 
@@ -160,6 +160,7 @@ Eine vorgeschlagene Korrektur nennt das angestrebte Ziel, die Belegstufe dahinte
 - Ob Home Assistant Sensoren für Bodenfeuchte oder Leitfähigkeit führt, die Belege der Stufe 1 je Pflanze liefern könnten, und wie ein Sensor an eine Pflanzeninstanz gebunden würde. `GetLiveContext` liefert Entity-Zustände, eine Zuordnung Pflanze-zu-Entity wurde nicht gefunden.
 - Ob die nennenswerten Antagonismen (welches Ion welches unterdrückt) in diese Spec gehören, in das über `search_glossary` erreichbare Glossar des Backends oder in die Wissensbasis. Sie hier zu kodieren, birgt dieselbe Drift, die dieses Repository bei Artdaten vermeidet.
 - Wie ein Plan zu gewichten ist, dessen `is_global_template` wahr ist und dessen `tags` eine andere Kultur nennen als die Art der Pflanze — gemessen sind die Pläne der Referenzinstanz weitgehend cannabis-spezifische Vorlagen, ihre Pflanzen jedoch nicht.
+- Ob irgendein Lese-Tool die von `record_feeding_event` geschriebenen Düngeereignisse zurückgibt (verfolgt in #54). Bis das gemessen ist, ist eine bestätigte Düngehäufigkeit ohne erfasste Dosismengen Stufe 3, nicht Stufe 2, und „Zufuhr über dem Ziel" wird nicht allein aus der Häufigkeit rekonstruiert.
 
 ## Quelle
 
