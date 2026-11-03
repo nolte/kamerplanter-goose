@@ -37,7 +37,7 @@ From `mcp__kamerplanter__get_plant_care_log`: feeding frequency, the most recent
 
 From the diary entries' `measurements`: any EC, pH, or runoff value.
 
-**Somebody has to fetch those entries, and this skill does not.** They arrive from the caller, which lists them with `mcp__kamerplanter__list_diary_entries` for the plant and reads each with `mcp__kamerplanter__get_diary_entry`. `plant-context-collect` does **not** do this: it establishes what is normal for a plant, and a dated reading is evidence for one question.
+**Somebody has to fetch those entries, and this skill does not.** They arrive from the caller, which loads `diary-measurements-read` to list them with `mcp__kamerplanter__list_diary_entries` for the plant and read each with `mcp__kamerplanter__get_diary_entry`. `plant-context-collect` does **not** do this: it establishes what is normal for a plant, and a dated reading is evidence for one question.
 
 Decide *read but empty* against *not read* on the caller's read report — how many entries were listed, opened, and carried no `measurements` — never on an empty measurement list. An empty diary is the common case, and reading emptiness as a caller bug turns the ordinary run into a reported defect. Where no read report arrived, say the diary was not read and name that as the gap.
 
