@@ -48,7 +48,7 @@ goose run --recipe fertilization-decision \
 | Unterversorgung, als Richtung festgestellt, und keine Umweltursache genannt | `feed` | unzureichender Ernährung |
 | Überversorgung | `do not feed` | unzureichende Ernährung ist ausgeschlossen |
 | Nichtverfügbarkeit bei ausreichender Versorgung oder eine genannte Umweltursache | `do not feed` | einer Umweltursache: Behebe zuerst diese |
-| Richtung unbestimmt, ein Verdacht oder eine schwache Belegstufe | `insufficient evidence` | einer unsicheren Diagnose |
+| Richtung unbestimmt oder ein Verdacht | `insufficient evidence` | einer unsicheren Diagnose |
 
 - **Ist der Beleg dünn, bevorzugt es die vorsichtige Antwort.** Eine Pflanze ohne Nährstoffplan, ohne Tagebuchmessung und nur mit bestätigten Düngeerinnerungen endet bei `insufficient evidence`. Die Erinnerungen sagen, dass gedüngt wurde, nicht wie viel, und die Nährstoffprüfung behandelt eine Häufigkeit ohne Mengen als schwachen Beleg.
 - **Eine Dosis erscheint nur, wenn das Mischprotokoll eine geliefert hat**, und dann mit der Annahme, die es zu deinem Basiswasser getroffen hat. Ohne dieses Ergebnis ist die Dosis `unknown`; das Rezept nennt nie eine Konzentration, eine Mischreihenfolge oder eine Menge aus Allgemeinwissen.
@@ -79,7 +79,7 @@ goose run --recipe fertilization-decision-apply \
 - **Es verweigert ohne genehmigte `feed`-Entscheidung, ohne Menge oder mit einer Menge, die keine schlichte Zahl ist**, und sagt, was davon zutrifft. Ein Wert mit Einheit wie ml wird verweigert und nie umgerechnet. Die Menge ist die Düngung, die du ausgeführt hast: Sie wird so festgehalten, wie du sie angibst, und der Lauf kann sie nicht prüfen. Es schreibt keinen Eintrag, der der Entscheidung widerspricht.
 - **Es ruft zuerst einen Probelauf auf**, meldet, was geschrieben würde, und schreibt erst dann, mit einem Idempotenzschlüssel aus der Pflanze und der `run_id`. Ein erfolgreicher Probelauf beweist nicht, dass das Schreiben gelingt; das Ergebnis des echten Aufrufs wird so gemeldet, wie es zurückkam.
 - **Geschrieben wird ein Eintrag.** Der Lauf hat nichts gedüngt und behauptet das auch nicht. **Es ist nicht gemessen, ob irgendein Lese-Tool erfasste Düngeereignisse zurückgibt** ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)), sodass eine festgehaltene Düngung die Nährstoffprüfung womöglich gar nicht erreicht.
-- Es ruft kein anderes Tool auf als das, das eine Düngung festhält, und kein Home-Assistant-Tool.
+- Das einzige zustandsändernde Tool, das es aufruft, ist das, das eine Düngung festhält. Vorher liest es die Gartenliste, und es ruft kein Home-Assistant-Tool auf.
 
 ## Das Ergebnis lesen
 

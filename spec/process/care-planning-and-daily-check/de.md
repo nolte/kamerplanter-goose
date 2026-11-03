@@ -69,7 +69,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ### F. Die tägliche Prüfung
 
 - **MUSS [MUST]** ein Orchestrierungs-Einstiegspunkt sein, der den Gartenkontext ausführt, dann jede verfügbare Domäne, dann die Entscheidungsrichtlinie und die Pflegeschicht, und **DARF NICHT [MUST NOT]** die Logik einer Domäne im Rezept duplizieren
-- **MUSS [MUST]** einen Parameter `plants` annehmen, durch Kommas getrennte Pflanzenschlüssel, standardmäßig leer: leer führt nur die Gartenebene aus (fällige Aufgaben und Pflanzdurchläufe aus dem Gartenkontext), angegeben führt die Nährstoff- und Schädlingsprüfung für diese Pflanzen aus
+- **MUSS [MUST]** einen Parameter `plants` annehmen, durch Kommas getrennte Pflanzenschlüssel, standardmäßig leer: leer führt nur die Gartenebene aus (fällige Aufgaben und Pflanzdurchläufe aus dem Gartenkontext), angegeben führt die Nährstoff-, Schädlings-, Bewässerungs- und Düngeprüfung für diese Pflanzen aus
 - **MUSS [MUST]** höchstens fünf Pflanzen prüfen und den Rest als nicht geprüft mit Grund melden, und **DARF NICHT [MUST NOT]** für jede Pflanze des Gartens ein Tool je Pflanze aufrufen
 - **MUSS [MUST]** jede Domäne mit einem Status aufführen: geprüft, nicht verfügbar (mit dem Skill) oder nicht geprüft (mit Grund), und **DARF NICHT [MUST NOT]** eine Domäne auslassen
 - **MUSS [MUST]** einen Tool-Fehler wörtlich melden und mit dem Rest fortfahren

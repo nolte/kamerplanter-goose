@@ -81,7 +81,7 @@ goose run --recipe watering-decision-apply \
 - **Es verweigert ohne genehmigte `water now`-Entscheidung oder ohne Erinnerungstyp** und sagt, welches von beiden. Es schreibt keine Bestätigung, die der Entscheidung widerspricht. Der Erinnerungstyp wird so festgehalten, wie du ihn angibst, und der Lauf kann ihn nicht prüfen.
 - **Es ruft zuerst einen Probelauf auf**, meldet, was geschrieben würde, und schreibt erst dann, mit einem Idempotenzschlüssel aus der Pflanze und der `run_id`. Ein erfolgreicher Probelauf beweist nicht, dass das Schreiben gelingt; das Ergebnis des echten Aufrufs wird so gemeldet, wie es zurückkam.
 - **Geschrieben wird ein Eintrag: die Bestätigung einer Pflegeerinnerung.** Der Lauf hat nichts gegossen und nicht geprüft, ob die Pflanze gegossen wurde.
-- Es ruft kein anderes Tool auf als das, das eine Pflegeerinnerung bestätigt, und kein Home-Assistant-Tool.
+- Das einzige zustandsändernde Tool, das es aufruft, ist das, das eine Pflegeerinnerung bestätigt. Vorher liest es die Gartenliste, und es ruft kein Home-Assistant-Tool auf.
 
 ## Das Ergebnis lesen
 

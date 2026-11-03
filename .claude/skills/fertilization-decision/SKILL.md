@@ -27,9 +27,9 @@ Take the direction and the tier from the nutrient report exactly as it states th
 | undersupply, established as a direction, and no environmental cause named | `feed` | insufficient nutrition |
 | oversupply | `do not feed` | insufficient nutrition ruled out (oversupply) |
 | unavailability at adequate supply, or any environmental cause named (a pH outside the range, an EC that impedes uptake, exhausted substrate shown by repeated snoozed repotting, antagonism) | `do not feed` | an environmental cause: correct it before treating the plant |
-| direction undetermined, a suspicion, or the highest tier is 3 or below | `insufficient evidence` | an uncertain diagnosis |
+| direction undetermined, or a suspicion | `insufficient evidence` | an uncertain diagnosis |
 
-`do not feed` is an ordinary and often correct result. When the evidence is incomplete, prefer the conservative row: `do not feed` or `insufficient evidence` over `feed`. Say which of insufficient nutrition, an environmental cause and an uncertain diagnosis the result rests on.
+At tier 3 or below the nutrient process reports the direction as undetermined, so such a plant ends in the last row. `do not feed` is an ordinary and often correct result. When the evidence is incomplete, prefer the conservative row: `do not feed` or `insufficient evidence` over `feed`. Say which of insufficient nutrition, an environmental cause and an uncertain diagnosis the result rests on.
 
 ### 3. The dose
 

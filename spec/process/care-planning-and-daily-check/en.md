@@ -69,7 +69,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 ### F. The daily check
 
 - **MUST** be an orchestration entry point that runs the garden context, then each domain that is available, then the decision policy and the care layer, and **MUST NOT** duplicate a domain's logic in the recipe
-- **MUST** take a `plants` parameter, comma-separated plant keys, empty by default: empty runs the garden level only (due tasks and planting runs from the garden context), and given runs the nutrient and pest checks for those plants
+- **MUST** take a `plants` parameter, comma-separated plant keys, empty by default: empty runs the garden level only (due tasks and planting runs from the garden context), and given runs the nutrient, pest, watering and fertilisation checks for those plants
 - **MUST** check at most five plants and report the rest as not checked with the reason, and **MUST NOT** call a per-plant tool for every plant of the garden
 - **MUST** list each domain with a status of checked, not available (naming the skill) or not checked (naming why), and **MUST NOT** leave a domain out
 - **MUST** report a tool error verbatim and continue with the rest

@@ -17,8 +17,8 @@ parameters:
     requirement: optional
     default: ""
     description: >-
-      Plant instance keys, comma-separated, to run the nutrient and pest checks
-      for. Empty runs the garden level only (due tasks and planting runs). At
+      Plant instance keys, comma-separated, to run the nutrient, pest, watering
+      and fertilisation checks for. Empty runs the garden level only (due tasks and planting runs). At
       most five are checked, in the order given; the rest are reported as not
       checked.
 

@@ -81,7 +81,7 @@ goose run --recipe watering-decision-apply \
 - **It refuses without an approved `water now` decision or without a reminder type**, and says which. It does not write a confirmation that contradicts the decision. The reminder type is recorded as you give it, and the run cannot check it.
 - **It calls a dry run first**, reports what would be written, and only then writes, with an idempotency key built from the plant and the `run_id`. A dry run that succeeds does not prove that the write will; the result of the real call is reported as returned.
 - **What is written is a record: the confirmation of a care reminder.** The run watered nothing and did not check that the plant was watered.
-- It calls no tool other than the one that confirms a care reminder, and no Home Assistant tool.
+- The only state-changing tool it calls is the one that confirms a care reminder. It reads the garden list first, and it calls no Home Assistant tool.
 
 ## Read the outcome
 

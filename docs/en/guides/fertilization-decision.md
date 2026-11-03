@@ -48,7 +48,7 @@ goose run --recipe fertilization-decision \
 | undersupply, established as a direction, and no environmental cause named | `feed` | insufficient nutrition |
 | oversupply | `do not feed` | insufficient nutrition is ruled out |
 | unavailability at adequate supply, or an environmental cause named | `do not feed` | an environmental cause: correct that first |
-| direction undetermined, a suspicion, or a weak evidence tier | `insufficient evidence` | an uncertain diagnosis |
+| direction undetermined, or a suspicion | `insufficient evidence` | an uncertain diagnosis |
 
 - **When the evidence is thin, it prefers the cautious answer.** A plant with no nutrient plan, no diary measurement and only confirmed feeding reminders ends at `insufficient evidence`. The reminders say that a feeding happened, not how much, and the nutrient check treats a frequency without amounts as weak evidence.
 - **A dose appears only when the mixing protocol returned one**, and then with the assumption it made about your base water. Without that result the dose is `unknown`; the recipe never gives a concentration, a mixing order or an amount from general knowledge.
@@ -79,7 +79,7 @@ goose run --recipe fertilization-decision-apply \
 - **It refuses without an approved `feed` decision, without an amount, or with an amount that is not a plain number**, and says which. A value with a unit such as ml is refused, never converted. The amount is the feeding you carried out: it is recorded as you give it, and the run cannot check it. It does not write a record that contradicts the decision.
 - **It calls a dry run first**, reports what would be written, and only then writes, with an idempotency key built from the plant and the `run_id`. A dry run that succeeds does not prove that the write will; the result of the real call is reported as returned.
 - **What is written is a record.** The run fed nothing, and it does not claim that anything was fed. **It is not measured whether any read tool returns recorded feeding events** ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)), so a recorded feeding may not reach the nutrient check at all.
-- It calls no tool other than the one that records a feeding, and no Home Assistant tool.
+- The only state-changing tool it calls is the one that records a feeding. It reads the garden list first, and it calls no Home Assistant tool.
 
 ## Read the outcome
 
