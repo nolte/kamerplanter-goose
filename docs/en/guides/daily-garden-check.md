@@ -62,8 +62,8 @@ The report starts with the domain table, then the care plan in four blocks: the 
 
 | Closing line | Means |
 |--------------|-------|
-| `CARE: <a> actions, <n> no action — <slug>` | how many recommendations were made and how many entries have no action |
 | `APPLY: none — this check reports and applies nothing` | nothing here can be applied |
+| `CARE: <a> actions, <n> no action — <slug>` (always the last line) | how many recommendations were made and how many entries have no action |
 
 A report with no actions and a long list of entries without action is the honest result when the garden's inputs are thin.
 

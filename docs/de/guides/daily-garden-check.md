@@ -62,8 +62,8 @@ Der Bericht beginnt mit der Domänentabelle, dann folgt der Pflegeplan in vier B
 
 | Schlusszeile | Bedeutung |
 |--------------|-----------|
-| `CARE: <a> actions, <n> no action — <slug>` | wie viele Empfehlungen gemacht wurden und wie viele Einträge ohne Handlung sind |
 | `APPLY: none — this check reports and applies nothing` | hier lässt sich nichts anwenden |
+| `CARE: <a> actions, <n> no action — <slug>` (immer die letzte Zeile) | wie viele Empfehlungen gemacht wurden und wie viele Einträge ohne Handlung sind |
 
 Ein Bericht ohne Handlungen und mit einer langen Liste von Einträgen ohne Handlung ist das ehrliche Ergebnis, wenn die Eingaben des Gartens dünn sind.
 

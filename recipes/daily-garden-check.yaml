@@ -136,7 +136,7 @@ prompt: |
   `NO ACTION, EVIDENCE INSUFFICIENT`. Then, per plant checked, its read report
   line from `diary-measurements-read`, and any tool error reported verbatim.
 
-  Close with one line, `CARE: <a> actions, <n> no action — <slug>`, where
-  `<a>` is the number of items of kind recommendation and `<n>` the number of
-  entries under `NO ACTION, EVIDENCE INSUFFICIENT`, and a second line,
-  `APPLY: none — this check reports and applies nothing`.
+  Close with the line `APPLY: none — this check reports and applies nothing`,
+  and, as the very last line of the output, `CARE: <a> actions, <n> no action —
+  <slug>`, where `<a>` is the number of items of kind recommendation and `<n>`
+  the number of entries under `NO ACTION, EVIDENCE INSUFFICIENT`.

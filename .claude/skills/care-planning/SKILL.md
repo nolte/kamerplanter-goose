@@ -64,6 +64,7 @@ CARE PLAN HEADER
   garden:     <tenant> (given | discovered)
   made from:  <the blocks received: garden context, domain reports, statuses, plan>
   absent:     <the blocks or fields that were not supplied, each with its reason>
+  not claimed: byte-identical prose outside the plan facts
 ITEMS
   ITEM <subject>/<domain>/<kind>/<n>
     kind:        observation | recommendation
