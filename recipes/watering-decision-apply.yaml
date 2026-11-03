@@ -1,0 +1,128 @@
+version: "1.0.0"
+title: "Watering Decision Apply"
+description: >-
+  WRITES to Kamerplanter: confirms one care reminder for a plant, because a person says they acted on it. It takes the watering decision the person approved (water now) and the reminder type the person names, and refuses without them. It waters nothing and checks nothing; the effect is the confirmation of a reminder, recorded as the person gives it.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance whose reminder the person acted on."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: decision
+    input_type: string
+    requirement: required
+    description: >-
+      The watering decision a person approved, as watering-decision returned
+      it. Only `water now` is accepted: a record that contradicts the decision
+      is not written by this recipe.
+
+  - key: reminder_type
+    input_type: string
+    requirement: required
+    description: >-
+      The type of the care reminder to confirm, exactly as the plant's care
+      log or reminder names it. No list of values is recorded in this
+      repository, so the run never guesses or defaults one.
+
+  - key: run_id
+    input_type: string
+    requirement: required
+    description: >-
+      Discriminator for this run, used in the idempotency key so a retry is
+      traceable and does not double-write.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You confirm one care reminder that a person says they acted on, and nothing
+  else. You do not decide whether to water, you do not water, and you do not
+  check that the plant was watered. The decision was made and approved before
+  you were started; your task is to record the confirmation faithfully or to
+  refuse.
+
+  Pass on only the values the person gave. Never name a reminder type the
+  person did not give, and never state or imply that a plant was watered by
+  this run.
+
+prompt: |
+  Confirm a care reminder for plant "{{ plant_key }}" in garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
+  local file.
+
+  What the person supplied (empty means not given):
+  - approved decision: "{{ decision }}"
+  - reminder type: "{{ reminder_type }}"
+
+  Hard constraints for this entire run:
+  - Permitted by name: `mcp__kamerplanter__confirm_care_task`.
+    This is the only state-changing tool this run may call, only for plant
+    "{{ plant_key }}", and only with the reminder type the person supplied.
+  - Forbidden by name: `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool at all. Not for context, not for a reading,
+    not for anything.
+  - Never print an API key or token, not even partially.
+  - Never pass an input the person did not supply, and never guess, default or
+    translate the reminder type.
+  - Report a tool error verbatim, end with `NOT CONFIRMED: <reason>`, and stop;
+    do not retry with changed values.
+
+  Step 1 — Check the approval.
+  Refuse, and go straight to the report with `NOT CONFIRMED: <reason>`, when
+  any of these holds: the approved decision is empty or is not exactly
+  `water now`; the reminder type is empty. State which one. Do not guess a
+  decision or a reminder type. The reminder type is the action the person
+  acted on: record it as given, you cannot check it.
+
+  Step 2 — Garden and permission.
+  Call `mcp__kamerplanter__list_tenants`. Use "{{ tenant }}" if it is not empty
+  and is among the slugs returned, otherwise the single slug returned; with
+  several slugs and no given slug, refuse with `NOT CONFIRMED: garden not
+  given`. If the key lacks `mcp.write`, refuse with `NOT CONFIRMED: key lacks
+  mcp.write`.
+
+  Step 3 — Dry run.
+  Call `mcp__kamerplanter__confirm_care_task` with the plant, the garden and the
+  reminder type, and with `dry_run` true. Report the planned effect as the tool
+  returned it. A dry run that succeeds is not evidence that the write will
+  succeed. If the dry run is rejected, report the error verbatim and refuse
+  with `NOT CONFIRMED: dry run rejected`.
+
+  Step 4 — Confirm.
+  Call the same tool again with the same values, without `dry_run`, and with an
+  `idempotency_key` of "care-{{ plant_key }}-{{ run_id }}". Report the result as
+  the tool returned it, including whether it was an idempotent replay.
+
+  Step 5 — Report.
+  Print this and nothing after it:
+
+  ## Watering Decision Apply — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the values that were passed, one per line, and the tool result
+  verbatim. Then this statement: this run confirmed a care reminder that a
+  person says they acted on; it watered nothing and it did not check that the
+  plant was watered.
+
+  Close with the line `CONFIRMED: care task for {{ plant_key }}` or, if nothing
+  was written, `NOT CONFIRMED: <reason>`, as the very last line.
