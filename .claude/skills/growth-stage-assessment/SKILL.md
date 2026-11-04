@@ -112,7 +112,7 @@ HAND-OFF: HARVEST PLANNING
 FINDING
   domain: growth stage | subject: <plant key> | kind: recommendation (questionable) or observation (consistent, insufficient evidence)
   statement / evidence / confidence / what would change it / missing data, as above
-  mutation (named, never called): mcp__kamerplanter__transition_plant_phase, target <estimated stage | target not established>   (questionable only)
+  mutation (named, never called): <the phase-transition tool named under Gotchas>, target <estimated stage | target not established>   (questionable only)
   consequence: <only if an input states one, otherwise absent>
 ```
 
@@ -126,11 +126,13 @@ A questionable stage is a recommendation to a person to check the plant against 
 - Never fill an absent input, a phase key, a GDD target or a photoperiod sensitivity, and never fabricate an observation.
 - Never read the current date into the facts.
 - Call no Home Assistant tool.
-- Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. `transition_plant_phase` sits closest to this skill's subject: it is named as the mutation a later apply step would call, and never called here.
+- Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`.
 - Report a tool error verbatim and continue with what remains.
 
 ## Gotchas
 
+- `transition_plant_phase` sits closest to this skill's subject: it is named as the mutation a later apply step would call, and never called here.
+- The phase-transition tool the finding names as its mutation is `mcp__kamerplanter__transition_plant_phase`. The finding carries that name in its output; this skill never calls it.
 - An overdue phase reframes "not flowering yet" from normal to notable, but it is a prior: on its own it makes a stage worth a look, not questionable.
 - The cultivar's `days_to_maturity` counts days, not degree days; nothing converts one into the other.
 - `plant-context-collect` judges timing against an observation's date, and so does this skill; a run with no observation and no caller date computes no timing at all.
