@@ -1,0 +1,204 @@
+version: "1.0.0"
+title: "Harvest Plan"
+description: >-
+  Read-only: orders the harvests of up to five plants you name in one Kamerplanter garden — each plant's readiness (ready, approaching, not ready, not harvestable, or insufficient evidence) and harvest window from the harvest months of its growing period, its pre-harvest safety-interval gate from treatments you say were applied, then a fixed order by window start, readiness and plant key, workload counted as plants per month, and storage constraints. Yield, storage and effort have no source in the record: they count only when you supply them. With no plants it reports the garden's crops and planting runs as context and plans nothing. It harvests, records and schedules nothing, has no apply recipe, and calls no Home Assistant tool. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: plants
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Plant instance keys, comma-separated. At most five are planned, in the
+      order given; the rest are reported as not planned. Empty plans nothing
+      and reports the garden's crops and planting runs as context.
+
+  - key: observations
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you see on each crop now, semicolon-separated, each
+      plant_key: your words, for example "42: pods dry; 43: first fruit
+      colouring". Without one, a plant's readiness is usually insufficient
+      evidence.
+
+  - key: intended_use
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What the harvests are for, in your words. The record has no field for
+      it.
+
+  - key: storage
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Storage conditions and limits, in your words, for example "cool cellar,
+      room for two crates". The record has no field for them; without it they
+      are reported as not modeled.
+
+  - key: capacity
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      How much harvesting you can do, with its unit, for example "3 plants per
+      week". Over capacity is stated only when the unit matches the plant
+      counts.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Weather and forecast, in your words and units. The Kamerplanter server
+      has no source for them, and this plan reads none from Home Assistant.
+
+  - key: treatments
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Treatments applied, comma-separated, each
+      plant_key:treatment_key:YYYY-MM-DD. Each one's pre-harvest safety
+      interval gates that plant's harvest. Empty leaves every gate unknown.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to plan against (YYYY-MM-DD). Empty uses the date each growth
+      stage assessment fixed; with none, no timing and no gate is computed for
+      that plant.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You order the harvests of a few plants and report. You never harvest,
+  record a harvest or a yield, write a diary entry, or schedule anything.
+
+  Skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour: which fields the record carries for a
+  harvest, and that yield, storage and effort are not among them. Do not
+  repeat their logic here.
+
+  A plan of plants with insufficient evidence is an honest result. Do not
+  invent a yield, an effort or a ripeness to make the plan look full.
+
+prompt: |
+  Plan the harvests of plants "{{ plants }}" in garden "{{ tenant }}".
+  Read-only run. Use MCP tools only: do not shell out, do not fetch URLs, and
+  read or write no local file other than loading the named skills
+  (`garden-context`, `plant-context-collect`, `diary-measurements-read`,
+  `growth-stage-assessment`, `weather-impact-analysis`, `decision-policy`,
+  `harvest-planning`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - plant keys: "{{ plants }}"
+  - own observations per plant: "{{ observations }}"
+  - intended use: "{{ intended_use }}"
+  - storage: "{{ storage }}"
+  - capacity: "{{ capacity }}"
+  - weather and forecast: "{{ weather }}"
+  - applied treatments: "{{ treatments }}"
+  - assessment date: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. Nothing is harvested or recorded.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, do not run a script, scene, or automation, do not read
+    weather from it, and do not call `TimeTillErnte` or `time_till`: they look
+    like a harvest answer and their effect is unclassified.
+  - Never print an API key or token, not even partially.
+  - Never decide readiness from the harvest months, the plant's age or the
+    growth stage alone, never compute a harvest date from days to maturity,
+    and never invent an observation, a treatment date, a yield, a storage
+    limit, an effort or a date.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}".
+  Keep the block it returns, including its absent fields and the garden slug
+  it resolved.
+
+  Step 2 — Which plants.
+  Split "{{ plants }}" at the commas, trim each key, drop empty entries and
+  duplicates, and keep the order given. The first five are planned; every
+  further key is `not planned (limit of five)`. If the list is empty, no plant
+  is planned, steps 3 and 4 are SKIP, and the plan reports the garden's crops
+  and planting runs from step 1 as context only. Never call a per-plant tool
+  for a plant that is not on the list. Split "{{ observations }}" at the
+  semicolons and "{{ treatments }}" at the commas, and give each plant only
+  the entries that name its key.
+
+  Step 3 — Policy.
+  Load the skill `decision-policy` and keep it for the next steps.
+
+  Step 4 — Per plant.
+  For each plant to plan, in order:
+  1. Load the skill `plant-context-collect` and follow it for the plant, in
+     the garden step 1 resolved. Carry its gaps list forward.
+  2. Load the skill `diary-measurements-read` and follow it for the plant,
+     and keep its read report line.
+  3. Load the skill `growth-stage-assessment` and follow it with that
+     context, those measurements, the plant's own observation from step 2
+     and the assessment date above, passing only the ones that are not
+     empty. Keep its assessment and its hand-off block for harvest planning.
+  4. If "{{ weather }}" is not empty, load the skill `weather-impact-analysis`
+     and follow it with that context and that weather, with no Home Assistant
+     read permitted and no placement. Keep its findings. Otherwise the
+     weather risk is no source.
+  A plant that does not exist or cannot be read is reported with the tool
+  error verbatim and skipped; the other plants are still planned.
+
+  Step 5 — Plan.
+  Load the skill `harvest-planning` and follow it in scope `plan` with the
+  garden context of step 1, the per-plant blocks of step 4, each plant's
+  observation and treatments from step 2, and the caller's intended use,
+  storage, capacity and assessment date above, passing only the ones that
+  are not empty. It makes its own readiness and treatment reads.
+
+  Step 6 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Harvest Plan — <the slug the skills resolved, given or discovered>
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the plan block exactly as the skill returned it (planned and
+  not planned, the order with window start, result and gate, workload,
+  capacity, storage, or the garden context when no plant was given), then
+  per planned plant its readiness block and finding. Then per plant its diary
+  read report line, and any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `HARVEST PLAN: <n> planned, <m> not planned — <slug>`
+  where `<n>` is the number of plants in the plan order and `<m>` the number
+  listed as not planned. If every step failed, close instead with
+  `HARVEST PLAN: not planned — <slug>`.
