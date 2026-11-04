@@ -1,0 +1,191 @@
+version: "1.0.0"
+title: "Plant Health Assessment"
+description: >-
+  Read-only: puts what is known about one plant's health side by side — your own observation, an optional photo entry, the diary's measurements, the growth stage, watering and fertilisation history, species and cultivar data, the nutrient and pest checks and the weather you supply — and returns a differential, never a diagnosis: seven candidate classes, each supported, suspicion, contradicted or not assessable, one overall result (leading explanation, competing explanations, suspicion only, no abnormality reported, insufficient evidence), and the observation that would tell surviving candidates apart, with evidence, confidence, uncertainty and missing data. Weather comes only from the weather you supply and is kept apart from the plant's symptoms; no Home Assistant tool is called. It treats nothing and records nothing, and has no apply recipe. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to assess."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: observations
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you see on the plant now, in your words, for example "lower leaves
+      yellow between the veins, fine webbing under the leaves". Without it, a
+      photo or a recorded inspection, there is no symptom to assess.
+
+  - key: entry_key
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A diary entry of this plant whose photos should be read. Empty reads no
+      photo.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Weather and forecast, in your words and units. The Kamerplanter server
+      has no source for them, and this run reads none from Home Assistant;
+      without it every weather factor is no source.
+
+  - key: placement
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Where the plant stands — outdoors, sheltered or indoors. The record has
+      no field for it; without it, every weather exposure is conditional.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to judge against (YYYY-MM-DD). Empty uses the date of the
+      newest diary entry read; with none, or when you give observations
+      without it, no timing is computed.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You put the candidate explanations for one plant's condition next to each
+  other and report which survive. You never diagnose, treat, record, or
+  actuate anything.
+
+  Skills carry the procedure; load each when its step calls for it. Each
+  domain check keeps its own verdict: the nutrient direction, the pest and
+  disease tenability, the growth stage and the weather exposures are theirs,
+  and the health skill combines them without upgrading any. Do not repeat
+  their logic here.
+
+  "Suspicion only" and "insufficient evidence" are legitimate results and
+  often the correct ones. Do not manufacture a leading explanation to look
+  decisive.
+
+prompt: |
+  Assess the health of plant "{{ plant_key }}" in garden "{{ tenant }}".
+  Read-only run. Use MCP tools only: do not shell out, do not fetch URLs, and
+  read or write no local file other than loading the named skills
+  (`plant-context-collect`, `diary-measurements-read`, `plant-photo-read`,
+  `nutrient-imbalance-assess`, `pest-pressure-assess`,
+  `growth-stage-assessment`, `weather-impact-analysis`, `decision-policy`,
+  `plant-health-assessment`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - own observation of the plant: "{{ observations }}"
+  - diary entry with photos: "{{ entry_key }}"
+  - weather and forecast: "{{ weather }}"
+  - placement: "{{ placement }}"
+  - assessment date: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run reports; it records nothing.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation, do
+    not call `TimeTillErnte` or `time_till`, and do not read weather from it:
+    weather comes only from the caller.
+  - Never print an API key or token, not even partially.
+  - Never call a result a diagnosis, never raise a candidate resting on one
+    symptom above a suspicion, and never upgrade a domain's own result.
+  - Never state the weather as a symptom of the plant, and never invent an
+    observation, a measurement, a weather value or a date.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Recorded measurements.
+  Load the skill `diary-measurements-read` and follow it for plant
+  "{{ plant_key }}" in garden "{{ tenant }}", or in the garden step 1 resolved
+  when that parameter is empty. Keep the measurements it returns and its read
+  report line.
+
+  Step 3 — Photos.
+  If "{{ entry_key }}" is not empty, load the skill `plant-photo-read` and
+  follow it for that entry against the context of step 1, and keep its
+  findings. Use them only if the entry belongs to plant "{{ plant_key }}";
+  if it belongs to another plant, do not use them and say so. If
+  "{{ entry_key }}" is empty, report this step as SKIP.
+
+  Step 4 — Nutrients.
+  Load the skill `nutrient-imbalance-assess` and follow it against the
+  context of step 1, the measurements of step 2 and the symptoms supplied.
+  Keep its report as it returned it.
+
+  Step 5 — Pests and diseases.
+  Load the skill `pest-pressure-assess` and follow it against the context of
+  step 1 and the symptoms supplied. Keep its report as it returned it,
+  including the status, the tier and the tests not run.
+
+  Step 6 — Growth stage.
+  Load the skill `growth-stage-assessment` and follow it with the context of
+  step 1, the measurements of step 2, the photo findings of step 3, and the
+  own observation and assessment date above, passing only the ones that are
+  not empty. It makes its two phase reads itself. Keep its assessment and its
+  hand-off blocks as it returned them.
+
+  Step 7 — Weather.
+  Load the skill `weather-impact-analysis` and follow it with the context of
+  step 1, the symptoms supplied, and the weather and placement above if they
+  are not empty, with no Home Assistant read permitted. It makes no tool call.
+  Keep its factors and its hand-off block for plant health as it returned
+  them.
+
+  Step 8 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 9 — Differential.
+  Load the skill `plant-health-assessment` and follow it with the blocks of
+  steps 1 to 7 and the caller facts above, passing only the ones that are not
+  empty. It makes no tool call. Any of steps 2 to 7 that failed or was
+  skipped is handed over as not collected, with the reason.
+
+  Step 10 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Plant Health Assessment — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the assessment exactly as the skill returned it (the inputs,
+  the presenting symptom, the symptoms, the exposures kept separate, the seven
+  candidates with what each rests on, the overall result, the surviving
+  candidates, the discriminating observations, uncertainty and missing data,
+  the hand-off block for IPM planning) and its finding, which is an
+  observation. Then the diary read report line, and any tool error reported
+  verbatim.
+
+  Close with one line, on a single line:
+  `HEALTH: <leading explanation | competing explanations | suspicion only | no abnormality reported | insufficient evidence> — {{ plant_key }}`
+  If a step failed and no differential could be reached, close instead with
+  `HEALTH: not assessed — {{ plant_key }}`.

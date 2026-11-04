@@ -29,6 +29,8 @@ Task-oriented how-tos: one page per shipped recipe, naming the command it takes,
 - [Fertilization decision](fertilization-decision.md) — whether to feed one plant, from its nutrient assessment, and how to record a feeding you carried out
 - [Growth stage check](growth-stage-check.md) — whether one plant's recorded phase matches what is known about it, and why "not enough evidence" is the usual answer
 - [Weather impact check](weather-impact-check.md) — what the weather you supply means for named plants, kept apart from their symptoms
+- [Plant health assessment](plant-health-assessment.md) — the candidate explanations for one plant side by side, which survive, and what would tell them apart; never a diagnosis
+- [Pest IPM plan](pest-ipm-plan.md) — what to do about a pest or disease suspicion and in which order, with every treatment's safety interval and prerequisites
 - [Species baseline check](species-baseline-check.md) — whether the species record a plant depends on is plausible, and what its lifecycle is
 - [Diary analysis queue](diary-analysis-queue.md) — analyse one waiting diary entry, work through the queue, or run it on a schedule
 
