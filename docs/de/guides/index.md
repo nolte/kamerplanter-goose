@@ -27,6 +27,8 @@ Aufgabenorientierte Anleitungen: eine Seite je mitgeliefertem Rezept, mit dem Be
 - [Tägliche Gartenprüfung](daily-garden-check.md) — was in einem Garten heute Aufmerksamkeit verdient, nach Dringlichkeit geordnet, mit dem, worauf es ruht, und dem, was mangels Beleg keine Handlung ergibt
 - [Bewässerungsentscheidung](watering-decision.md) — ob eine Pflanze jetzt gegossen werden soll, worauf das ruht und warum „zu wenig Beleg“ die übliche Antwort ist
 - [Düngeentscheidung](fertilization-decision.md) — ob eine Pflanze gedüngt werden soll, aus ihrer Nährstoffprüfung, und wie du eine ausgeführte Düngung festhältst
+- [Prüfung des Wachstumsstadiums](growth-stage-check.md) — ob die erfasste Phase einer Pflanze zu dem passt, was über sie bekannt ist, und warum „zu wenig Beleg“ die übliche Antwort ist
+- [Prüfung der Wetterwirkung](weather-impact-check.md) — was das Wetter, das du angibst, für genannte Pflanzen bedeutet, getrennt von ihren Symptomen
 - [Artdaten-Prüfung](species-baseline-check.md) — ob der Artdatensatz, auf dem eine Pflanze steht, plausibel ist, und wie sein Lebenszyklus aussieht
 - [Tagebuch-Analyse-Queue](diary-analysis-queue.md) — einen wartenden Tagebucheintrag analysieren, die Warteschlange abarbeiten oder beides nach Zeitplan laufen lassen
 

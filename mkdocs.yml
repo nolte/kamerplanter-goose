@@ -87,6 +87,8 @@ plugins:
             Daily garden check: Tägliche Gartenprüfung
             Watering decision: Bewässerungsentscheidung
             Fertilization decision: Düngeentscheidung
+            Growth stage check: Prüfung des Wachstumsstadiums
+            Weather impact check: Prüfung der Wetterwirkung
             Species baseline check: Artdaten-Prüfung
             Diary analysis queue: Tagebuch-Analyse-Queue
             Domain review: Persona-Review
@@ -161,6 +163,8 @@ nav:
       - Daily garden check: en/guides/daily-garden-check.md
       - Watering decision: en/guides/watering-decision.md
       - Fertilization decision: en/guides/fertilization-decision.md
+      - Growth stage check: en/guides/growth-stage-check.md
+      - Weather impact check: en/guides/weather-impact-check.md
       - Species baseline check: en/guides/species-baseline-check.md
       - Diary analysis queue: en/guides/diary-analysis-queue.md
       - Domain review: en/guides/domain-review.md

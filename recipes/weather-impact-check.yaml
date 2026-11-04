@@ -1,0 +1,143 @@
+version: "1.0.0"
+title: "Weather Impact Check"
+description: >-
+  Read-only: says what the weather and forecast you supply mean for the plants you name (at most five): per factor (temperature extremes, rainfall, wind, humidity, heat and cold events, forecast changes) an exposure, no exposure in the supplied data, or no source, with the threshold it was judged against and whether care, health or harvest timing is likely affected. Weather comes from you; if Home Assistant offers GetLiveContext, one weather reading is added and labelled as an unmeasured source, and a disagreement is shown side by side. Weather is never reported as a plant symptom, and with no weather at all every factor is no source. It actuates nothing and records nothing, and has no apply recipe. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: plants
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Plant instance keys, comma-separated. At most five are assessed, in the
+      order given; the rest are reported as not checked. Empty assesses no
+      plant and reports the weather factors only.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Weather and forecast, in your words and units. The Kamerplanter server
+      has no source for them; they are taken as written and marked as coming
+      from you.
+
+  - key: placement
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Where each plant stands — outdoors, sheltered or indoors — in your words,
+      for example "42 outdoors, 43 on the windowsill". The record has no field
+      for it; without it, every impact is stated as conditional on placement.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You say what the supplied weather means for the named plants and report.
+  You never turn a device on or off, set a value, water, protect, or move a
+  plant, and you record nothing.
+
+  Skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour: which sources exist for weather, which do
+  not, and why a weather reading is never a plant symptom. Do not repeat their
+  logic here.
+
+  "No source" is a legitimate result and, without supplied weather, the
+  correct one. Do not manufacture an exposure to look useful.
+
+prompt: |
+  Assess what the weather means for the plants "{{ plants }}" in garden
+  "{{ tenant }}". Read-only run. Use MCP tools only: do not shell out, do not
+  fetch URLs, and read or write no local file other than loading the named
+  skills (`plant-context-collect`, `decision-policy`,
+  `weather-impact-analysis`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - weather and forecast: "{{ weather }}"
+  - placement: "{{ placement }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Home Assistant: do not turn anything on or off, do not set a value, and
+    do not run a script, scene, or automation. Do not call `TimeTillErnte` or
+    `time_till`: their effect is unclassified. The only Home Assistant tool
+    this run may call is `GetLiveContext`, if it is present, once, with
+    `domain: weather`, in step 3 — no other domain and no sensor.
+  - Never print an API key or token, not even partially.
+  - Never state the weather as a symptom of a plant or as evidence about its
+    present state, never average two weather sources, and never invent a
+    weather value, a threshold or a placement.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Which plants.
+  Split "{{ plants }}" at the commas, trim each key, drop empty entries and
+  duplicates, and keep the order given. The first five are assessed; every
+  further key is `not checked (limit of five)`. If the list is empty, no plant
+  is assessed and steps 2 and 4 are SKIP. Never call a per-plant tool for a
+  plant that is not on the list.
+
+  Step 2 — Context.
+  For each plant to assess, load the skill `plant-context-collect` and follow
+  it for the plant in garden "{{ tenant }}", or in the garden it resolves when
+  that parameter is empty. Carry its gaps list forward. A plant that does not
+  exist or cannot be read is reported with the tool error verbatim and
+  skipped.
+
+  Step 3 — Home Assistant weather.
+  Look for a Home Assistant tool named `GetLiveContext`. If it is present,
+  call it once with `domain: weather` and keep what it returns, as returned,
+  as a source labelled `home_assistant (unmeasured)`. If it is absent, report
+  this step as SKIP naming `GetLiveContext`; if it returns no weather entity,
+  say so. Never call another Home Assistant tool.
+
+  Step 4 — Policy and assessment.
+  Load the skill `decision-policy` and keep it. Then load the skill
+  `weather-impact-analysis` and follow it once per assessed plant, with that
+  plant's context of step 2, the caller's weather and placement above
+  (passing only the ones that are not empty), the reading of step 3 if there
+  was one, and a Home Assistant read marked as already done in step 3, so
+  the skill calls no tool of its own. With no plant, follow it once with no
+  context and report the factors only.
+
+  Step 5 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Weather Impact Check — <the slug the skills resolved, given or discovered>
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then, per assessed plant, the weather impact block exactly as the
+  skill returned it (sources, placement, contradictions, the six factors with
+  data, threshold and impact, VPD, what cannot be concluded, the symptoms
+  block kept separate, the hand-off block for plant health) and its findings.
+  Then every plant `not checked`, and any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `WEATHER: <e> exposures, <s> no source — <slug>`
+  where `<e>` is the number of factors rated `exposure` and `<s>` the number
+  rated `no source`, summed over the assessed plants (or over the one
+  factors-only assessment when no plant was given). If every step failed,
+  close instead with `WEATHER: not assessed — <slug>`.

@@ -30,6 +30,8 @@ Each recipe has a guide of its own, linked from its name.
 | [`watering-decision-apply`](../guides/watering-decision.md) | **yes** | Confirms one care reminder a person says they acted on |
 | [`fertilization-decision`](../guides/fertilization-decision.md) | no | Feed, do not feed, or not enough evidence, for one plant; feeds nothing |
 | [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **yes** | Records one feeding a person carried out |
+| [`growth-stage-check`](../guides/growth-stage-check.md) | no | Recorded stage consistent, questionable (ahead, behind, unclear), or not enough evidence, for one plant; changes no phase |
+| [`weather-impact-check`](../guides/weather-impact-check.md) | no | Per weather factor an exposure, none, or no source, for up to five plants; actuates nothing |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
@@ -66,6 +68,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `care-planning` | The domain results put into one list ordered by urgency, with what has no action; calls no tool |
 | `watering-decision` | Water now, wait, or insufficient evidence, from the plant's present state; calls no tool |
 | `fertilization-decision` | Feed, do not feed, or insufficient evidence, from the nutrient assessment; calls no tool |
+| `growth-stage-assessment` | Recorded stage consistent, questionable or insufficient evidence, from observations against timing expectations; reads the phase status and history |
+| `weather-impact-analysis` | Weather exposures per factor, kept apart from symptoms; reads one Home Assistant weather entity only where permitted |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 

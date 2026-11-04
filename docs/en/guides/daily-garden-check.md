@@ -3,12 +3,12 @@ title: Daily garden check
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-03
+last_updated: 2026-11-05
 ---
 
 # Daily garden check
 
-A garden holds many small questions at once: what is due, what looks wrong, what needs nothing. `daily-garden-check` is the daily look. It reads one Kamerplanter garden, runs the nutrient, pest, watering and fertilisation checks for the plants you name, and puts everything into one list ordered by what deserves attention first. Each item says whether it is an observation or a recommendation, what it rests on, how sure it is, and what would change it. What has no action because the evidence is missing is listed too, with the observation that would supply it.
+A garden holds many small questions at once: what is due, what looks wrong, what needs nothing. `daily-garden-check` is the daily look. It reads one Kamerplanter garden, runs the nutrient, pest, watering, fertilisation, growth-stage and weather checks for the plants you name, and puts everything into one list ordered by what deserves attention first. Each item says whether it is an observation or a recommendation, what it rests on, how sure it is, and what would change it. What has no action because the evidence is missing is listed too, with the observation that would supply it.
 
 This run **only reads**. It changes no record, schedules nothing, and has no apply recipe. "Nothing to do" is a legitimate result, and the check does not pad the list to look useful.
 
@@ -17,7 +17,7 @@ This run **only reads**. It changes no record, schedules nothing, and has no app
 
 ## Before you start
 
-- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `decision-policy` and `care-planning` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
+- **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `growth-stage-assessment`, `weather-impact-analysis`, `decision-policy` and `care-planning` from `.claude/skills/`, and skill discovery is relative to the Goose process's working directory. Started elsewhere, the skills are lost silently and the run still produces a plausible answer.
 - Run [`connectivity-check`](connectivity-check.md) first against a new environment.
 
 ## Run it
@@ -25,13 +25,15 @@ This run **only reads**. It changes no record, schedules nothing, and has no app
 ```sh
 goose run --recipe daily-garden-check \
   --params tenant=my-garden \
-  --params plants="plant-1,plant-2"
+  --params plants="plant-1,plant-2" \
+  --params weather="clear tonight, down to -2 °C; mild from Thursday"
 ```
 
 | Parameter | Required | Effect when omitted |
 |-----------|:--------:|---------------------|
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `plants` | no | the garden level only: due tasks and planting runs. The per-plant checks are not run |
+| `weather` | no | every weather factor is `no source`: the server has none, and this check reads none from Home Assistant |
 
 `plants` is a comma-separated list of plant instance keys. **At most five are checked**, in the order you give them; every further key is reported as not checked. The limit keeps the number of per-plant calls bounded: the check never reads every plant of a garden.
 
@@ -43,10 +45,11 @@ goose run --recipe daily-garden-check \
 | pest | checked for the plants you name |
 | watering | checked for the plants you name |
 | fertilisation | checked for the plants you name |
+| growth stage | checked for the plants you name |
+| weather | checked for the plants you name, from the `weather` you supply |
 | plant health and pest management | **not available** (`plant-health-assessment`, `pest-ipm-planning`, [#48](https://github.com/nolte/kamerplanter-goose/issues/48)) |
-| growth stage and weather | **not available** (`growth-stage-assessment`, `weather-impact-analysis`, [#49](https://github.com/nolte/kamerplanter-goose/issues/49)) |
 
-The watering and fertilisation checks add no calls of their own: they work on what the other checks already collected, and they return their findings in the care plan's own shape. **Expect watering to end at "insufficient evidence"** for a plant with no moisture reading, which is the ordinary result (see the [watering decision](watering-decision.md) and the [fertilization decision](fertilization-decision.md)). A domain that is not available is named in the report and never replaced by another. When one of those skills exists, it plugs in here without a change to the care plan's rules.
+The watering and fertilisation checks add no calls of their own: they work on what the other checks already collected, and they return their findings in the care plan's own shape. **Expect watering to end at "insufficient evidence"** for a plant with no moisture reading, which is the ordinary result (see the [watering decision](watering-decision.md) and the [fertilization decision](fertilization-decision.md)). The growth-stage check adds two phase reads per plant and **usually ends at "insufficient evidence"** too, because the check passes it no observation of your own (see the [growth stage check](growth-stage-check.md)). The weather check adds no call: it takes the weather only from you, never from Home Assistant, and keeps every weather effect apart from the plant's symptoms (see the [weather impact check](weather-impact-check.md)). A domain that is not available is named in the report and never replaced by another. When one of those skills exists, it plugs in here without a change to the care plan's rules.
 
 ## What the list means
 

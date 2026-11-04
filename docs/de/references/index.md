@@ -30,6 +30,8 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`watering-decision-apply`](../guides/watering-decision.md) | **ja** | Bestätigt eine Pflegeerinnerung, nach der eine Person gehandelt hat |
 | [`fertilization-decision`](../guides/fertilization-decision.md) | nein | Düngen, nicht düngen oder zu wenig Beleg, für eine Pflanze; düngt nichts |
 | [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **ja** | Hält eine Düngung fest, die eine Person ausgeführt hat |
+| [`growth-stage-check`](../guides/growth-stage-check.md) | nein | Erfasstes Stadium passend, fraglich (voraus, hinterher, unklar) oder zu wenig Beleg, für eine Pflanze; ändert keine Phase |
+| [`weather-impact-check`](../guides/weather-impact-check.md) | nein | Je Wetterfaktor eine Exposition, keine oder keine Quelle, für bis zu fünf Pflanzen; steuert nichts an |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
@@ -66,6 +68,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `care-planning` | Die Domänenergebnisse in einer nach Dringlichkeit geordneten Liste, mit dem, was keine Handlung ergibt; ruft kein Werkzeug auf |
 | `watering-decision` | Jetzt gießen, warten oder unzureichender Beleg, aus dem gegenwärtigen Zustand der Pflanze; ruft kein Werkzeug auf |
 | `fertilization-decision` | Düngen, nicht düngen oder unzureichender Beleg, aus der Nährstoffprüfung; ruft kein Werkzeug auf |
+| `growth-stage-assessment` | Erfasstes Stadium passend, fraglich oder unzureichender Beleg, aus Beobachtungen gegen zeitliche Erwartungen; liest Phasenstatus und Phasenverlauf |
+| `weather-impact-analysis` | Wetterexpositionen je Faktor, getrennt von Symptomen; liest eine Home-Assistant-Wetter-Entität nur, wo erlaubt |
 
 **Prüfperspektiven** — lesen dieses Checkout, nie einen Garten. Eine je Lauf; sie sollen sich uneinig sein:
 
