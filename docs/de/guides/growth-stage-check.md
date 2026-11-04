@@ -44,7 +44,7 @@ goose run --recipe growth-stage-check \
 | `temperatures` | nein | keine Wachstumsgradtage: Der Server hat keinen Temperaturverlauf |
 | `latitude` | nein | keine Tageslänge für draußen: Der Server hat dafür kein Feld |
 | `light` | nein | kein Lichtplan für drinnen |
-| `as_of` | nein | das Datum der jüngsten gelesenen Beobachtung wird verwendet; ohne eine wird keine Zeit berechnet |
+| `as_of` | nein | das Datum des jüngsten gelesenen Tagebucheintrags wird verwendet; ohne einen wird keine Zeit berechnet |
 
 ## Was es entscheidet
 
@@ -59,6 +59,7 @@ goose run --recipe growth-stage-check \
 - **Eine unaufgelöste Phase ist keine normale Phase.** Der Phasenstatus kann `unresolved` liefern, was wie ein Ergebnis aussieht und keines ist; der Bericht sagt, dass das erfasste Stadium fehlt.
 - **Wachstumsgradtage sind Kontext.** Sie werden nur aus einer täglichen Reihe, die du lieferst, und der Basistemperatur der Art berechnet, mit genannter Methode und Spanne. Kein Ziel an Wachstumsgradtagen für ein Stadium oder für die Reife ist festgehalten, daher verorten sie allein nie ein Stadium.
 - **Die Tageslänge wird berechnet, die Reaktion der Pflanze darauf ist nicht bekannt.** Draußen aus deinem Breitengrad, drinnen aus deinem Lichtplan. Kein Artfeld hält eine Empfindlichkeit für die Tageslänge fest, daher sagt der Bericht dazu `no source`.
+- **Gib `as_of` zusammen mit `observations` an.** Deine Beobachtung trägt kein Datum, daher berechnet der Lauf mit `observations` und ohne `as_of` gar keinen zeitbezogenen Vergleich (Tage in der Phase, Tage seit dem Pflanzen, Monatsfenster, Wachstumsgradtage, Tageslänge) und sagt, warum. Das Datum eines Fotoeintrags zählt nur, wenn der Lauf diesen Tagebucheintrag gelesen hat und er zur Pflanze gehört.
 - **Der Phasenverlauf wird so gemeldet, wie er zurückkommt.** Seine Felder sind hier nirgends festgehalten, also wird nichts über sie angenommen.
 
 ## Das Ergebnis lesen

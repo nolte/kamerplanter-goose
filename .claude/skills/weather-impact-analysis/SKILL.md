@@ -10,7 +10,7 @@ Turns weather into exposures a person can weigh: what the plant is exposed to, a
 ## Input
 
 - **The plant context block** from `plant-context-collect`: species (`frost_sensitivity`, `hardiness_zones`), the resolved phase and its definition (`stress_tolerance`), `location_name`, the inspections, the gaps list.
-- **Caller facts**, each optional, taken as written and marked `caller`: weather and forecast, in the caller's words and units; where the plant stands (outdoors, sheltered, indoors); and thresholds the caller wants a factor judged against.
+- **Caller facts**, each optional, taken as written and marked `caller`: weather and forecast, in the caller's words and units; and where the plant stands (outdoors, sheltered, indoors). A caller does not supply thresholds: a threshold comes only from the record or from labelled general knowledge (step 3).
 - **Symptoms**, optional: findings of `plant-photo-read`, diary entries and recorded inspections already in the blocks. This skill reads no photo and no diary itself.
 - **Whether a Home Assistant read is permitted**, from the caller, or **a reading the caller already made** with `GetLiveContext`. Without an explicit permission it is not: the daily check, for one, calls no Home Assistant tool. A reading the caller hands over is used as given, and this skill makes no call of its own.
 
@@ -35,7 +35,7 @@ For each of these six factors, give exactly one status:
 | temperature extremes | name a minimum or maximum that reaches a threshold of step 3, or name frost or a heat spell |
 | rainfall | name rain, heavy rain, hail or a dry spell |
 | wind | name strong wind, gusts or a storm |
-| humidity | give a relative humidity, or name fog, persistent wet or very dry air |
+| humidity | give a relative humidity beyond a threshold of step 3, or name fog, prolonged wetness or very dry air; a stated humidity within every threshold, or with none to compare it with, is `no exposure in the supplied data` ("18 °C, 55 % RH" is no exposure) |
 | heat and cold events | name a heatwave, a frost night or a cold snap |
 | forecast changes | describe a change between now and the forecast (a drop, a rise, rain arriving, frost returning) |
 
@@ -43,9 +43,8 @@ For each of these six factors, give exactly one status:
 
 ### 3. Judge against a threshold
 
-An exposure is judged only against a threshold that has a source, named with its level:
+An exposure is judged only against a threshold that has one of these two sources, named with its level; the caller is not one of them:
 
-- a caller threshold (`caller`);
 - the species `frost_sensitivity` or `hardiness_zones` and the phase's `stress_tolerance` (level 4), read literally: their value sets are not recorded, so state the value as read and do not assume its meaning;
 - general knowledge, only labelled as level 8 and not from the record (for example "air at or below 0 °C is frost").
 
@@ -102,7 +101,7 @@ FINDING
   consequence: <only if an input states one, otherwise absent>
 ```
 
-Give one finding per exposure and one for the factors with no source. **An exposure judged against a recorded threshold (caller or level 4), for a plant the caller places outdoors or sheltered, is a recommendation**: a proposal to a person to protect, move or check the plant. Every other result is an observation, including an exposure judged only against general knowledge or with the placement not stated. No state-changing tool exists for any of it: a named mutation is `no tool measured`. Return no field that was not read. The facts two runs over the same input must agree on are the factor statuses, the thresholds and their levels, the impacts, the findings' kinds and the missing-data list; retrieval times and prose may differ, and byte-identical prose is not claimed.
+Give one finding per exposure and one for the factors with no source. **An exposure judged against a level 4 threshold from the record, for a plant the caller places outdoors or sheltered, is a recommendation**: a proposal to a person to protect, move or check the plant. Every other result is an observation, including an exposure judged only against general knowledge or with the placement not stated: without a placement, every exposure stays conditional and is never a recommendation. No state-changing tool exists for any of it: a named mutation is `no tool measured`. Return no field that was not read. The facts two runs over the same input must agree on are the factor statuses, the thresholds and their levels, the impacts, the findings' kinds and the missing-data list; retrieval times and prose may differ, and byte-identical prose is not claimed.
 
 ## Hard rules
 

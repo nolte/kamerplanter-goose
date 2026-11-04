@@ -37,7 +37,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 
 - **MUST** take the plant context block from `plant-context-collect` as given and **MUST NOT** call a tool to fetch what it already holds; **MAY** take the read report and measurements from `diary-measurements-read`, the findings of `plant-photo-read`, the lifecycle report of `plant-lifecycle-resolve` and the garden context block from `garden-context` as given
 - **MUST** accept as caller-supplied, marked `caller`, only facts the server has no source for: weather and forecast, a daily temperature series, the latitude, an indoor light schedule, where the plant stands (outdoors, sheltered, indoors), the person's own observation of the plant, and the assessment date
-- **MUST** take the assessment date from the caller or, without one, from the recorded date of the newest observation used, and **MUST NOT** read the current date
+- **MUST** take the assessment date from the caller or, without one, from the recorded date of the newest dated observation used (a diary entry of this plant that was actually read), **MUST** compute no time-based comparison or derivation (days in the phase, days since planting, month windows, growing degree days, photoperiod) when the person's own observation is supplied without an assessment date from the caller, saying that the observation carries no date, and **MUST NOT** read the current date
 - **MUST** report each absent input as absent with its reason, `no source` or `not collected`, and **MUST NOT** fill it
 
 ### B. The growth stage
@@ -66,7 +66,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 - **MUST** report each of temperature extremes, rainfall, wind, humidity, heat and cold events, and forecast changes as exactly one of `exposure`, `no exposure in the supplied data` and `no source`
 - **MUST** report every factor as `no source` when neither source supplied data, and **MUST** say what the assessment cannot conclude
 - **MUST** report a disagreement between the caller and Home Assistant as a contradiction with both sources side by side, and **MUST NOT** average them
-- **MUST** read weather as level 6, and **MUST** state the threshold an exposure is judged against with its source and level, or say that no threshold is recorded and the impact is not assessed
+- **MUST** read weather as level 6, **MUST** judge an exposure only against a threshold read verbatim from the species or phase record (level 4) or from general knowledge labelled level 8, stated with its source and level, and otherwise **MUST** say that no threshold is recorded and the impact is not assessed
 - **MUST** name, for each exposure, the area it is likely to affect (care, health or harvest timing) and **MUST** make it conditional on where the plant stands when the caller did not say
 - **MUST NOT** use a Home Assistant entity of any other domain, or any sensor, as evidence about a plant
 
@@ -79,7 +79,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 ### F. Plug-in shape and hand-off
 
 - **MUST** return, besides the result, findings in the shape the care planning spec defines in its section C
-- **MUST** give `recorded stage questionable` and an exposure judged against a recorded threshold for a plant the caller places outdoors or sheltered as recommendations, and every other result as an observation
+- **MUST** give `recorded stage questionable` and an exposure judged against a level 4 threshold for a plant the caller places outdoors or sheltered as recommendations, and every other result as an observation
 - **MUST** leave the consequence of a finding absent unless an input states one
 - **MUST** return a hand-off block for harvest planning holding the recorded and estimated stage, the result and its direction, the days in the phase against `typical_duration_days`, the days since `planted_on` against the cultivar's `days_to_maturity`, the accumulated growing degree days with their inputs, and the photoperiod, each absent with its reason where it is
 - **MUST** return a hand-off block for plant health holding the exposures and, separately, the symptoms with any "consistent with" link

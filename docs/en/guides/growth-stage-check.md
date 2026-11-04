@@ -44,7 +44,7 @@ goose run --recipe growth-stage-check \
 | `temperatures` | no | no growing degree days: the server has no temperature history |
 | `latitude` | no | no outdoor day length: the server has no field for it |
 | `light` | no | no indoor light schedule |
-| `as_of` | no | the date of the newest observation read is used; with none, no timing is computed |
+| `as_of` | no | the date of the newest diary entry read is used; with none, no timing is computed |
 
 ## What it decides
 
@@ -59,6 +59,7 @@ goose run --recipe growth-stage-check \
 - **An unresolved phase is not a normal phase.** The phase status can answer `unresolved`, which reads like a result and is not; the report says the recorded stage is absent.
 - **Growing degree days are context.** They are computed only from a daily series you supply and the species' base temperature, with the method and the span stated. No growing-degree-day target for a stage or for maturity is recorded, so they never place a stage on their own.
 - **Day length is computed, the plant's response to it is not known.** Outdoors from your latitude, indoors from your light schedule. No species field records sensitivity to day length, so the report says `no source` for it.
+- **Give `as_of` with `observations`.** Your observation carries no date, so with `observations` and no `as_of` the run computes no time-based comparison at all (days in the phase, days since planting, month windows, growing degree days, day length) and says why. A photo entry's date counts only when the run read that diary entry and it belongs to the plant.
 - **The phase history is reported as it comes back.** Its fields are not recorded anywhere here, so nothing is assumed about them.
 
 ## Read the outcome

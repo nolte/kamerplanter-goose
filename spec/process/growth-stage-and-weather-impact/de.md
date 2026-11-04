@@ -37,7 +37,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **MUSS [MUST]** den Pflanzenkontext-Block von `plant-context-collect` so übernehmen, wie er ist, und **DARF NICHT [MUST NOT]** ein Tool aufrufen, um zu holen, was er schon enthält; **DARF [MAY]** den Leseberichts-Block und die Messwerte von `diary-measurements-read`, die Befunde von `plant-photo-read`, den Lebenszyklus-Bericht von `plant-lifecycle-resolve` und den Gartenkontext-Block von `garden-context` so übernehmen, wie sie sind
 - **MUSS [MUST]** als vom Aufrufer geliefert, mit `caller` gekennzeichnet, nur Tatsachen annehmen, für die der Server keine Quelle hat: Wetter und Vorhersage, eine tägliche Temperaturreihe, den Breitengrad, einen Lichtplan für drinnen, wo die Pflanze steht (draußen, geschützt, drinnen), die eigene Beobachtung der Person an der Pflanze und das Beurteilungsdatum
-- **MUSS [MUST]** das Beurteilungsdatum vom Aufrufer nehmen oder, ohne eines, vom erfassten Datum der jüngsten verwendeten Beobachtung, und **DARF NICHT [MUST NOT]** das aktuelle Datum lesen
+- **MUSS [MUST]** das Beurteilungsdatum vom Aufrufer nehmen oder, ohne eines, vom erfassten Datum der jüngsten datierten verwendeten Beobachtung (ein tatsächlich gelesener Tagebucheintrag dieser Pflanze), **MUSS [MUST]** keinen zeitbezogenen Vergleich und keine zeitbezogene Ableitung berechnen (Tage in der Phase, Tage seit dem Pflanzen, Monatsfenster, Wachstumsgradtage, Photoperiode), wenn die eigene Beobachtung der Person ohne ein Beurteilungsdatum vom Aufrufer geliefert wird, und dabei sagen, dass die Beobachtung kein Datum trägt, und **DARF NICHT [MUST NOT]** das aktuelle Datum lesen
 - **MUSS [MUST]** jede fehlende Eingabe als fehlend mit Grund melden, `no source` oder `not collected`, und **DARF NICHT [MUST NOT]** sie auffüllen
 
 ### B. Das Wachstumsstadium
@@ -66,7 +66,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **MUSS [MUST]** jeden der Faktoren Temperaturextreme, Niederschlag, Wind, Luftfeuchte, Hitze- und Kälteereignisse und Vorhersageänderungen als genau eines von `exposure`, `no exposure in the supplied data` und `no source` melden
 - **MUSS [MUST]** jeden Faktor als `no source` melden, wenn keine der beiden Quellen Daten geliefert hat, und **MUSS [MUST]** sagen, was die Beurteilung nicht schließen kann
 - **MUSS [MUST]** einen Widerspruch zwischen dem Aufrufer und Home Assistant als Widerspruch mit beiden Quellen nebeneinander melden und **DARF NICHT [MUST NOT]** sie mitteln
-- **MUSS [MUST]** Wetter als Stufe 6 lesen und **MUSS [MUST]** die Schwelle, an der eine Exposition gemessen wird, mit ihrer Quelle und Stufe nennen, oder sagen, dass keine Schwelle festgehalten ist und die Wirkung nicht beurteilt wird
+- **MUSS [MUST]** Wetter als Stufe 6 lesen, **MUSS [MUST]** eine Exposition nur an einer Schwelle messen, die wörtlich aus dem Art- oder Phasendatensatz gelesen ist (Stufe 4) oder aus Allgemeinwissen stammt, das als Stufe 8 gekennzeichnet ist, mit ihrer Quelle und Stufe genannt, und **MUSS [MUST]** sonst sagen, dass keine Schwelle festgehalten ist und die Wirkung nicht beurteilt wird
 - **MUSS [MUST]** für jede Exposition den Bereich nennen, den sie voraussichtlich betrifft (Pflege, Gesundheit oder Erntezeitpunkt), und **MUSS [MUST]** sie davon abhängig machen, wo die Pflanze steht, wenn der Aufrufer es nicht gesagt hat
 - **DARF NICHT [MUST NOT]** eine Home-Assistant-Entität einer anderen Domäne oder irgendeinen Sensor als Beleg zu einer Pflanze verwenden
 
@@ -79,7 +79,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ### F. Einklinkform und Übergabe
 
 - **MUSS [MUST]** neben dem Ergebnis Befunde in der Form liefern, die die Spezifikation zur Pflegeplanung in ihrem Abschnitt C festlegt
-- **MUSS [MUST]** `recorded stage questionable` und eine Exposition, die an einer festgehaltenen Schwelle gemessen ist, für eine Pflanze, die der Aufrufer draußen oder geschützt verortet, als Empfehlungen liefern und jedes andere Ergebnis als Beobachtung
+- **MUSS [MUST]** `recorded stage questionable` und eine Exposition, die an einer Schwelle der Stufe 4 gemessen ist, für eine Pflanze, die der Aufrufer draußen oder geschützt verortet, als Empfehlungen liefern und jedes andere Ergebnis als Beobachtung
 - **MUSS [MUST]** die Folge eines Befunds fehlen lassen, wenn keine Eingabe eine nennt
 - **MUSS [MUST]** einen Übergabeblock für die Ernteplanung liefern, der das erfasste und das geschätzte Stadium, das Ergebnis und seine Richtung, die Tage in der Phase gegen `typical_duration_days`, die Tage seit `planted_on` gegen das `days_to_maturity` der Sorte, die aufsummierten Wachstumsgradtage mit ihren Eingaben und die Photoperiode enthält, jedes mit Grund als fehlend, wo es fehlt
 - **MUSS [MUST]** einen Übergabeblock für die Pflanzengesundheit liefern, der die Expositionen und, getrennt davon, die Symptome mit einer etwaigen „consistent with“-Verknüpfung enthält

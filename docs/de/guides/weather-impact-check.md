@@ -55,14 +55,14 @@ goose run --recipe weather-impact-check \
 | Temperaturextreme | ein Minimum oder Maximum, das eine Schwelle erreicht, Frost oder eine Hitzeperiode |
 | Niederschlag | Regen, Starkregen, Hagel oder eine Trockenperiode |
 | Wind | starken Wind, Böen oder Sturm |
-| Luftfeuchte | eine relative Luftfeuchte, Nebel, anhaltende Nässe oder sehr trockene Luft |
+| Luftfeuchte | eine relative Luftfeuchte jenseits einer festgehaltenen oder gekennzeichneten Schwelle, Nebel, anhaltende Nässe oder sehr trockene Luft; „18 °C, 55 % rF“ allein ist keine Exposition |
 | Hitze- und Kälteereignisse | eine Hitzewelle, eine Frostnacht oder einen Kälteeinbruch |
 | Vorhersageänderungen | eine Änderung zwischen jetzt und der Vorhersage |
 
-- **Eine Schwelle hat eine Quelle, oder sie wird nicht verwendet.** Deine eigene Schwelle, die Frostempfindlichkeit oder die Winterhärtezonen der Art oder die Stresstoleranz der Phase, so gelesen, wie sie erfasst sind; Allgemeinwissen nur, wenn es als solches gekennzeichnet ist. Ohne eine ist die Wirkung `not assessed`.
+- **Eine Schwelle hat eine Quelle, oder sie wird nicht verwendet.** Die Frostempfindlichkeit oder die Winterhärtezonen der Art oder die Stresstoleranz der Phase, so gelesen, wie sie erfasst sind; Allgemeinwissen nur, wenn es als solches gekennzeichnet ist. Ohne eine ist die Wirkung `not assessed`.
 - **Wetter ist kein Symptom.** Symptome kommen nur aus einer Fotolesung, einem Tagebucheintrag oder einer erfassten Inspektion und stehen in einem eigenen Block. Ein Symptom und eine Exposition werden höchstens als „consistent with“ verknüpft, was ein Verdacht ist, keine Diagnose.
 - **Das Dampfdruckdefizit** wird nur aus einer Temperatur und einer Luftfeuchte von derselben Zeit und demselben Ort berechnet, mit genannter Formel, und ohne Urteil gemeldet: Für es ist kein Zielwert festgehalten.
-- **Eine Empfehlung braucht eine festgehaltene Schwelle und eine Pflanze, die du draußen oder geschützt verortest.** Alles andere ist eine Beobachtung.
+- **Eine Empfehlung braucht eine Schwelle aus dem Datenbestand und eine Pflanze, die du draußen oder geschützt verortest.** Eine eigene Schwelle kannst du nicht setzen. Alles andere ist eine Beobachtung.
 
 ## Das Ergebnis lesen
 

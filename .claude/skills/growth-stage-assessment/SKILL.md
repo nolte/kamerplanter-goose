@@ -23,7 +23,7 @@ Without the plant context block, stop and say that `plant-context-collect` must 
 
 ### 1. Fix the assessment date
 
-Take it from the caller. Without one, take the recorded date of the newest observation used (a diary entry's or a photo entry's date). Without either, there is no assessment date: every timing comparison below is `not computed (no assessment date)`. Never read today's date; the date is an input, so two runs over the same input give the same result.
+Take it from the caller. Without one, take the recorded date of the newest dated observation used: a diary entry of this plant that `diary-measurements-read` actually read, including the entry whose photos were read only when it was among those entries and belongs to this `plant_key`. A photo finding carries no date of its own, and neither does the person's own observation. **When the person's own observation is supplied and the caller gave no assessment date, compute no time-based comparison or derivation** (days in the phase, days since `planted_on`, month windows, growing degree days, photoperiod) and say why: the observation that speaks to the present carries no date, and a diary date would judge it against another day. Without any date there is no assessment date either. In both cases every timing comparison below is `not computed (<reason>)`. Never read today's date; the date is an input, so two runs over the same input give the same result.
 
 ### 2. Read the phase status
 

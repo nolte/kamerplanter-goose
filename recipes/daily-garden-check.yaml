@@ -116,8 +116,9 @@ prompt: |
      returned them.
   8. Load the skill `weather-impact-analysis` and follow it with that context
      and the caller's weather above if it is not empty, with no Home
-     Assistant read permitted. Keep its factors, its hand-off block and its
-     findings as it returned them.
+     Assistant read permitted and no placement, so every exposure stays
+     conditional and is an observation, never a recommendation. Keep its
+     factors, its hand-off block and its findings as it returned them.
   A plant that does not exist or cannot be read is reported with the tool error
   verbatim and skipped; the other plants are still checked.
 

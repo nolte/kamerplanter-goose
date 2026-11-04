@@ -55,14 +55,14 @@ goose run --recipe weather-impact-check \
 | temperature extremes | a minimum or maximum that reaches a threshold, frost, or a heat spell |
 | rainfall | rain, heavy rain, hail or a dry spell |
 | wind | strong wind, gusts or a storm |
-| humidity | a relative humidity, fog, persistent wet or very dry air |
+| humidity | a relative humidity beyond a recorded or labelled threshold, fog, prolonged wetness or very dry air; "18 °C, 55 % RH" alone is no exposure |
 | heat and cold events | a heatwave, a frost night or a cold snap |
 | forecast changes | a change between now and the forecast |
 
-- **A threshold has a source or it is not used.** Your own threshold, the species' frost sensitivity or hardiness zones, or the phase's stress tolerance, read as recorded; general knowledge only when labelled as such. Without one, the impact is `not assessed`.
+- **A threshold has a source or it is not used.** The species' frost sensitivity or hardiness zones, or the phase's stress tolerance, read as recorded; general knowledge only when labelled as such. Without one, the impact is `not assessed`.
 - **Weather is not a symptom.** Symptoms come only from a photo reading, a diary entry or a recorded inspection, and they are listed in a block of their own. A symptom and an exposure are linked at most as "consistent with", which is a suspicion, not a diagnosis.
 - **Vapour pressure deficit** is computed only from a temperature and a humidity from the same time and place, with the formula stated, and reported without judgement: no target is recorded for it.
-- **A recommendation needs a recorded threshold and a plant you place outdoors or in a sheltered spot.** Everything else is an observation.
+- **A recommendation needs a threshold from the record and a plant you place outdoors or in a sheltered spot.** You cannot set a threshold yourself. Everything else is an observation.
 
 ## Read the outcome
 

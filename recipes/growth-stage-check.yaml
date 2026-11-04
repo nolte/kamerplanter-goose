@@ -64,7 +64,8 @@ parameters:
     default: ""
     description: >-
       The date to judge against (YYYY-MM-DD). Empty uses the date of the
-      newest observation read; with none, no timing is computed.
+      newest diary entry read; with none, or when you give observations
+      without it, no timing is computed.
 
 # No `extensions:` block on purpose — see extensions.yaml.
 
@@ -118,6 +119,10 @@ prompt: |
   - Never place a stage from accumulated warmth, the plant's age or a photo
     alone, and never invent an observation, a temperature, a phase key or a
     date.
+  - If an own observation is given and the assessment date is empty, compute
+    no time-based comparison (days in the phase, days since planting, month
+    windows, growing degree days, day length) and say that the observation
+    carries no date.
   - Report a tool error verbatim as a step result and continue with the rest.
 
   Step 1 — Context.
@@ -133,7 +138,12 @@ prompt: |
   Step 3 — Photos.
   If "{{ entry_key }}" is not empty, load the skill `plant-photo-read` and
   follow it for that entry against the context of step 1, and keep its
-  findings and the entry's date. If it is empty, report this step as SKIP.
+  findings. Take the entry's date only from a diary entry step 2 actually
+  read with that key, and only if that entry belongs to plant
+  "{{ plant_key }}"; if it belongs to another plant, do not use its findings
+  and say so. Otherwise report the photo entry's date as absent and do not
+  use it as the assessment date. If "{{ entry_key }}" is empty, report this
+  step as SKIP.
 
   Step 4 — Policy.
   Load the skill `decision-policy` and keep it for the next step.
