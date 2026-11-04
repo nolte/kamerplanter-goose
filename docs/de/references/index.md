@@ -34,6 +34,10 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`weather-impact-check`](../guides/weather-impact-check.md) | nein | Je Wetterfaktor eine Exposition, keine oder keine Quelle, für bis zu fünf Pflanzen; steuert nichts an |
 | [`plant-health-assessment`](../guides/plant-health-assessment.md) | nein | Eine Differenzialbetrachtung für eine Pflanze: führende oder konkurrierende Erklärungen, nur Vermutung, nichts Auffälliges oder zu wenig Beleg; nie eine Diagnose |
 | [`pest-ipm-plan`](../guides/pest-ipm-plan.md) | nein | Vier IPM-Stufen für einen Schädlings- oder Krankheitsverdacht, eine Behandlung nur an der Schwelle und mit ihrem Sicherheitsblock; behandelt und hält nichts fest |
+| [`harvest-readiness-check`](../guides/harvest-readiness-check.md) | nein | Reif, nahe der Reife, nicht reif, nicht erntbar oder zu wenig Beleg, für eine Pflanze, mit ihrer Sperre durch die Wartezeit; erntet nichts |
+| [`harvest-plan`](../guides/harvest-plan.md) | nein | Die Ernten von bis zu fünf Pflanzen in einer Reihenfolge, mit Fenstern und Arbeitszählungen; plant nichts ein |
+| [`garden-review`](../guides/garden-review.md) | nein | Die bisherige Geschichte eines Gartens, Pflanze für Pflanze, mit Lehren und einem Block für den nächsten Zyklus; schreibt nichts |
+| [`season-review`](../guides/season-review.md) | nein | Die Geschichte einer Saison, archivierte Pflanzen eingeschlossen, übergeben an den nächsten Plan; schreibt nichts |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
@@ -74,6 +78,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `weather-impact-analysis` | Wetterexpositionen je Faktor, getrennt von Symptomen; liest eine Home-Assistant-Wetter-Entität nur, wo erlaubt |
 | `plant-health-assessment` | Kandidaten-Erklärungen je Klasse, jede gestützt, Vermutung, widerlegt oder nicht beurteilbar, und ein Gesamtergebnis; ruft kein Werkzeug auf |
 | `pest-ipm-planning` | Bestätigung, Umweltkorrektur, kulturelle Maßnahmen und gezielte Behandlung in Reihenfolge, mit Voraussetzungen und Sicherheitsauflagen je Behandlung; liest die Katalogdatensätze des Kandidaten |
+| `harvest-planning` | Reif, nahe der Reife, nicht reif, nicht erntbar oder unzureichender Beleg aus einem beobachteten Reifemerkmal, eine Sperre durch die Wartezeit und eine Erntereihenfolge für bis zu fünf Pflanzen; liest die Erntereife- und Behandlungsdaten |
+| `garden-review` | Verlaufsdatensätze, Leistung der Sorten, Lehren und ein Block für den nächsten Zyklus für einen Garten oder eine Saison; ruft kein Tool auf |
 
 **Prüfperspektiven** — lesen dieses Checkout, nie einen Garten. Eine je Lauf; sie sollen sich uneinig sein:
 
