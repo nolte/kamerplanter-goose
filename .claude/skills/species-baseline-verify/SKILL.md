@@ -107,4 +107,4 @@ Governed by `spec/process/species-baseline-verification/en.md`.
 
 ## Gotchas
 
-- One of those deserves the emphasis: `assign_species_phase_sequence` takes no tenant, so a verification run reaching for it to fix one species rewrites the resolved sequence in every garden on the instance.
+- Of the forbidden tools listed under Hard rules, one deserves the emphasis: `assign_species_phase_sequence` takes no tenant, so a verification run reaching for it to fix one species rewrites the resolved sequence in every garden on the instance.

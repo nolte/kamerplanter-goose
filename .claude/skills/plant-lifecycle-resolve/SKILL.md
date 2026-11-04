@@ -93,4 +93,4 @@ Governed by `spec/process/species-baseline-verification/en.md`.
 
 ## Gotchas
 
-- Two of those sit closest to this skill's own subject: `transition_plant_phase` repairs a wrong phase, and `assign_species_phase_sequence` carries no tenant and rewrites the resolved sequence in every garden. Resolving is reading.
+- Of the forbidden tools listed under Hard rules, two sit closest to this skill's own subject: `transition_plant_phase` repairs a wrong phase, and `assign_species_phase_sequence` carries no tenant and rewrites the resolved sequence in every garden. Resolving is reading.
