@@ -10,12 +10,12 @@ last_updated: 2026-11-05
 
 Eine Fruchtfolge hält eine Pflanzenfamilie einige Saisons aus einem Beet fern, nachdem sie dort stand. `crop-rotation-plan` nimmt die Kulturen, die Sie anbauen wollen, Ihre Beete und was vorher darin stand, und schlägt für die genannten Saisons eine Familie je Beet und Saison vor. Jede Kultur, die es für ein Beet betrachtet hat, erhält ein Urteil mit der Regel dahinter; jeder Konflikt wird aufgeführt, auch einer, den Ihre eigene Festlegung verursacht; jede ausgelassene Kultur wird mit dem Grund aufgeführt.
 
-Der Plan ist ein **Dokument zur Prüfung**. Er hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das eine Beetzuordnung, eine Fruchtfolge oder einen Pflanzdurchlauf festhält. Das Rezept, das einen Plan festhalten würde, ist ein blockiertes Folge-Issue, das aus [#47](https://github.com/nolte/kamerplanter-goose/issues/47) abgespalten wurde, und existiert noch nicht.
+Der Plan ist ein **Dokument zur Prüfung**. Er hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das eine Beetzuordnung, eine Fruchtfolge oder einen Pflanzdurchlauf festhält. Das Rezept, das einen Plan festhalten würde, wird blockiert in [#68](https://github.com/nolte/kamerplanter-goose/issues/68) geführt und existiert noch nicht.
 
 Dieser Lauf **liest nur**. Er ändert keinen Datensatz.
 
 !!! note "Noch nicht an einer laufenden Instanz ausgeführt"
-    Das Rezept und seine vier Skills wurden geschrieben, während der Kamerplanter-MCP-Server nicht erreichbar war. Werkzeugnamen und Artfelder stammen aus der [Server-Spezifikation](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/de.md) und der [Spezifikation zur Artdaten-Prüfung](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/de.md), am 2026-08-07 an zwei Arten gemessen. Ob jede Art eine Familie trägt und was eine archivierte Pflanze trägt, ist nicht gemessen. Behandeln Sie den ersten echten Lauf als die Messung.
+    Das Rezept und seine beiden neuen Skills, `rotation-history-collect` und `crop-rotation-planning`, wurden geschrieben, während der Kamerplanter-MCP-Server nicht erreichbar war. Werkzeugnamen und Artfelder stammen aus der [Server-Spezifikation](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/mcp/kamerplanter-mcp-server/de.md) und der [Spezifikation zur Artdaten-Prüfung](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/species-baseline-verification/de.md), am 2026-08-07 an zwei Arten gemessen. Ob jede Art eine Familie trägt und was eine archivierte Pflanze trägt, ist nicht gemessen. Behandeln Sie den ersten echten Lauf als die Messung.
 
 ## Bevor Sie anfangen
 
@@ -43,7 +43,7 @@ Die Schlüssel oben sind Beispiele; verwenden Sie die Artschlüssel, die der Kat
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug aus `list_tenants` |
 | `beds` | nein | nur die in `bed_history` oder in einer Festlegung genannten Beete werden geplant |
 | `bed_history` | nein | die Vorgeschichte eines Beets stammt nur aus dem Katalog, und ein Beet, das der Katalog nicht abdeckt, bleibt unbekannt |
-| `rotation_years` | nein | eine Wiederholung derselben Familie wird als `repeat — interval unknown` gemeldet, nie als Konflikt und nie als unbedenklich |
+| `rotation_years` | nein | eine Wiederholung derselben Familie wird als `repeat — interval unknown` gemeldet, nie als Konflikt; jede andere Kultur ist bestenfalls `unknown`, weil der Lauf ohne Abstand die ganze Vorgeschichte des Beets bräuchte |
 | `demand_sequence` | nein | die Bedarfsreihenfolge wird nicht ausgewertet |
 | `constraints` | nein | keine Festlegung und kein Ausschluss |
 
@@ -51,7 +51,7 @@ Die Schlüssel oben sind Beispiele; verwenden Sie die Artschlüssel, die der Kat
 
 ## Beetvorgeschichte und Abstand liefern
 
-- **Die Beetvorgeschichte** ist `bed:season:crop`, durch Kommas getrennt, zum Beispiel `bed-1:2026:solanum-lycopersicum`. Schreiben Sie `bed:season:none` für eine Saison, in der das Beet leer stand. Ein Eintrag genügt, damit die Vorgeschichte eines Beets zählt: Der Lauf nimmt dann, was Sie geschrieben haben, als vollständig, eine Saison, die Sie nicht genannt haben, trug also keine Kultur. Ein Beet ganz ohne Vorgeschichte bleibt in den ersten Saisons `unknown`.
+- **Die Beetvorgeschichte** ist `bed:season:crop`, durch Kommas getrennt, zum Beispiel `bed-1:2026:solanum-lycopersicum`. Schreiben Sie `bed:season:none` für eine Saison, in der das Beet leer stand. Die Vorgeschichte eines Beets zählt ab seinem frühesten Eintrag: Ab dieser Saison nimmt der Lauf, was Sie geschrieben haben, als vollständig, eine Saison, die Sie nicht genannt haben, trug also keine Kultur. Saisons vor Ihrem frühesten Eintrag bleiben unbekannt, `bed-2:2026:none` deckt also 2026 und danach ab und nichts davor. Ein Beet ganz ohne Vorgeschichte bleibt `unknown`, wo der Abstand vor die geplanten Saisons reicht.
 - **Die Vorgeschichte aus dem Katalog** wird auch verwendet, aber nur, wo der Standortschlüssel einer Pflanze genau dem Beetnamen entspricht. Jeder andere Standort wird als Kontext aufgeführt. Die Saison einer Katalogpflanze ist das Jahr, in dem sie gepflanzt wurde. Ein gescheitertes oder unvollständiges Lesen wird gemeldet und nie als „hier wuchs nichts“ gelesen.
 - **`rotation_years`** ist der kleinste Abstand in Saisons, in dem eine Familie wieder in einem Beet stehen darf. Mit `4` ist eine Familie, die 2026 gepflanzt wurde, 2027, 2028 und 2029 ein Konflikt und 2030 erlaubt. Keine Zahl ist eingebaut, weil der Katalog keine enthält.
 - **`demand_sequence`** ist eine Reihenfolge von Bedarfsklassen, als Text mit dem `nutrient_demand_level` des Katalogs verglichen, zum Beispiel `heavy_feeder,medium_feeder,light_feeder,green_manure`. Nach einer Kultur einer Klasse wird die nächste Klasse der Reihenfolge bevorzugt; `green_manure` passt auch zu einer Kultur, die der Katalog als für Gründüngung geeignet kennzeichnet. Sie ordnet nur und ergibt nie einen Konflikt.
@@ -65,7 +65,7 @@ Die Schlüssel oben sind Beispiele; verwenden Sie die Artschlüssel, die der Kat
 | `conflict` | eine Kultur derselben Familie stand innerhalb des von Ihnen angegebenen Abstands im Beet |
 | `repeat — interval unknown` | eine Kultur derselben Familie stand früher im Beet, und Sie haben keinen Abstand angegeben, um es zu beurteilen |
 | `caution` | nichts anderes trifft zu, und eine Pflanze an diesem Beet hat eine festgehaltene Inspektion; der Katalog hält keinen Wirtskreis fest, daher lässt sich ein Schädling nicht an eine Familie binden |
-| `unknown` | die Kultur hat keine festgehaltene Familie, eine Kultur im Fenster hat keine, oder die Vorgeschichte des Beets reicht nicht weit genug zurück |
+| `unknown` | die Kultur hat keine festgehaltene Familie, eine Kultur im Fenster hat keine, das Beet hat einen Eintrag mit unbekannter Saison, die Vorgeschichte des Beets reicht nicht weit genug zurück, oder ein Lesen der Inspektionen für das Beet ist gescheitert |
 
 Je Beet und Saison wählt der Lauf eine Familie, bevorzugt `clear`, dann `caution`, dann `unknown`, dann eine Familie, die in dieser Saison weniger Beete schon tragen, dann die Bedarfsreihenfolge. Eine Familie mit `conflict` oder `repeat — interval unknown` wird nie gewählt, außer Sie haben sie festgelegt. Ein Beet in einer Saison ohne wählbare Familie ist `open`.
 
@@ -82,14 +82,14 @@ Der Bericht zeigt, welche Skills geladen wurden, dann eine Tabelle der Beete und
 
 | Schlusszeile | Bedeutet |
 |--------------|----------|
-| `ROTATION: <p> placements, <c> conflicts, <u> unknown — <slug>` | wie viele Beete und Saisons eine Familie erhielten, wie viele Konflikte gefunden wurden und wie viele Urteile über Kulturen unbekannt waren |
-| `APPLY: no write tool measured (blocked follow-up split out of nolte/kamerplanter-goose#47)` | der Plan lässt sich von hier aus nicht festhalten |
+| `ROTATION: <p> placements, <c> conflicts, <u> unknown — <slug>` | wie viele Stellen (Beet, Saison) eine gewählte oder festgelegte Familie tragen, wie viele Konflikte der Plan enthält und wie viele Urteile über Kulturen unbekannt waren |
+| `APPLY: no write tool measured (nolte/kamerplanter-goose#68)` | der Plan lässt sich von hier aus nicht festhalten |
 
 Ein Plan voller `unknown` ist das ehrliche Ergebnis, solange die Familien im Katalog nicht befüllt sind oder Ihre Beetvorgeschichte fehlt. `bed_history` und `rotation_years` zu liefern macht daraus Urteile.
 
 ## Wie weit „deterministisch“ reicht
 
-Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Platzierungen, die Urteile mit ihren Regeln, die Konflikte, die Gründe für *nicht platziert* und die Belegstufen. Zwei Läufe über dieselben Eingaben sollten dieselben Plan-Fakten ergeben; der Text drumherum kann abweichen. Die Reihenfolge, in der Sie Kulturen oder Beete aufführen, ändert sie nicht. Geprüft wurde das dreimal an einem erfundenen, als Text ausgeschriebenen Beispiel — vier Beete, drei Saisons, eine Kultur ohne Familie, eine widersprechende Festlegung, eine Wiederholung derselben Familie und eine Inspektion, einmal mit und einmal ohne Abstand —, nicht an einem laufenden Garten. Die Platzierungen, die Urteile mit ihren Regeln und die nicht platzierten Kulturen stimmten in allen drei Läufen überein; welche Konflikte aufgeführt werden und welche Stufe ein Urteil trägt, nicht, und der Skill wurde danach in beiden Punkten eindeutig gemacht, ohne neue Reihe. Das Beispiel liegt nicht in diesem Repository.
+Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Platzierungen, die Urteile mit ihren Regeln, die Konflikte, die Gründe für *nicht platziert* und die Belegstufen. Zwei Läufe über dieselben Eingaben sollten dieselben Plan-Fakten ergeben; der Text drumherum kann abweichen. Die Reihenfolge, in der Sie Kulturen oder Beete aufführen, ändert sie nicht. Geprüft wurde das dreimal an einem erfundenen, als Text ausgeschriebenen Beispiel — vier Beete, drei Saisons, eine Kultur ohne Familie, eine widersprechende Festlegung, eine Wiederholung derselben Familie und eine Inspektion, einmal mit und einmal ohne Abstand —, nicht an einem laufenden Garten. In einer ersten Reihe stimmten Platzierungen, Urteile und nicht platzierte Kulturen überein, die aufgeführten Konflikte und die Stufen der Urteile nicht. Nachdem der Skill in beiden Punkten eindeutig gemacht wurde, stimmte eine zweite Reihe aus drei Läufen bei den Konflikten und bei jeder Stufe überein; zwei ihrer Läufe waren in jedem Plan-Fakt gleich, und einer ordnete in der Variante ohne Abstand ein Beet anders, worauf die Reihenfolge der Ordnungsschlüssel strenger formuliert wurde. Diese letzte Änderung wurde nicht erneut gemessen. Das Beispiel liegt nicht in diesem Repository.
 
 ## Quellen
 

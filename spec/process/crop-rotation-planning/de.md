@@ -13,7 +13,7 @@ Diese Spezifikation legt zwei Schritte fest. Das Sammeln der Fruchtfolge-Vorgesc
 
 Alles zur Werkzeugoberfläche unten ist zitiert aus der [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md) und aus dem [Prozess zur Artdaten-Prüfung](../species-baseline-verification/de.md), deren Messungen am 2026-08-07 und 2026-08-16 an der Referenzinstanz gemacht wurden. **Nichts davon wurde beim Schreiben dieser Spezifikation erneut gemessen**: Der `kamerplanter`-MCP-Server war in der Sitzung, die sie entworfen hat, nicht erreichbar (`INVALID_CONFIG`). Werkzeug- und Feldnamen sind aus jenen Spezifikationen übernommen; ob sie noch existieren und was eine Antwort darüber hinaus trägt, bleibt unbelegt, bis ein `tools/list` und ein lesender Aufruf an einer erreichbaren Instanz es sagen.
 
-Grenzen: Die [Entscheidungsregeln für den Garten](../garden-decision-policy/de.md) besitzen das Gewicht einer Aussage, die Form einer Empfehlung und den Gartenkontext; diese Spezifikation wendet sie an und wiederholt sie nicht. Die [Spezifikation zur Pflanzplanung](../plant-planning-and-planting-calendar/de.md) besitzt die Pflanzdurchläufe, und ihre Durchläufe bleiben `rotation: unknown`, weil einem Durchlauf kein Beet zugeordnet wird und ein Fruchtfolgeurteil nur je Beet existiert. Beetaufteilung, Fläche, Abstände, Platzierung von Nachbarn und Folgesaaten sind nolte/kamerplanter-goose#46, das die Ausgabe dieser Spezifikation liest. Die `-apply`-Hälfte von nolte/kamerplanter-goose#47 wird im blockierten Folge-Issue geführt, das aus #47 abgespalten wurde. Das Audit, das entscheidet, welches Artefakt was besitzt, ist nolte/kamerplanter-goose#39, und nichts hier greift ihm vor. [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md) besitzt die Rezeptmechanik, und [die Server-Spezifikation](../../mcp/kamerplanter-mcp-server/de.md) besitzt Transport, Authentifizierung und Mandantenfähigkeit.
+Grenzen: Die [Entscheidungsregeln für den Garten](../garden-decision-policy/de.md) besitzen das Gewicht einer Aussage, die Form einer Empfehlung und den Gartenkontext; diese Spezifikation wendet sie an und wiederholt sie nicht. Die [Spezifikation zur Pflanzplanung](../plant-planning-and-planting-calendar/de.md) besitzt die Pflanzdurchläufe, und ihre Durchläufe bleiben `rotation: unknown`, weil einem Durchlauf kein Beet zugeordnet wird und ein Fruchtfolgeurteil nur je Beet existiert. Beetaufteilung, Fläche, Abstände, Platzierung von Nachbarn und Folgesaaten sind nolte/kamerplanter-goose#46, das die Ausgabe dieser Spezifikation liest. Die `-apply`-Hälfte von nolte/kamerplanter-goose#47 wird in nolte/kamerplanter-goose#68 geführt. Das Audit, das entscheidet, welches Artefakt was besitzt, ist nolte/kamerplanter-goose#39, und nichts hier greift ihm vor. [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md) besitzt die Rezeptmechanik, und [die Server-Spezifikation](../../mcp/kamerplanter-mcp-server/de.md) besitzt Transport, Authentifizierung und Mandantenfähigkeit.
 
 Leser: Autoren von Garten-Skills und -Rezepten in diesem Repository, der Autor der Beetaufteilung, der den Fruchtfolgeplan verbraucht, und alle, die eine Fruchtfolge prüfen, bevor sie danach handeln.
 
@@ -51,7 +51,7 @@ Leser: Autoren von Garten-Skills und -Rezepten in diesem Repository, der Autor d
 | Die Pflanzdurchläufe des Gartens | `list_planting_runs` | Ihre Form und ihre Parameter |
 
 - **MUSS [MUST]** jede Liste an ihrem Trennzeichen und jeden Eintrag an seinen Doppelpunkten trennen und **DARF NICHT [MUST NOT]** den zusammengesetzten Text als Namen weitergeben; ein Beetname ist der Text vor dem ersten Doppelpunkt eines `beds`-Eintrags
-- **MUSS [MUST]** anhalten und das Problem benennen, wenn die Saisons keine aufeinanderfolgenden ganzen Jahre sind, und **DARF NICHT [MUST NOT]** eine Lücke füllen
+- **MUSS [MUST]** eine doppelt genannte Saison einmal zählen und einmal im Kopf melden, **MUSS [MUST]** anhalten und das Problem benennen, wenn die übrigen Saisons keine aufeinanderfolgenden ganzen Jahre sind, und **DARF NICHT [MUST NOT]** eine Lücke füllen
 - **MUSS [MUST]** Beete, Beetvorgeschichte, Abstand, Bedarfsreihenfolge und Bedingungen als Quelle `caller` kennzeichnen und **MUSS [MUST]** jede als nicht geliefert melden, wenn der Aufrufer sie leer ließ
 - **MUSS [MUST]** als Beete des Plans die Vereinigung der `beds`-Einträge, der in der Beetvorgeschichte genannten Beete und der in einer Festlegung genannten Beete behandeln und **MUSS [MUST]** melden, dass nichts zu platzieren ist, wenn diese Vereinigung leer ist
 - **MUSS [MUST]** jeden Eintrag, der sich nicht zerlegen lässt, und jede Bedingung in freiem Text wörtlich als `not evaluated` aufführen und **DARF NICHT [MUST NOT]** freien Text als Regel auslegen
@@ -65,7 +65,7 @@ Leser: Autoren von Garten-Skills und -Rezepten in diesem Repository, der Autor d
 | `nutrient_demand_level` | `get_species_info`, `get_cultivar` | 4 | Seine Wertemenge: Nur `heavy_feeder` und `medium_feeder` sind festgehalten |
 | `green_manure_suitable` | `get_species_info`, `get_cultivar` | 4 | Welche Arten es tragen |
 
-- **MUSS [MUST]** `get_species_info` einmal je verschiedener Art unter den Kandidaten, den Festlegungen und der Beetvorgeschichte lesen und **MUSS [MUST]** `get_cultivar` nur für eine Sorte lesen, die ein Eintrag nennt
+- **MUSS [MUST]** `get_species_info` einmal je verschiedener Art unter den Kandidaten, den Festlegungen, der Beetvorgeschichte und den Pflanzen an zugeordneten Standorten lesen und **MUSS [MUST]** `get_cultivar` nur für eine Sorte lesen, die ein Eintrag oder eine zugeordnete Katalogpflanze nennt
 - **MUSS [MUST]** den Wert der Sorte verwenden, wenn die Sorte das Feld trägt, sonst den Wert der Art, und **MUSS [MUST]** je Feld festhalten, welcher von beiden es war
 - **MUSS [MUST]** ein fehlendes Feld als fehlend melden, also als für diese Art nicht befüllt, und **DARF NICHT [MUST NOT]** ein fehlendes `family_key` als „gehört zu keiner Familie“ lesen
 - **DARF NICHT [MUST NOT]** eine Familie aus der Erinnerung, aus einem wissenschaftlichen Namen oder aus einer Gattung nehmen und **DARF NICHT [MUST NOT]** sie während eines Laufs recherchieren; eine Kultur ohne festgehaltenes `family_key` hat die Familie `unknown`
@@ -84,46 +84,61 @@ Leser: Autoren von Garten-Skills und -Rezepten in diesem Repository, der Autor d
 - **MUSS [MUST]** die Beetvorgeschichte des Aufrufers als primäre Quelle nehmen und **MUSS [MUST]** eine Katalogpflanze nur dann einem Beet zuordnen, wenn ihr `location_key` genau dem Beetnamen entspricht; jeder andere Standort wird als `unmapped location history` aufgeführt, nur als Kontext
 - **MUSS [MUST]** `list_plants` mit `include_archived: true` lesen, seitenweise und begrenzt, wie der Skill `garden-context` es seitenweise liest und begrenzt, und **MUSS [MUST]** ein unvollständiges oder gescheitertes Lesen als solches melden und **DARF NICHT [MUST NOT]** es als „keine Vorgeschichte“ behandeln
 - **MUSS [MUST]** das Jahr von `planted_on` als Saison einer Katalogpflanze nehmen und **MUSS [MUST]** eine Pflanze ohne `planted_on` als Vorgeschichte mit der Saison `unknown` melden
-- **MUSS [MUST]** die Vorgeschichte eines Beets nur dann als belegt zählen, wenn der Aufrufer mindestens einen Eintrag dafür lieferte, `none` eingeschlossen, oder wenn ein vollständiges Lesen des Katalogs ihm mindestens eine Pflanze zuordnete; eine belegte Vorgeschichte gilt als vollständig, eine Saison, die sie nicht nennt, trägt also keine Kultur, und der Plan **MUSS [MUST]** sagen, dass das eine Annahme ist, die auf dem Aufrufer ruht
+- **MUSS [MUST]** die Vorgeschichte eines Beets ab der Saison seines frühesten Eintrags mit bekannter Saison als belegt zählen, eines Eintrags des Aufrufers (`none` eingeschlossen) oder einer zugeordneten Pflanze aus einem vollständigen Lesen des Katalogs, und sie ab dieser Saison als vollständig nehmen, eine Saison, die sie nicht nennt, trägt also keine Kultur; jede Saison davor und jede Saison eines Beets ohne einen solchen Eintrag **MUSS [MUST]** `unknown` sein, nie leer, ein einzelnes `bed:2026:none` belegt also 2026 und danach und nichts davor; der Plan **MUSS [MUST]** sagen, dass das eine Annahme ist und worauf sie ruht
 - **MUSS [MUST]** einen Eintrag der Vorgeschichte in einer geplanten Saison so behandeln, dass er dieses Beet in dieser Saison belegt, und **MUSS [MUST]** ihn für die späteren Saisons als Vorgeschichte zählen
-- **MUSS [MUST]** `get_plant_inspections` nur für Pflanzen an einem Standort lesen, der einem Beet zugeordnet ist, und **MUSS [MUST]** eine festgehaltene Inspektion als `caution` für dieses Beet auf Stufe 3 mit der fehlenden Eingabe `host range: not recorded` melden; weder `get_pest` noch `get_disease` hält einen Wirtskreis fest, daher **DARF NICHT [MUST NOT]** ein Befall zu einem Konflikt werden
+- **MUSS [MUST]** `get_plant_inspections` nur für Pflanzen an einem Standort lesen, der einem Beet zugeordnet ist, **MUSS [MUST]** eine festgehaltene Inspektion als `caution` für dieses Beet auf Stufe 3 mit der fehlenden Eingabe `host range: not recorded` melden und **MUSS [MUST]** ein gescheitertes oder unvollständiges Lesen der Inspektionen als fehlende Daten behandeln, die das `clear` des Beets zu `unknown` machen; weder `get_pest` noch `get_disease` hält einen Wirtskreis fest, daher **DARF NICHT [MUST NOT]** ein Befall zu einem Konflikt werden
 - **DARF NICHT [MUST NOT]** die Beurteilung des Schädlingsdrucks einer lebenden Pflanze für eine künftige Kultur wiederverwenden
 
 ### D. Regeln und Urteile
 
 Jede Kultur, die für ein Beet und eine Saison betrachtet wird, erhält genau ein Urteil, das erste, das in dieser Reihenfolge zutrifft:
 
-| Urteil | Wann |
-|--------|------|
-| `unknown` (Familie) | Die Familie der Kultur ist `unknown` |
-| `conflict` | Mit `rotation_years` N: Eine Kultur derselben Familie steht im selben Beet in einer Saison 1 bis N−1 Saisons früher |
-| `repeat — interval unknown` | Ohne `rotation_years`: Eine Kultur derselben Familie steht im selben Beet in irgendeiner früheren Saison |
-| `unknown` (Vorgeschichte) | Eine Kultur unbekannter Familie steht im Vergleichsfenster, das Beet hat einen Eintrag der Vorgeschichte mit der Saison `unknown`, oder das Fenster reicht vor die erste geplante Saison eines Beets, dessen Vorgeschichte nicht belegt ist |
-| `caution` | Nichts davon, und das Beet hat eine festgehaltene Inspektion |
-| `clear` | Nichts davon |
+| Regel | Urteil | Wann |
+|-------|--------|------|
+| 1 | `unknown` (Familie) | Die Familie der Kultur ist `unknown` |
+| 2 | `conflict` | Mit `rotation_years` N: Eine Kultur derselben Familie steht im selben Beet in einer Saison 1 bis N−1 Saisons früher |
+| 3 | `repeat — interval unknown` | Ohne `rotation_years`: Eine Kultur derselben Familie steht im selben Beet in irgendeiner früheren Saison |
+| 4 | `unknown` (Vorgeschichte) | Eine Kultur unbekannter Familie steht im Vergleichsfenster, oder das Beet hat einen Eintrag der Vorgeschichte mit der Saison `unknown` |
+| 5 | `unknown` (Abdeckung) | Das Fenster enthält eine Saison, die für das Beet `unknown` ist (Abschnitt C); ohne Abstand hat das Fenster keinen Anfang, daher trifft das immer zu |
+| 6 | `unknown` (Inspektionen) | Ein Lesen der Inspektionen für eine Pflanze am Beet ist gescheitert oder unvollständig |
+| 7 | `caution` | Nichts davon, und das Beet hat eine festgehaltene Inspektion |
+| 8 | `clear` | Nichts davon |
 
 Das Vergleichsfenster sind die Saisons 1 bis N−1 Saisons früher mit einem Abstand und jede frühere Saison ohne einen. Es enthält die Beetvorgeschichte und die eigenen Platzierungen des Plans in früheren geplanten Saisons.
+
+Worauf ein Urteil ruht und welche Stufe jedes Element trägt: das `family_key` der Kultur und das `family_key` eines Eintrags, Stufe 4; ein Eintrag der Vorgeschichte des Aufrufers, N und eine festgelegte Platzierung, `caller`; eine zugeordnete Katalogpflanze, Stufe 5; eine Platzierung, die der Plan gewählt hat, die Stufe des `family_key`, nach dem sie gewählt wurde; eine Inspektion, Stufe 3. N ist, wenn geliefert, ein Element jedes Urteils, weil es das Fenster festlegt.
+
+| Regel | Elemente |
+|-------|----------|
+| 1 | das Lesen von `get_species_info`, dem `family_key` fehlt; N, wenn geliefert |
+| 2 | das `family_key` der Kultur; der passende Eintrag; N |
+| 3 | das `family_key` der Kultur; der passende Eintrag |
+| 4, 5, 6 | das `family_key` der Kultur; jeder Eintrag im Fenster, einschließlich des Eintrags mit unbekannter Familie oder Saison; N, wenn geliefert |
+| 7 | das `family_key` der Kultur; jeder Eintrag im Fenster; der Eintrag, der die Vorgeschichte des Beets belegt; N; die Inspektion |
+| 8 | das `family_key` der Kultur; jeder Eintrag im Fenster; der Eintrag, der die Vorgeschichte des Beets belegt, wenn das Fenster vor die erste geplante Saison reicht; N |
+
+Die Stufe eines Urteils ist `caller`, wenn eines seiner Elemente `caller` ist, und sonst die schwächste Stufe unter ihnen, die höchste Zahl.
 
 - **MUSS [MUST]** jedem Urteil seine Regel, die Felder beider Seiten mit ihren Quellen und Stufen und die fehlenden Daten gemäß den [Entscheidungsregeln für den Garten](../garden-decision-policy/de.md) mitgeben; ein Urteil, das auf einem vom Aufrufer gelieferten Fakt ruht, **MUSS [MUST]** das sagen
 - **MUSS [MUST]** N als den kleinsten Abstand in Saisons lesen, in dem eine Familie wieder in einem Beet stehen darf, und **DARF NICHT [MUST NOT]** einen Wert ergänzen, wenn der Aufrufer keinen angab
 - **DARF NICHT [MUST NOT]** für eine Wiederholung derselben Familie `conflict` oder `clear` melden, wenn kein Abstand geliefert wurde
 - **DARF NICHT [MUST NOT]** `clear` für eine Kultur unbekannter Familie oder für ein Fenster melden, das die Vorgeschichte nicht abdeckt
 - **MUSS [MUST]** die Bedarfsreihenfolge als Präferenz behandeln, `met`, `unmet`, `unknown` oder `not evaluated`, beurteilt gegen die Bedarfsklasse der Kultur im selben Beet eine Saison früher, und **DARF NICHT [MUST NOT]** sie einen Konflikt ergeben lassen
-- **MUSS [MUST]** eine Festlegung einhalten, indem ihre Kultur platziert wird, und **MUSS [MUST]** eine Festlegung, die eine Regel bricht, auf ein belegtes Beet in einer belegten Saison fällt oder einem Ausschluss oder einer anderen Festlegung widerspricht, als Konflikt melden und **DARF NICHT [MUST NOT]** sie verschieben
+- **MUSS [MUST]** eine Festlegung einhalten, indem ihre Kultur platziert wird, und **MUSS [MUST]** eine Festlegung, die eine Regel bricht, auf ein Beet fällt, das in der betreffenden Saison belegt ist, oder einem Ausschluss oder einer anderen Festlegung widerspricht, als Konflikt melden und **DARF NICHT [MUST NOT]** sie verschieben
 - **MUSS [MUST]** einen Ausschluss einhalten, indem diese Kultur für dieses Beet in keiner Saison betrachtet wird
 
 ### E. Der Plan und seine Verbraucher
 
-Der Planer geht die Saisons der Reihe nach durch und innerhalb einer Saison die Beete nach ihrem Namen als Text. Festlegungen werden zuerst platziert. Für jedes andere Beet und jede andere Saison betrachtet er jede Familiengruppe, die Kandidatenkulturen mit gemeinsamem `family_key`, wobei jede Kultur unbekannter Familie eine eigene Gruppe ist, und lässt die Kulturen weg, die von diesem Beet ausgeschlossen sind.
+Der Planer entscheidet die Saisons der Reihe nach, jede vollständig vor der nächsten, sodass jedes Urteil einer Saison berechnet wird, nachdem alle früheren Saisons entschieden sind. Innerhalb einer Saison platziert er zuerst die Festlegungen dieser Saison, jede mit ihrem an der eigenen Stelle berechneten Urteil, und geht dann die übrigen Beete nach ihrem Namen als Text durch. Für jedes davon betrachtet er jede Familiengruppe, die Kandidatenkulturen mit gemeinsamem `family_key`, wobei jede Kultur unbekannter Familie eine eigene Gruppe ist, lässt die Kulturen weg, die von diesem Beet ausgeschlossen sind, und überspringt eine Gruppe, die die Ausschlüsse leer lassen.
 
 - **MUSS [MUST]** je Beet und Saison höchstens eine Familiengruppe wählen, deren Urteil `clear`, `caution` oder `unknown` ist, und **MUSS [MUST]** Beet und Saison als `open` melden, mit jeder Gruppe und ihrem Urteil, wenn keine in Frage kommt
 - **MUSS [MUST]** die in Frage kommenden Gruppen nach Urteil ordnen (`clear`, dann `caution`, dann `unknown`), dann danach, wie viele Beete die Gruppe in dieser Saison schon tragen (weniger zuerst), dann nach Bedarfspräferenz (`met`, dann `unknown` oder `not evaluated`, dann `unmet`), dann bekannte Familien vor unbekannten, dann nach dem Gruppenschlüssel als Text
 - **DARF NICHT [MUST NOT]** Durchläufe, Flächen oder Abstände platzieren; eine Platzierung nennt eine Familiengruppe und ihre Kulturen, und die Beetaufteilung platziert sie
 - **MUSS [MUST]** jeder Platzierung eine Begründung mitgeben, die die Werte der Rangfolge angibt und jede nicht gewählte Gruppe mit ihrem Urteil nennt
-- **MUSS [MUST]** jede Kandidatenkultur, die nie platziert wurde, unter `NOT PLACED` aufführen, mit dem Grund je Beet und Saison: ihrem Urteil, ihrem Ausschluss oder der Gruppe, die sie überholt hat
+- **MUSS [MUST]** jede Kandidatenkultur, die nie platziert wurde, unter `NOT PLACED` aufführen, mit dem Grund je Beet und Saison: ihrem Urteil, `excluded`, `occupied`, `pinned slot`, wenn eine Festlegung einer anderen Kultur die Stelle hält, oder der Gruppe, die sie überholt hat
 - **MUSS [MUST]** jede Kultur als `species_key/cultivar_key` schlüsseln, mit `none` für keine Sorte, was das Präfix einer Durchlaufkennung der [Pflanzplanung](../plant-planning-and-planting-calendar/de.md) ist, sodass ein Plan und ein Pflanzplan darüber zusammengeführt werden
 
-Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen: `ROTATION HEADER` (der Garten, vorgegeben oder ermittelt, die Eingaben, der Abstand und die Bedarfsreihenfolge oder `not supplied`, die nicht ausgewerteten Einträge), `BED HISTORY`, `ROTATION PLAN`, `CONFLICTS` (jede platzierte Kultur, die eine Regel bricht, und jeder Widerspruch, den eine Festlegung verursacht; da die Auswahl nie ein `conflict` oder ein `repeat — interval unknown` platziert, erzeugt nur eine Festlegung einen Eintrag, und eine Kultur, die für ein Beet in einer Saison betrachtet und dort nicht platziert wurde, behält ihr Urteil bei diesem Beet und unter `NOT PLACED`), `NOT PLACED` und `APPLY CONTRACT`. Die Stufe eines Urteils ist `caller`, wenn es auf irgendeinem vom Aufrufer gelieferten Element ruht, und sonst die schwächste Stufe unter seinen Elementen.
+Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen: `ROTATION HEADER` (der Garten, vorgegeben oder ermittelt, die Eingaben, der Abstand und die Bedarfsreihenfolge oder `not supplied`, die nicht ausgewerteten Einträge), `BED HISTORY`, `ROTATION PLAN`, `CONFLICTS` (jede platzierte Kultur, die eine Regel bricht, und jeder Widerspruch, den eine Festlegung verursacht; da die Auswahl nie ein `conflict` oder ein `repeat — interval unknown` platziert, erzeugt nur eine Festlegung einen Eintrag, und eine Kultur, die für ein Beet in einer Saison betrachtet und dort nicht platziert wurde, behält ihr Urteil bei diesem Beet und unter `NOT PLACED`), `NOT PLACED` und `APPLY CONTRACT`. Die Stufe jedes Urteils folgt Abschnitt D.
 
 | Verbraucher | Liest |
 |-------------|-------|
@@ -142,7 +157,7 @@ Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen
 
 - **MUSS [MUST]** die Fruchtfolgeplanung rein lesend halten: Die Planungs-Skills und -Rezepte rufen kein Werkzeug auf, das Zustand ändert
 - **MUSS [MUST]** in jeden Plan einen Block `APPLY CONTRACT` aufnehmen, der je Platzierung angibt, was ein späteres `-apply`-Rezept festhalten müsste (das Beet, die Saison, die Familiengruppe und ihre Kulturen), und **MUSS [MUST]** angeben, dass der gemessene Katalog kein Werkzeug hat, das eine Beetzuordnung, eine Fruchtfolge, einen Pflanzdurchlauf oder einen Plan festhält: Die Schreibwerkzeuge, die er verzeichnet, sind `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` und `create_inspection`, dazu das Einrichtungswerkzeug `create_site`, und keines davon tut es; `set_plant_location` verschiebt eine Pflanze, die existiert, und eine Fruchtfolge plant Kulturen, die noch keine Pflanzen sind
-- **MUSS [MUST]** das blockierte Folge-Issue, das aus #47 abgespalten wurde, als den Ort nennen, an dem das `-apply`-Rezept geführt wird, und **DARF NICHT [MUST NOT]** ein Rezept mit der Endung `-apply` ausliefern, das nicht schreibt, was seine Beschreibung sagt
+- **MUSS [MUST]** nolte/kamerplanter-goose#68 als den Ort nennen, an dem das `-apply`-Rezept geführt wird, und **DARF NICHT [MUST NOT]** ein Rezept mit der Endung `-apply` ausliefern, das nicht schreibt, was seine Beschreibung sagt
 - **MUSS [MUST]** das Festhalten eines Plans einem eigenen Rezept überlassen, das einen freigegebenen Plan entgegennimmt, nachdem eine Person ihn geprüft hat
 
 ## Akzeptanzkriterien
@@ -172,7 +187,7 @@ Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen
 - [Die Spezifikation zur Pflanzplanung](../plant-planning-and-planting-calendar/de.md) — die Durchlaufkennung, über deren Präfix dieser Plan zusammengeführt wird, und der Hinweis zur Fruchtfolge, den sie unbekannt lässt
 - `recipes/plant-master-data-check.yaml` — `list_plants` gemessen mit `matched: 9` gegenüber `total_in_tenant: 11`, der einzige Beleg dafür, dass archivierte Pflanzen existieren
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
-- Issue nolte/kamerplanter-goose#47 — die Fruchtfolgefaktoren und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#46, #59 und #39 — der Verbraucher, der Präzedenzfall für eine blockierte Anwendungshälfte und das Audit
+- Issue nolte/kamerplanter-goose#47 — die Fruchtfolgefaktoren und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#68 — die blockierte Anwendungshälfte; nolte/kamerplanter-goose#46, #59 und #39 — der Verbraucher, der Präzedenzfall für eine blockierte Anwendungshälfte und das Audit
 
 ## Offene Fragen
 
@@ -181,6 +196,6 @@ Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen
 - **Kulturen, die länger als eine Saison stehen.** Die Katalogsaison ist das Jahr von `planted_on`, daher zählt eine mehrjährige Kultur oder eine, die zwei Jahre überspannt, nur in ihrem Pflanzjahr. Kein Feld `cycle_type` existiert, um das zu korrigieren.
 - **Eingebaute Abstände je Familie.** Keine sind eingebaut. Recherchierte Abstände bräuchten je drei unabhängige Quellen, beim Verfassen und nicht in einem Lauf, und wären eine Änderung dieser Spezifikation.
 - **Die Form von `list_planting_runs`.** Pflanzdurchläufe bleiben Kontext, bis ihre Form festgehalten ist.
-- **Ob eine laufende Instanz ein Werkzeug hat, das eine Fruchtfolge oder eine Beetzuordnung festhält.** Der gemessene Katalog hat keines, die Server-Spezifikation sagt, jede Werkzeugzahl als Untergrenze zu behandeln, und niemand hat `tools/list` an einer erreichbaren Instanz ausgeführt. Das `-apply`-Rezept wartet darauf, geführt im blockierten Folge-Issue, das aus #47 abgespalten wurde.
+- **Ob eine laufende Instanz ein Werkzeug hat, das eine Fruchtfolge oder eine Beetzuordnung festhält.** Der gemessene Katalog hat keines, die Server-Spezifikation sagt, jede Werkzeugzahl als Untergrenze zu behandeln, und niemand hat `tools/list` an einer erreichbaren Instanz ausgeführt. Das `-apply`-Rezept wartet darauf, geführt als nolte/kamerplanter-goose#68.
 - **Wie Determinismus gemessen wird.** Diese Spezifikation legt die Plan-Fakten fest und verlangt, dass sie über dieselben Eingabeblöcke gleich sind. Geprüft wird das an einer festen, als Text ausgeschriebenen Vorlage, wiederholte Läufe verglichen; das zeigt die Eigenschaft für diese Vorlage und nicht für einen laufenden Garten, und die Zahl der Läufe, die nötig ist, um sie stabil zu nennen, wird hier nicht festgelegt.
 - **Wo das Audit, nolte/kamerplanter-goose#39, die Fruchtfolge gegenüber Pflanzplanung und Beetaufteilung einordnet.** Ob Sammeln und Planen zwei Skills bleiben, entscheidet das Audit.

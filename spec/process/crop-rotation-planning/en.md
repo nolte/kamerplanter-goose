@@ -13,7 +13,7 @@ This spec specifies two steps. Collecting the rotation history reads each crop's
 
 Everything about the tool surface below is quoted from [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) and from [the species baseline process](../species-baseline-verification/en.md), whose measurements were taken against the reference instance on 2026-08-07 and 2026-08-16. **Nothing here was re-measured when this spec was written**: the `kamerplanter` MCP server was unreachable in the session that drafted it (`INVALID_CONFIG`). A tool or field name is quoted from those specs; whether it still exists, and what a response carries beyond what they record, is unestablished until a `tools/list` and a read-only call against a reachable instance say so.
 
-Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; this spec applies them and does not restate them. [The plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs, and its runs stay `rotation: unknown`, because a run is assigned no bed and a rotation verdict exists only per bed. Bed layout, area, spacing, companion placement and succession are nolte/kamerplanter-goose#46, which reads this spec's output. The `-apply` half of nolte/kamerplanter-goose#47 is tracked in the blocked follow-up split out of #47. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
+Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; this spec applies them and does not restate them. [The plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs, and its runs stay `rotation: unknown`, because a run is assigned no bed and a rotation verdict exists only per bed. Bed layout, area, spacing, companion placement and succession are nolte/kamerplanter-goose#46, which reads this spec's output. The `-apply` half of nolte/kamerplanter-goose#47 is tracked in nolte/kamerplanter-goose#68. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
 
 Readers: authors of garden skills and recipes in this repository, the author of bed layout who consumes the rotation plan, and anyone reviewing a rotation before acting on it.
 
@@ -51,7 +51,7 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 | The garden's planting runs | `list_planting_runs` | Their shape and parameters |
 
 - **MUST** split every list at its separator and each entry at its colons, and **MUST NOT** pass the joined text on as a name; a bed name is the text before the first colon of a `beds` entry
-- **MUST** stop and name the problem when the seasons are not consecutive whole years, and **MUST NOT** fill a gap
+- **MUST** count a season listed twice once and report it once in the header, and **MUST** stop and name the problem when the remaining seasons are not consecutive whole years, and **MUST NOT** fill a gap
 - **MUST** mark beds, bed history, the interval, the demand order and the constraints as source `caller`, and **MUST** report each as not supplied when the caller left it empty
 - **MUST** treat as the plan's beds the union of the `beds` entries, the beds named in the bed history and the beds named in a pin, and **MUST** report that there is nothing to place when that union is empty
 - **MUST** list every entry that cannot be parsed, and every free-text constraint, verbatim as `not evaluated`, and **MUST NOT** interpret free text as a rule
@@ -65,7 +65,7 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 | `nutrient_demand_level` | `get_species_info`, `get_cultivar` | 4 | Its value set: only `heavy_feeder` and `medium_feeder` are recorded |
 | `green_manure_suitable` | `get_species_info`, `get_cultivar` | 4 | Which species carry it |
 
-- **MUST** read `get_species_info` once per distinct species among the candidates, the pins and the bed history, and **MUST** read `get_cultivar` only for a cultivar an entry names
+- **MUST** read `get_species_info` once per distinct species among the candidates, the pins, the bed history and the plants at mapped locations, and **MUST** read `get_cultivar` only for a cultivar that an entry or a mapped catalog plant names
 - **MUST** use a cultivar's value when the cultivar carries the field and the species value otherwise, and **MUST** record which, per field
 - **MUST** report an absent field as absent, meaning not populated for that species, and **MUST NOT** read an absent `family_key` as "belongs to no family"
 - **MUST NOT** take a family from recall, from a scientific name or from a genus, and **MUST NOT** research one during a run; a crop without a recorded `family_key` has family `unknown`
@@ -84,46 +84,61 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 - **MUST** take the caller's bed history as the primary source, and **MUST** attach a catalog plant to a bed only when its `location_key` equals the bed name exactly; every other location is listed as `unmapped location history`, context only
 - **MUST** read `list_plants` with `include_archived: true`, paged and capped as the `garden-context` skill pages and caps it, and **MUST** report a partial or failed read as such and **MUST NOT** treat it as "no history"
 - **MUST** take the year of `planted_on` as a catalog plant's season, and **MUST** report a plant without `planted_on` as history with season `unknown`
-- **MUST** count a bed's history as established only when the caller supplied at least one entry for it, `none` included, or when a complete catalog read mapped at least one plant to it; an established history is taken as complete, so a season it does not name holds no crop, and the plan **MUST** say that this is an assumption resting on the caller
+- **MUST** count a bed's history as established from the season of its earliest entry with a known season, a caller entry (`none` included) or a mapped plant of a complete catalog read, and take it as complete from that season on, so a season it does not name holds no crop; every season before it, and every season of a bed with no such entry, **MUST** be `unknown`, never empty, so a single `bed:2026:none` establishes 2026 onward and nothing before; the plan **MUST** say that this is an assumption and what it rests on
 - **MUST** treat a history entry in a planned season as occupying that bed and season, and **MUST** count it as history for the later seasons
-- **MUST** read `get_plant_inspections` only for plants at a location mapped to a bed, and **MUST** report a recorded inspection as a `caution` for that bed at level 3 with the missing input `host range: not recorded`; neither `get_pest` nor `get_disease` records a host range, so a pressure **MUST NOT** become a conflict
+- **MUST** read `get_plant_inspections` only for plants at a location mapped to a bed, **MUST** report a recorded inspection as a `caution` for that bed at level 3 with the missing input `host range: not recorded`, and **MUST** treat a failed or partial inspection read as missing data that turns the bed's `clear` into `unknown`; neither `get_pest` nor `get_disease` records a host range, so a pressure **MUST NOT** become a conflict
 - **MUST NOT** reuse the judgement of a living plant's pest pressure for a future crop
 
 ### D. Rules and verdicts
 
 Every crop considered for a bed and season gets exactly one verdict, the first that applies in this order:
 
-| Verdict | When |
-|---------|------|
-| `unknown` (family) | The crop's family is `unknown` |
-| `conflict` | With `rotation_years` N: a crop of the same family stands in the same bed in a season 1 to N−1 seasons earlier |
-| `repeat — interval unknown` | Without `rotation_years`: a crop of the same family stands in the same bed in any earlier season |
-| `unknown` (history) | A crop of unknown family stands in the comparison window, the bed holds a history entry whose season is `unknown`, or the window reaches before the first planned season of a bed whose history is not established |
-| `caution` | None of the above, and the bed has a recorded inspection |
-| `clear` | None of the above |
+| Rule | Verdict | When |
+|------|---------|------|
+| 1 | `unknown` (family) | The crop's family is `unknown` |
+| 2 | `conflict` | With `rotation_years` N: a crop of the same family stands in the same bed in a season 1 to N−1 seasons earlier |
+| 3 | `repeat — interval unknown` | Without `rotation_years`: a crop of the same family stands in the same bed in any earlier season |
+| 4 | `unknown` (history) | A crop of unknown family stands in the comparison window, or the bed holds a history entry whose season is `unknown` |
+| 5 | `unknown` (coverage) | The window holds a season that is `unknown` for the bed (section C); without an interval the window has no start, so this always applies |
+| 6 | `unknown` (inspections) | An inspection read for a plant at the bed failed or was partial |
+| 7 | `caution` | None of the above, and the bed has a recorded inspection |
+| 8 | `clear` | None of the above |
 
 The comparison window is the seasons 1 to N−1 seasons earlier with an interval, and every earlier season without one. It holds the bed history and the plan's own placements in earlier planned seasons.
+
+What a verdict rests on, and the level each element carries: the crop's `family_key` and an entry's `family_key`, level 4; a caller history entry, N and a pinned placement, `caller`; a mapped catalog plant, level 5; a placement the plan selected, the level of the `family_key` it was selected on; an inspection, level 3. N, when supplied, is an element of every verdict, because it defines the window.
+
+| Rule | Elements |
+|------|----------|
+| 1 | the `get_species_info` read that lacks `family_key`; N if supplied |
+| 2 | the crop's `family_key`; the matching entry; N |
+| 3 | the crop's `family_key`; the matching entry |
+| 4, 5, 6 | the crop's `family_key`; every entry in the window, including the entry with unknown family or season; N if supplied |
+| 7 | the crop's `family_key`; every entry in the window; the entry that establishes the bed's history; N; the inspection |
+| 8 | the crop's `family_key`; every entry in the window; the entry that establishes the bed's history, when the window reaches before the first planned season; N |
+
+The level of a verdict is `caller` when any of its elements is `caller`, and otherwise the weakest level among them, the highest number.
 
 - **MUST** give every verdict its rule, the fields on both sides with their sources and levels, and the missing data per [the garden decision policy](../garden-decision-policy/en.md); a verdict resting on a caller-supplied fact **MUST** say so
 - **MUST** read N as the smallest distance in seasons at which a family may stand in a bed again, and **MUST NOT** supply a value when the caller gave none
 - **MUST NOT** report `conflict` or `clear` for a same-family repeat when no interval was supplied
 - **MUST NOT** report `clear` for a crop of unknown family or for a window the history does not cover
 - **MUST** treat demand order as a preference, `met`, `unmet`, `unknown` or `not evaluated`, judged against the demand class of the crop in the same bed one season earlier, and **MUST NOT** let it produce a conflict
-- **MUST** honour a pin by placing its crop, and **MUST** report a pin that breaks a rule, lands on an occupied bed and season, or contradicts an exclusion or another pin, as a conflict, and **MUST NOT** move it
+- **MUST** honour a pin by placing its crop, and **MUST** report a pin that breaks a rule, lands on a bed that is occupied in that season, or contradicts an exclusion or another pin, as a conflict, and **MUST NOT** move it
 - **MUST** honour an exclusion by not considering that crop for that bed in any season
 
 ### E. The plan and its consumers
 
-The planner walks the seasons in order and, within a season, the beds by name as text. Pins are placed first. For every other bed and season it considers each family group, the candidate crops that share a `family_key`, with every crop of unknown family as a group of its own, and drops the crops excluded from that bed.
+The planner decides the seasons in order, each completely before the next, so every verdict in a season is computed after all earlier seasons are decided. Within a season it places that season's pins first, each with its verdict computed at its own slot, and then walks the other beds by name as text. For each of them it considers each family group, the candidate crops that share a `family_key`, with every crop of unknown family as a group of its own, drops the crops excluded from that bed, and skips a group the exclusions leave empty.
 
 - **MUST** select, per bed and season, at most one family group whose verdict is `clear`, `caution` or `unknown`, and **MUST** report the bed and season as `open`, with every group and its verdict, when none qualifies
 - **MUST** rank the qualifying groups by verdict (`clear`, then `caution`, then `unknown`), then by how many beds already hold the group in that season (fewer first), then by demand preference (`met`, then `unknown` or `not evaluated`, then `unmet`), then known families before unknown ones, then by group key as text
 - **MUST NOT** place runs, area or spacing; a placement names a family group and its crops, and bed layout places them
 - **MUST** give every placement a rationale that states the ranking values and names every group not chosen with its verdict
-- **MUST** list every candidate crop never placed under `NOT PLACED`, with the reason per bed and season: its verdict, its exclusion, or the group that outranked it
+- **MUST** list every candidate crop never placed under `NOT PLACED`, with the reason per bed and season: its verdict, `excluded`, `occupied`, `pinned slot` when a pin of another crop holds the slot, or the group that outranked it
 - **MUST** key every crop as `species_key/cultivar_key`, with `none` for no cultivar, which is the prefix of a [plant planning](../plant-planning-and-planting-calendar/en.md) run identifier, so a plan and a planting plan join on it
 
-The plan document has six blocks, in this order and under these names: `ROTATION HEADER` (the garden, given or discovered, the inputs, the interval and demand order or `not supplied`, the not-evaluated entries), `BED HISTORY`, `ROTATION PLAN`, `CONFLICTS` (every placed crop that breaks a rule and every contradiction a pin causes; since selection never places a `conflict` or a `repeat — interval unknown`, only a pin produces an entry, and a crop considered for a slot and not placed there keeps its verdict in that slot and under `NOT PLACED`), `NOT PLACED` and `APPLY CONTRACT`. The level of a verdict is `caller` when it rests on any caller-supplied item, and otherwise the weakest level among its items.
+The plan document has six blocks, in this order and under these names: `ROTATION HEADER` (the garden, given or discovered, the inputs, the interval and demand order or `not supplied`, the not-evaluated entries), `BED HISTORY`, `ROTATION PLAN`, `CONFLICTS` (every placed crop that breaks a rule and every contradiction a pin causes; since selection never places a `conflict` or a `repeat — interval unknown`, only a pin produces an entry, and a crop considered for a slot and not placed there keeps its verdict in that slot and under `NOT PLACED`), `NOT PLACED` and `APPLY CONTRACT`. The level of every verdict follows section D.
 
 | Consumer | Reads |
 |----------|-------|
@@ -142,7 +157,7 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 
 - **MUST** keep rotation planning read-only: the planning skills and recipes call no state-changing tool
 - **MUST** include in every plan an `APPLY CONTRACT` block that states, per placement, what a later `-apply` recipe would have to record (the bed, the season, the family group and its crops), and **MUST** state that the measured catalog has no tool that records a bed assignment, a rotation, a planting run or a plan: the write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site`, and none of them does; `set_plant_location` moves a plant that exists, and a rotation plans crops that are not plants yet
-- **MUST** name the blocked follow-up split out of #47 as the place where the `-apply` recipe is tracked, and **MUST NOT** ship a recipe with the `-apply` suffix that does not write what its description says
+- **MUST** name nolte/kamerplanter-goose#68 as the place where the `-apply` recipe is tracked, and **MUST NOT** ship a recipe with the `-apply` suffix that does not write what its description says
 - **MUST** leave recording a plan to a separate recipe that takes an approved plan, after a person has reviewed it
 
 ## Acceptance Criteria
@@ -172,7 +187,7 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 - [The plant planning spec](../plant-planning-and-planting-calendar/en.md) — the run identifier whose prefix this plan joins on, and the rotation note it leaves unknown
 - `recipes/plant-master-data-check.yaml` — `list_plants` measured with `matched: 9` against `total_in_tenant: 11`, the only evidence that archived plants exist
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
-- Issue nolte/kamerplanter-goose#47 — the rotation factors and the five criteria are taken from its body; nolte/kamerplanter-goose#46, #59 and #39 — the consumer, the precedent for a blocked apply half, and the audit
+- Issue nolte/kamerplanter-goose#47 — the rotation factors and the five criteria are taken from its body; nolte/kamerplanter-goose#68 — the blocked apply half; nolte/kamerplanter-goose#46, #59 and #39 — the consumer, the precedent for a blocked apply half, and the audit
 
 ## Open Questions
 
@@ -181,6 +196,6 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 - **Crops that stand longer than one season.** The catalog season is the year of `planted_on`, so a perennial or a crop spanning two years counts in its planting year only. No `cycle_type` field exists to correct it.
 - **Built-in family intervals.** None are built in. Researched intervals would need three independent sources each, at authoring time and not in a run, and would be an amendment to this spec.
 - **The shape of `list_planting_runs`.** Planting runs stay context until their shape is recorded.
-- **Whether a live instance has a tool that records a rotation or a bed assignment.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, tracked as the blocked follow-up split out of #47.
+- **Whether a live instance has a tool that records a rotation or a bed assignment.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, tracked as nolte/kamerplanter-goose#68.
 - **How determinism is measured.** This spec defines the plan facts and requires them to be the same over the same input blocks. It is checked on a fixed fixture written out as text, repeated runs compared; that shows the property for that fixture and not for a live garden, and the number of runs needed to call it stable is not settled here.
 - **Where the audit, nolte/kamerplanter-goose#39, places rotation relative to planting and bed layout.** Whether collection and planning stay two skills is the audit's decision.

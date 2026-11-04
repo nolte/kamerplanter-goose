@@ -20,7 +20,7 @@ Turns a rotation history into a rotation plan a person can review. It makes no t
   - **demand_sequence**: values separated by commas, compared as text with `nutrient_demand_level`; the value `green_manure` also matches a crop whose `green_manure_suitable` is `true`;
   - **constraints**: entries separated by semicolons, each `pin=bed:season:species_key[:cultivar_key]`, `exclude=bed:species_key[:cultivar_key]`, or free text.
 
-Without the rotation history block, stop and say that `rotation-history-collect` must run first. Without crops or seasons, stop and name the missing one. When the seasons, sorted, are not consecutive whole years, stop and name the gap; never fill it.
+Without the rotation history block, stop and say that `rotation-history-collect` must run first. Without crops or seasons, stop and name the missing one. When the seasons, deduplicated and sorted, are not consecutive whole years, stop and name the gap; never fill it.
 
 ## Procedure
 
@@ -31,31 +31,48 @@ Without the rotation history block, stop and say that `rotation-history-collect`
 - The plan's beds are the union of the `beds` names, the beds in the bed history and the beds in a pin, ordered by name as text. When the union is empty, there is nothing to place: report every crop under `NOT PLACED` with the reason `no bed supplied`.
 - A crop's **family** is its `family_key` from the history block. When it is absent, the family is `unknown`. Never take one from anywhere else.
 - A crop's **demand class** is its `nutrient_demand_level`, the cultivar's before the species'; absent means `unknown`.
+- A season listed twice is counted once and reported once in the header as a duplicate.
 - Every entry that does not parse, every free-text constraint, every history entry after the last planned season and every pin outside the planned seasons goes, verbatim, to `not evaluated` in the header.
 
 ### 2. Bed history
 
 Per bed, the history is the caller's entries for it plus the mapped catalog plants at it (season = the year of `planted_on`, or `unknown`). Keep both when they name the same bed and season; list a disagreement between them in `BED HISTORY` and use both.
 
-A bed's history is **established** when the caller gave at least one entry for it, `none` included, or when the catalog read was `complete` and mapped at least one plant to it. An established history is taken as complete: a season it does not name held no crop. Say in `BED HISTORY` that this is an assumption resting on the caller. Any other bed's history is **not established**; a partial or failed catalog read never makes a bed's history "none".
+A bed's history is **established from** the season of its earliest entry with a known season: a caller entry, `none` included, or a mapped catalog plant when the catalog read was `complete`. From that season on, the history is taken as complete: a season it does not name held no crop. Say in `BED HISTORY` that this is an assumption, and on what it rests (`caller`, or `list_plants` level 5). **Every season before it is `unknown`, never empty**, and so is every season of a bed with no such entry. A single `bed:2026:none` establishes 2026 onward and nothing before. A partial or failed catalog read never establishes anything; its mapped plants still count as entries. The planned seasons are always known: each holds a pin, a selection, `open` (no crop) or `occupied`.
 
-A history entry in a planned season **occupies** that bed and season: nothing is selected there, the slot is reported `occupied`, and the entry counts as history for later seasons. A history entry with season `unknown` is listed and cannot fall inside any window; it makes the bed's verdicts `unknown` (history) wherever its family is the candidate's family or unknown.
+A history entry in a planned season **occupies** that bed and season: nothing is selected there, the slot is reported `occupied`, and the entry counts as history for later seasons.
 
-A bed **has a caution** when the history block lists at least one recorded inspection for a plant mapped to it.
+A history entry with season `unknown` may fall in any window, so it makes every verdict in its bed that is not already `conflict` or `repeat — interval unknown` `unknown` (rule 4), whatever its family.
+
+A bed **has a caution** when the history block lists at least one recorded inspection for a plant mapped to it. A bed has **missing inspections** when the inspection read of a plant mapped to it failed or was partial.
 
 ### 3. The verdict of one crop for one bed and season
 
-For a crop c of family f, in bed B, in planned season S. The **window** is the seasons S−1 down to S−(N−1) when N is supplied (empty when N is 1), and every season before S when it is not. The **entries** are the history entries of B in the window and the plan's own placements in B in earlier planned seasons that fall in the window. Take the first that applies:
+For a crop c of family f, in bed B, in planned season S. The **window** is the seasons S−1 down to S−(N−1) when N is supplied (empty when N is 1), and every season before S when it is not. The **entries** are the history entries of B in the window and the plan's own placements (pinned or selected) in B in earlier planned seasons that fall in the window. Take the first that applies:
 
 1. f is `unknown` → `unknown`, missing `family_key of <c>`.
 2. N supplied, and an entry in the window has family f → `conflict`, naming that entry.
 3. N not supplied, and any earlier entry has family f → `repeat — interval unknown`, naming that entry. Never `conflict`, never `clear`.
 4. An entry in the window has family `unknown`, or B has a history entry with season `unknown` → `unknown`, missing the family or the season of that entry.
-5. B's history is not established, and the window reaches a season before the first planned season (always, without N; with N, when S−(N−1) is before it) → `unknown`, missing `bed history for <B>`.
-6. B has a caution → `caution`, level 3, missing `host range: not recorded`. A recorded pressure never makes a conflict.
-7. Otherwise → `clear`.
+5. The window holds a season that is `unknown` for B (section 2: before B's history is established, or B has none) → `unknown`, missing `bed history for <B> before <season>`. Without N the window reaches back without end, so without an interval no crop is ever `clear` or `caution`.
+6. B has missing inspections → `unknown`, missing `inspections of <plant_key>`.
+7. B has a caution → `caution`, missing `host range: not recorded`. A recorded pressure never makes a conflict.
+8. Otherwise → `clear`.
 
-A caution on B is listed beside every verdict in B, whichever verdict it is. Each verdict carries its rule (the number above), the fields on both sides (the candidate's `family_key` and the entry's), their sources (`get_species_info`, `list_plants`, `caller`, or the plan's own placement), their levels, and the missing data. A verdict resting on a caller-supplied history entry or on N says so: those have source `caller` and no level of their own. The **level of a verdict** is `caller` when any item it rests on is caller-supplied (a caller history entry, N, or a pin); otherwise it is the weakest level among its items (the highest number). A `conflict` always rests on N and is therefore `caller`.
+A caution on B is listed beside every verdict in B, whichever verdict it is. Each verdict carries its rule (the number above), the elements it rests on with their sources and levels, and the missing data.
+
+**What a verdict rests on**, per rule. The level of an element is: the candidate's `family_key` and any entry's `family_key`, the level the history block gives (4); a caller history entry, N and a pinned placement, `caller`; a mapped catalog plant, level 5; a placement the plan selected, the level of the `family_key` it was selected on (4); an inspection, level 3. Whenever N is supplied it is an element of every verdict, because it defines the window.
+
+| Rule | Elements |
+|------|----------|
+| 1 | the `get_species_info` read that lacks `family_key` for c; N if supplied |
+| 2 | c's `family_key`; the matching entry; N |
+| 3 | c's `family_key`; the matching entry |
+| 4, 5, 6 | c's `family_key`; every entry in the window, including the entry with unknown family or season; N if supplied |
+| 7 | c's `family_key`; every entry in the window; the entry that establishes B's history; N; the inspection |
+| 8 | c's `family_key`; every entry in the window; the entry that establishes B's history, when the window reaches before the first planned season; N |
+
+The **level of a verdict** is `caller` when any of its elements is `caller`; otherwise it is the weakest level among them, the highest number. So a `conflict`, a `caution` and a `clear` are always `caller` (they need N), and a `repeat — interval unknown` against an earlier selection of the plan is level 4.
 
 ### 4. Demand preference
 
@@ -63,12 +80,12 @@ With a demand sequence and exactly one known demand class among the crops in B i
 
 ### 5. Place
 
-Walk the planned seasons in order and, within a season, the beds by name as text.
+Walk the planned seasons in order. Each season is decided completely before the next one starts, and a verdict in season S is computed after every earlier season is decided.
 
-1. **Pins first.** Place every pinned crop in its bed and season, whatever its verdict. A pin is never moved. List it under `CONFLICTS` when its verdict is `conflict` or `repeat — interval unknown`, when the slot is `occupied`, when an exclusion names the same bed and crop, or when two pins put two families in one bed and season. A pinned slot takes no further group.
-2. **Then every other slot that is not occupied.** Build the family groups: the candidate crops that share a `family_key`, with each crop of unknown family as a group of its own keyed `unknown/<crop key>`. Drop from each group the crops excluded from B. A group's verdict is its crops' verdict; crops of one known family share it.
+1. **Pins of that season first**, beds by name as text. Place every pinned crop of S in its bed, whatever its verdict, and compute that verdict at its own slot. A pin is never moved. List it under `CONFLICTS` when its verdict is `conflict` or `repeat — interval unknown`, when the slot is `occupied`, when an exclusion names the same bed and crop, or when two pins put two families in one bed and season. A pinned slot takes no further group.
+2. **Then every other slot of S that is not occupied**, beds by name as text. Build the family groups: the candidate crops that share a `family_key`, with each crop of unknown family as a group of its own keyed `unknown/<crop key>`. Drop from each group the crops excluded from B; a group left empty is skipped, and its crops get the reason `excluded` for that slot. A group's verdict is its crops' verdict; crops of one known family share it.
 3. **Qualifying groups** have the verdict `clear`, `caution` or `unknown`. `conflict` and `repeat — interval unknown` are never selected unless pinned.
-4. **Rank** the qualifying groups by, in order: verdict (`clear`, `caution`, `unknown`); the number of beds that already hold the group in this season, fewer first; demand preference (`met`, then `unknown` or `not evaluated`, then `unmet`); known families before unknown ones; the group key as text. Select the first. When none qualifies, the slot is `open`.
+4. **Rank** the qualifying groups by, in order: verdict (`clear`, `caution`, `unknown`); the number of beds that already hold the group in this season, pins included, fewer first; demand preference (`met`, then `unknown` or `not evaluated`, then `unmet`); known families before unknown ones; the group key as text. Apply the keys strictly in this order: a later key only breaks a tie on every earlier one, so a group of unknown family held by fewer beds ranks ahead of a known family held by more. Select the first. When none qualifies, the slot is `open`.
 
 The selection becomes part of the history of later seasons in that bed. The order of the input and the current date play no part.
 
@@ -76,7 +93,7 @@ The selection becomes part of the history of later seasons in that bed. The orde
 
 ### 6. Not placed
 
-A candidate crop that no slot selected or pinned is listed under `NOT PLACED`, with one reason per bed and season: its verdict, `excluded`, `occupied`, or `outranked by <group key>`.
+A candidate crop that no slot selected or pinned is listed under `NOT PLACED`, with one reason per bed and season: its verdict, `excluded`, `occupied`, `pinned slot` (the slot holds a pin of another crop), or `outranked by <group key>`.
 
 ### 7. Report
 
@@ -92,18 +109,19 @@ ROTATION HEADER
   demand_sequence: <values | not supplied>                  (source caller)
   planting runs:   <from the garden context, context only | not read>
   not modeled:     soil effects other than green_manure_suitable
+  duplicates:      <seasons listed twice | none>
   not evaluated:   <entries verbatim | none>
 BED HISTORY
-  <bed>: established | not established — <why>
+  <bed>: established from <season> (caller | list_plants level 5) | not established — <why>
     <season>: <species_key/cultivar_key|none> family <family_key|unknown> (source caller | list_plants level 5)
     caution: <inspection records, level 3, host range: not recorded | none>
-  assumption: an established history is taken as complete; it rests on the caller
+  assumption: from the season it is established, a history is taken as complete; seasons before it are unknown
   unmapped location history: <as received, context only>
 ROTATION PLAN
   SLOT <bed>/<season>
-    selected:    <family_key | unknown/<crop key>> | open | occupied
+    selected:    <family_key> | unknown/<crop key> | open | occupied
     pinned:      yes | no
-    crops:       <species_key/cultivar_key>: <verdict> — rule <n>; <fields, sources, levels>; missing <...>
+    crops:       <species_key/cultivar_key>: <verdict> — rule <n>; level <n | caller>; <elements, sources, levels>; missing <...>
     demand:      met | unmet | unknown | not evaluated
     rationale:   <the ranking values; every group not chosen with its verdict>
     confidence / uncertainty / missing_data   (per decision-policy)
@@ -114,7 +132,7 @@ NOT PLACED
 APPLY CONTRACT
   per placement: <what a later apply step would record: the bed, the season, the family group and its crops>
   The measured catalog has no tool that records a bed assignment, a rotation, a planting run or a plan. The write and setup tools it records are the twelve listed under Gotchas; none does, and the one that moves a plant moves a plant that exists, while a rotation plans crops that are not plants yet.
-  The apply recipe is tracked in the blocked follow-up split out of nolte/kamerplanter-goose#47.
+  The apply recipe is tracked in nolte/kamerplanter-goose#68.
 ```
 
 Return no field that was not read; list an unread field as absent with its reason. The plan facts that two runs over the same blocks must agree on are the placements, the verdicts with their rule numbers, the conflicts, the not-placed reasons and the evidence levels; retrieval times and prose may differ, and this property is checked on a fixed fixture, not on a live garden.
@@ -137,7 +155,8 @@ Return no field that was not read; list an unread field as absent with its reaso
 - The apply contract names no tool, because the measured catalog has none that records a rotation. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). `set_plant_location` moves a plant that exists. Reproduce this list in the report as the twelve tools the catalog records; it is explanation, never a call.
 - A history block full of absent families gives a plan full of `unknown`. That is the honest result while the catalog's family coverage is unmeasured, not a failure.
 - Without an interval, a family never returns to a bed within the plan, because a repeat does not qualify; a long plan over few families then ends in `open` slots. Supply `rotation_years` to let a family return.
-- A bed with no history at all stays `unknown` in the first seasons. One `bed:season:none` entry establishes it.
+- A bed with no history at all stays `unknown` wherever its window reaches before the plan. One `bed:season:none` entry establishes that season onward, never the seasons before it.
+- Without an interval the window has no start, so no crop is `clear` or `caution`; the best verdict is `unknown`. Supply `rotation_years` to get `clear`.
 - This skill itself was not run against a live instance; it has no tool calls to get wrong, and its input blocks inherit that status.
 
 ## Source

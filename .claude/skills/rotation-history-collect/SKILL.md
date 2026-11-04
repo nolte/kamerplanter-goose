@@ -46,7 +46,7 @@ Do not read `compatible_companions[]` for this purpose; it is about planting sid
 
 ### 3. Inspections at mapped beds
 
-For each plant at a mapped location, call `mcp__kamerplanter__get_plant_inspections` with `plant_key` and `tenant`. Record per plant: `none recorded` for an empty history, the inspection records as returned (date, and what the record names: a pest, a disease, a pressure level, symptoms, findings), or the tool error verbatim. Do not judge the content: no host range is recorded on `get_pest` or `get_disease`, so this skill does not say which future crop a recorded pressure affects. Do not call it for unmapped plants.
+For each plant at a mapped location, call `mcp__kamerplanter__get_plant_inspections` with `plant_key` and `tenant`. Record per plant: `none recorded` for an empty history, the inspection records as returned (date, and what the record names: a pest, a disease, a pressure level, symptoms, findings), `partial: <reason>` when the response says it is incomplete, or the tool error verbatim. A failed or partial read is missing data for that bed, never "none recorded". Do not judge the content: no host range is recorded on `get_pest` or `get_disease`, so this skill does not say which future crop a recorded pressure affects. Do not call it for unmapped plants.
 
 ### 4. Report
 
@@ -67,7 +67,7 @@ MAPPED HISTORY:
 UNMAPPED LOCATION HISTORY:
   <location_key|no location_key>: <plant_key> <species_key> season <year|unknown>   (context only)
 INSPECTIONS:
-  <bed>: <plant_key>: none recorded | <records as returned> (get_plant_inspections, <retrieved>, level 3) | error: <verbatim>
+  <bed>: <plant_key>: none recorded | <records as returned> (get_plant_inspections, <retrieved>, level 3) | partial: <reason> | error: <verbatim>
 NOT MODELED: soil effects other than green_manure_suitable
 ABSENT FIELDS: <field (reason), ...>
 ```
