@@ -488,8 +488,12 @@ def permitting_skill_loads(
     list ("the skills a and b"), a name after "Follow", "the b skill" without
     backticks, and a capitalised "Skill". A mere mention therefore counts as a load; that direction can only
     fail a recipe, never pass one. The same token rule is followed
-    transitively through each loaded skill's SKILL.md, so a skill-to-skill load
-    cannot become the bypass.
+    transitively through each loaded skill, so a skill-to-skill load cannot
+    become the bypass — but there only in the skill's instruction text
+    (`skill_instruction_text`). Counting explanation too was tried and
+    withdrawn: plant-photo-read's `## Gotchas` says the claim tools belong to
+    diary-analysis-claim, and that sentence alone made every read-only recipe
+    loading plant-photo-read read as loading the claim skill.
     """
     permitting = {
         name
@@ -517,7 +521,7 @@ def permitting_skill_loads(
             if skill in seen:
                 continue
             seen.add(skill)
-            pending |= referenced(skills[skill]) - seen
+            pending |= referenced(skill_instruction_text(skills[skill])) - seen
         loads.extend((recipe, skill) for skill in sorted(seen & permitting))
     return loads
 
@@ -1632,6 +1636,26 @@ PERMITTING_LOAD_CASES = [
         {"read-check.yaml": (False, "Load the skill `reader`.")},
         {
             "reader": READING_SKILL + "\nThen follow the `claimer` skill.\n",
+            "claimer": PERMITTING_SKILL,
+        },
+        [("read-check.yaml", "claimer")],
+    ),
+    (
+        "a skill mentioning a permitting skill only under Gotchas creates no load",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {
+            "reader": READING_SKILL + "\n## Gotchas\n\n- The claim tools belong to "
+            "`claimer`; this skill hands back to it.\n",
+            "claimer": PERMITTING_SKILL,
+        },
+        [],
+    ),
+    (
+        "a skill naming a permitting skill in its procedure loads it",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {
+            "reader": "## Procedure\n\n1. Hand the entry to `claimer`.\n\n"
+            + READING_SKILL,
             "claimer": PERMITTING_SKILL,
         },
         [("read-check.yaml", "claimer")],
