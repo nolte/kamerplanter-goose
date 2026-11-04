@@ -3,7 +3,7 @@ title: References
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-08-16
+last_updated: 2026-11-05
 ---
 
 # References
@@ -44,6 +44,7 @@ Each recipe has a guide of its own, linked from its name.
 | [`planting-calendar`](../guides/planting-calendar.md) | no | When each chosen crop can be sown, transplanted and harvested at a garden |
 | [`garden-plan`](../guides/garden-plan.md) | no | Planting-run proposals for chosen crops, for review; applies nothing |
 | [`season-plan`](../guides/season-plan.md) | no | The plan laid on twelve months, with its successions |
+| [`crop-rotation-plan`](../guides/crop-rotation-plan.md) | no | One plant family per bed and season, with verdicts and conflicts; records nothing |
 | [`plant-master-data-check`](../guides/plant-master-data-check.md) | no | Which plants lack the master data a later analysis would need |
 | [`domain-review`](../guides/domain-review.md) | to `.audits/` only | Reviews a recipe or spec as one grower persona |
 | [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **yes** | Analyses one queued diary entry and submits the result |
@@ -70,6 +71,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `crop-selection` | Which candidate crops a site supports, with reasons and failed constraints |
 | `planting-calendar` | The sowing, transplanting and harvest windows per crop and growing period, with the rule behind each |
 | `plant-planning` | Planting-run proposals with identifiers, rationale and confidence; calls no tool |
+| `rotation-history-collect` | Each crop's family, demand class and green-manure suitability, and the plants and inspections per location, archived included |
+| `crop-rotation-planning` | One family per bed and season, with a verdict and its rule for every crop considered and every conflict named; calls no tool |
 | `diary-measurements-read` | The recorded measurements of one plant's diary, with a report of how much was read |
 | `care-planning` | The domain results put into one list ordered by urgency, with what has no action; calls no tool |
 | `watering-decision` | Water now, wait, or insufficient evidence, from the plant's present state; calls no tool |

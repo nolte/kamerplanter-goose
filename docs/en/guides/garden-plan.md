@@ -3,7 +3,7 @@ title: Garden plan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-10-14
+last_updated: 2026-11-05
 ---
 
 # Garden plan
@@ -50,7 +50,7 @@ goose run --recipe garden-plan \
 - **One run per growing period and method.** A species with a summer and a winter period yields two runs. Without a method preference, a crop that qualifies for both methods appears twice; they are alternatives for you to choose between.
 - **The identifier says what the run is**: species, cultivar or `none`, method, and the period's months. It does not depend on the order of the crops you listed.
 - **No bed is assigned.** Bed layout does that. The beds you supplied are listed in the plan header.
-- **Rotation is always unknown**, because rotation is not built yet; companions are not read as a rotation rule.
+- **Rotation is always unknown**, because a run is assigned no bed and rotation is judged per bed; the [crop rotation plan](crop-rotation-plan.md) does that and keys its crops the same way as a run identifier begins. Companions are not read as a rotation rule.
 - **A succession is named only where the dates show one**: the last harvest month of one period before the first sowing month of another. Both runs say so, `precedes` on the earlier and `follows` on the later.
 
 ## How far "deterministic" goes
