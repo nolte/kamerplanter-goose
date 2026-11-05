@@ -56,7 +56,9 @@ Die beiden Orte nutzen unterschiedliche Formen für dieselben Daten:
 
 Der Fehler ist still und irreführend: Das Rezept validiert, die Extension verbindet sich, und der Server antwortet `401`, als wären die Zugangsdaten falsch.
 
-**Eine Extension, deren `env_keys`-Variable nicht gesetzt ist, wird vollständig übersprungen** — keine Warnung `Failed to start extension`, die Tools fehlen einfach. Beobachtet, als `pass` nicht entschlüsseln konnte: Zwei Extensions verschwanden, während eine dritte, deren Variable gesetzt war, normal lud. Der Agent diagnostizierte das als „keine MCP-Server konfiguriert", was falsch war.
+**Eine `env_keys`-Variable, die gar nicht gesetzt ist, bricht den ganzen Lauf ab.** Gemessen am 2026-11-05 mit Goose 1.45.0: Fehlte eine von `HA_URL`, `HA_MCP_TOKEN`, `GITHUB_MCP_PAT` oder `KAMERPLANTER_URL` in der Umgebung, stoppte `goose run` vor der Sitzung mit `Failed to fetch secret '<VAR>' from config: Configuration value not found: <VAR>` und Exit-Code 1 — für jedes Rezept wie für einen einfachen `-t`-Prompt, nicht nur für Läufe, die diesen Server nutzen. Die Meldung zeigt, dass Goose den Wert nach der Umgebung in seiner eigenen Konfiguration sucht; ein dort über `goose configure` hinterlegter Wert würde genügen, was der wahrscheinliche, aber nicht gemessene Grund ist, warum ein nicht gesetzter `KAMERPLANTER_API_KEY` auf derselben Maschine nicht abbrach.
+
+**Eine auf die leere Zeichenkette gesetzte Variable lässt nur ihre Extension wegfallen.** Das hinterlässt `export X=$(pass …)`, wenn `pass` nicht entschlüsseln kann. Am selben Tag für alle vier gemessen: Der Lauf geht weiter, Goose versucht die Extension, und es meldet `Failed to start extension '<name>' … continuing without it`. Eine frühere Beobachtung hielt den leeren Fall als stilles Verschwinden ohne Warnung fest; die Messung vom 2026-11-05 hat das nicht bestätigt. So oder so kann der Agent die fehlenden Tools noch als „keine MCP-Server konfiguriert" deuten, was falsch ist.
 
 `--render-recipe` klärt das nicht: Es druckt `${VAR}` in beiden Fällen unersetzt.
 
@@ -192,7 +194,7 @@ spec/                          diese Ebene plus eine Spec je Backend
 - **SOLLTE [SHOULD]** ein fehlendes Tool als ausdrückliches Schrittergebnis melden, das das Tool benennt, nie als stille Ersetzung
 - **SOLLTE [SHOULD]** ein Rezept, das einen Skill lädt, diesen Ladevorgang als benanntes Schrittergebnis melden lassen, da ein nicht geladener Skill einen Lauf hinterlässt, der allein aus dem Prompt weiterhin eine plausible Antwort erzeugt
 - **SOLLTE [SHOULD]** die Verfügbarkeit eines Skills in der Zielumgebung messen, bevor ein Rezept sich darauf stützt — so wie die Werkzeugoberfläche des Providers gemessen statt angenommen wird
-- **SOLLTE [SHOULD]** beim Melden eines Fehlers ein nicht gesetztes Zugangsdatum von einem nicht erreichbaren Server unterscheiden, da eine Extension mit nicht gesetzter `env_keys`-Variable ohne Warnung verschwindet
+- **SOLLTE [SHOULD]** beim Melden eines Fehlers ein nicht gesetztes Zugangsdatum von einem nicht erreichbaren Server unterscheiden, da eine nicht gesetzte `env_keys`-Variable den Lauf mit einem Konfigurationsfehler abbricht, der die Variable nennt, und eine leere die Extension hinter einer leicht zu übersehenden Startwarnung wegfallen lässt
 - **KANN [MAY]** Extensions innerhalb eines einzelnen Rezepts deklarieren, wenn es eigenständig konsumiert werden soll, wobei es dann auf den geteilten Satz vollständig verzichtet
 
 ## Akzeptanzkriterien

@@ -56,7 +56,9 @@ The two locations use different shapes for the same data:
 
 The failure is silent and misleading: the recipe validates, the extension connects, and the server answers `401` as though the credential were wrong.
 
-**An extension whose `env_keys` variable is unset is skipped entirely** — no `Failed to start extension` warning, the tools are simply absent. Observed when `pass` could not decrypt: two extensions vanished while a third, whose variable was set, loaded normally. The agent diagnosed it as "no MCP servers configured", which was wrong.
+**An `env_keys` variable that is not set at all aborts the whole run.** Measured 2026-11-05 on Goose 1.45.0: with any one of `HA_URL`, `HA_MCP_TOKEN`, `GITHUB_MCP_PAT` or `KAMERPLANTER_URL` removed from the environment, `goose run` stopped before the session with `Failed to fetch secret '<VAR>' from config: Configuration value not found: <VAR>` and exit code 1 — for every recipe and a plain `-t` prompt alike, not only for runs that use that server. The message shows Goose looking the value up in its own config after the environment; a value stored there through `goose configure` would satisfy it, which is the likely but unmeasured reason an unset `KAMERPLANTER_API_KEY` did not abort on the same machine.
+
+**A variable set to the empty string drops only its extension.** That is what `export X=$(pass …)` leaves when `pass` cannot decrypt. Measured the same day for all four: the run continues, Goose attempts the extension, and it prints `Failed to start extension '<name>' … continuing without it`. An earlier observation recorded the empty case as a silent disappearance with no warning; the 2026-11-05 measurement did not reproduce that. Either way the agent may still diagnose the missing tools as "no MCP servers configured", which is wrong.
 
 `--render-recipe` does not settle this: it prints `${VAR}` unexpanded either way.
 
@@ -192,7 +194,7 @@ spec/                          this layer plus one spec per backend
 - **SHOULD** report an absent tool as an explicit step result naming the tool, never as a silent substitution
 - **SHOULD** have a recipe that loads a skill report the load as a named step result, since a skill that fails to load leaves a run that still produces a plausible answer from the prompt alone
 - **SHOULD** verify skill availability by measurement in the target environment before a recipe depends on it, the same way the provider's tool surface is measured rather than assumed
-- **SHOULD** distinguish an unset credential from an unreachable server when reporting a failure, since an extension with an unset `env_keys` variable disappears without a warning
+- **SHOULD** distinguish an unset credential from an unreachable server when reporting a failure, since an unset `env_keys` variable aborts the run with a config error that names the variable, and an empty one drops the extension behind a start warning that is easy to miss
 - **MAY** declare extensions inside a single recipe when it is meant to be consumed standalone, accepting that it then forgoes the shared set entirely
 
 ## Acceptance Criteria

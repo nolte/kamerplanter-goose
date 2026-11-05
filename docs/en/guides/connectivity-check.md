@@ -60,7 +60,8 @@ The run prints one row per step with a Result of exactly `PASS`, `FAIL`, or `SKI
 | `404` from Kamerplanter | its MCP server is not switched on — `MCP_SERVER_ENABLED=true` |
 | `401` from Kamerplanter | the API key is invalid or revoked |
 | `401` from Home Assistant | the long-lived access token is wrong |
-| a server absent from the run entirely | the variable under that extension's `env_keys` is unset, and Goose drops the extension without a warning |
+| the run stops before it starts, with `Configuration value not found: <VAR>` | a variable under some extension's `env_keys` is unset — any extension's, not only one this recipe uses |
+| a server absent from the run, after a `Failed to start extension` warning | the variable under that extension's `env_keys` is set but empty, typically a password-manager lookup that failed |
 | `401` although the credential is correct | the variable is not listed under that extension's `env_keys`, so the literal `${KAMERPLANTER_API_KEY}` went over the wire and the server rejected it as a wrong key |
 
 The last two are the expensive ones, because neither reads like a configuration problem. Both are properties of `extensions.yaml`, not of your server.
@@ -69,4 +70,4 @@ The last two are the expensive ones, because neither reads like a configuration 
 
 - [`recipes/connectivity-check.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/connectivity-check.yaml) — the four steps, the forbidden tools, and the report format
 - [`extensions.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/extensions.yaml) — the endpoints and `env_keys` every recipe here shares
-- [`spec/goose/recipe-project-pattern/en.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/goose/recipe-project-pattern/en.md) — why an unset `env_keys` variable removes an extension silently
+- [`spec/goose/recipe-project-pattern/en.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/goose/recipe-project-pattern/en.md) — what an unset or empty `env_keys` variable does to a run

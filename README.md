@@ -50,13 +50,16 @@ export HA_URL="https://ha.example.com"
 export KAMERPLANTER_API_KEY=$(pass path/to/kamerplanter/token-mcp)
 export HA_MCP_TOKEN=$(pass path/to/homeassistant/token-mcp)
 
+# empty, not unset: an unset env_keys variable stops every run (see below)
+export GITHUB_MCP_PAT=""
+
 export GOOSE_RECIPE_PATH="$PWD/recipes"
 export GOOSE_ADDITIONAL_CONFIG_FILES="$PWD/extensions.yaml"
 ```
 
-`extensions.yaml` also lists a third system, GitHub. No recipe here uses it yet; it is kept for work on the knowledge documents this repository draws on. Leave `GITHUB_MCP_PAT` unset and it is quietly skipped, which is the right setting for everyone not doing that work. Set it — as the maintainer's `.envrc` does, from `gh auth token` — and your GitHub token is sent to a Copilot endpoint. Worth knowing before you copy that line.
+`extensions.yaml` also lists a third system, GitHub. No recipe here uses it yet; it is kept for work on the knowledge documents this repository draws on. Set `GITHUB_MCP_PAT` to the empty string — `export GITHUB_MCP_PAT=""` — and Goose skips it with a `Failed to start extension 'github'` warning, which is the right setting for everyone not doing that work. Do not leave it unset: an unset variable in any extension's `env_keys` stops every run before it starts, with `Configuration value not found: GITHUB_MCP_PAT`. Set it — as the maintainer's `.envrc` does, from `gh auth token` — and your GitHub token is sent to a Copilot endpoint. Worth knowing before you copy that line.
 
-**Do not run `direnv allow` on the `.envrc` that ships here.** It is checked into git and filled with the maintainer's own addresses and password-manager paths. On your machine those lookups fail, both systems drop out **without any warning**, and the run reports that no systems are configured at all — which looks like a Goose problem and is not one. Put your own lines in, keeping the two `TASK_*` variables the file already sets, or the `task` commands below stop before they start.
+**Do not run `direnv allow` on the `.envrc` that ships here.** It is checked into git and filled with the maintainer's own addresses and password-manager paths. On your machine those lookups fail, both systems drop out behind a `Failed to start extension` warning that scrolls past, and the run reports that no systems are configured at all — which looks like a Goose problem and is not one. Put your own lines in, keeping the two `TASK_*` variables the file already sets, or the `task` commands below stop before they start.
 
 Then check that your systems answer:
 
