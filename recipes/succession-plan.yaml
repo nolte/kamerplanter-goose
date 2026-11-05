@@ -1,0 +1,282 @@
+version: "1.0.0"
+title: "Succession Plan"
+description: >-
+  Read-only: succession proposals for one Kamerplanter garden and one season — which planting runs can follow each other in the same bed, and which can be sown in staggered sets — each naming its run identifiers and the planting-calendar windows it rests on, every run without a succession listed with its reason. A succession is proposed only between crops the crop rotation plan admits to the same bed; a stagger interval counts only when you supply it. The plan is a document for review; it records nothing, and the measured catalog has no tool that could. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: crops
+    input_type: string
+    requirement: required
+    description: >-
+      Candidate crops, comma-separated: each a species key, or a species key and a
+      cultivar key joined by a colon (species_key:cultivar_key), the same shape as
+      garden-plan and crop-rotation-plan.
+
+  - key: season
+    input_type: string
+    requirement: required
+    description: >-
+      The one season to plan, a year (for example 2027). Windows are months
+      within it; a run whose harvest reaches into the next year is not
+      succeeded.
+
+  - key: beds
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Beds and containers, comma-separated, each name, name:<n>m2 or name:<n>l
+      (for example bed-1:2m2,tub-1:10l). No source in the catalog. Passed to the
+      rotation step, which decides the family per bed.
+
+  - key: bed_history
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What stood in each bed before, comma-separated, each
+      bed:season:species_key[:cultivar_key] or bed:season:none, as in
+      crop-rotation-plan.
+
+  - key: rotation_years
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A whole number: the smallest distance in seasons at which one family may
+      stand in a bed again, as in crop-rotation-plan. Without it no crop is
+      clear; the rotation still fills slots, at best with unknown verdicts.
+
+  - key: demand_sequence
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      An order of nutrient demand classes, comma-separated, as in
+      crop-rotation-plan. A preference for the rotation step only.
+
+  - key: constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Semicolon-separated: pin=bed:season:species_key[:cultivar_key] and
+      exclude=bed:species_key[:cultivar_key], as in crop-rotation-plan. Any
+      other text is listed as not evaluated.
+
+  - key: stagger_weeks
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A whole number of weeks between staggered sowings inside a known direct
+      sowing window. No interval is built in; without it a staggered sowing is
+      reported as possible, with the interval not supplied.
+
+  - key: goals
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you want from the crops, in your words, as in garden-plan.
+
+  - key: harvest_window
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      When you want to harvest, in your words. A preference: it ranks and never
+      drops a crop.
+
+  - key: planting_method
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A preference: direct_sow or indoor_then_transplant. Without it a crop
+      offered under both methods for one growing period is not succeeded until
+      you choose.
+
+  - key: light
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Light and exposure of the site, in your words. No source in the catalog.
+
+  - key: area_or_volume
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Available area or container volume of the site, in your words. No source
+      in the catalog.
+
+  - key: water
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Water availability, in your words. No source in the catalog.
+
+  - key: site_constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Environmental constraints of the site, free text, for site analysis (the
+      constraints parameter of garden-plan).
+
+  - key: hardiness_zone
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The garden's hardiness zone. No tool says which zone a garden is in.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You turn chosen crops into planting runs, a rotation for one season, and
+  reviewable succession proposals, and report the successions. You never
+  record a plan, advise beyond it, or write. A succession is proposed only
+  between runs whose crops the rotation plan admits to the same bed, and only
+  from the windows the planting calendar computed; a stagger interval comes
+  from the caller or is not supplied.
+
+  Nine skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — which fields have no source, what an
+  absent species field means, and what the sowing calendar returns.
+
+prompt: |
+  Make a succession plan for garden "{{ tenant }}" and season "{{ season }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
+  local file other than loading the named skills (`garden-context`, `site-analysis`, `crop-selection`, `decision-policy`, `planting-calendar`, `plant-planning`, `rotation-history-collect`, `crop-rotation-planning`, `succession-planning`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - candidate crops: "{{ crops }}"
+  - season: "{{ season }}"
+  - beds and containers: "{{ beds }}"
+  - bed history: "{{ bed_history }}"
+  - rotation interval in seasons: "{{ rotation_years }}"
+  - demand order: "{{ demand_sequence }}"
+  - constraints: "{{ constraints }}"
+  - stagger interval in weeks: "{{ stagger_weeks }}"
+  - goals: "{{ goals }}"
+  - harvest window: "{{ harvest_window }}"
+  - planting method preference: "{{ planting_method }}"
+  - light and exposure: "{{ light }}"
+  - area or container volume: "{{ area_or_volume }}"
+  - water availability: "{{ water }}"
+  - environmental constraints of the site: "{{ site_constraints }}"
+  - hardiness zone of the garden: "{{ hardiness_zone }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run plans; it records nothing.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never use a typical date, duration, offset or stagger interval from
+    general knowledge, and never fill an unknown window.
+  - Never propose a succession between crops the rotation plan does not admit
+    to the same bed, and never re-derive a rotation.
+
+  Every step that loads a skill reports the load as its result. If a skill
+  cannot be loaded, report that as the step result naming the skill and stop.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
+  the block it returns.
+
+  Step 2 — Site.
+  Load the skill `site-analysis` and follow it with that block, the caller's
+  site facts above (light, area or volume, water, the environmental
+  constraints of the site, the hardiness zone; only the ones that are not
+  empty) and the candidate crops. Keep the site profile.
+
+  Step 3 — Crops.
+  Load the skill `crop-selection` and follow it with the site profile, the
+  garden context, the candidate crops, the goals and the harvest window. Keep
+  the candidate records with their verdicts.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for every later step.
+
+  Step 5 — Calendar.
+  Load the skill `planting-calendar` and follow it with the site profile, the
+  candidate records and the harvest window.
+
+  Step 6 — Planting runs.
+  Load the skill `plant-planning` and follow it with the calendar, the
+  candidate records, the garden context, the beds, the harvest window and the
+  method preference, passing only the ones that are not empty. Keep the plan.
+
+  Step 7 — Rotation history.
+  Load the skill `rotation-history-collect` and follow it with the tenant, the
+  candidate crops plus every crop named in a pin, the crops named in the bed
+  history, and the bed names: the beds above, the beds in the bed history and
+  the beds in a pin.
+
+  Step 8 — Rotation.
+  Load the skill `crop-rotation-planning` and follow it with the rotation
+  history block, the garden context block, the candidate crops, the season as
+  its only season, and the beds, bed history, rotation interval, demand order
+  and constraints, passing only the ones that are not empty. Keep the plan.
+
+  Step 9 — Successions.
+  Load the skill `succession-planning` and follow it with the plant-planning
+  block, the rotation block, the season, the stagger interval and the
+  constraints, passing only the ones that are not empty.
+
+  Step 10 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Succession Plan — <the slug the skills resolved, given or discovered> — <season>
+
+  Skill loads, one row each:
+
+  | Skill | Loaded |
+  |-------|--------|
+  | garden-context / site-analysis / crop-selection / decision-policy / planting-calendar / plant-planning / rotation-history-collect / crop-rotation-planning / succession-planning | yes, or no: the error |
+
+  The successions, one row each, in the order the skill returned them:
+
+  | Kind | Slot | Runs | Windows | Gap or dates | Rotation | Level |
+  |------|------|------|---------|--------------|----------|-------|
+  | sequential / staggered | bed/season, or the slots the run is admitted to | earlier -> later run identifier, or the run identifier | each window with its rule and level | the gap in months, the sowing dates, or "interval not supplied" | each crop's verdict with rule and level | caller or a number |
+
+  Then the runs that were not succeeded, one row each with the reason. Then
+  the succession header exactly as the skill returned it, including the
+  not-evaluated entries, the not-planned candidates carried over, and the
+  rotation slots of the season as the rotation step returned them. Then the
+  apply contract exactly as the skill returned it, including that the
+  measured catalog has no tool that records a succession, and any tool error
+  reported verbatim.
+
+  Close with one line,
+  `SUCCESSION: <s> successions, <u> unknown — <slug>`, where <s> counts the
+  sequential successions plus the staggered ones with sowing dates, and <u>
+  counts the staggered entries whose interval was not supplied plus the runs
+  not succeeded because their occupancy is unknown or spans the season
+  boundary, and a second line,
+  `APPLY: no write tool measured (nolte/kamerplanter-goose#74)`.

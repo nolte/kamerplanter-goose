@@ -72,7 +72,7 @@ Per bed and season the run selects one family, preferring `clear`, then `caution
 ## What the plan does not do
 
 - **It records nothing.** There is no tool to record it with.
-- **It does not lay out a bed.** It names a family and its crops per bed and season. Area, spacing, neighbours and succession are bed layout's work, tracked in [#46](https://github.com/nolte/kamerplanter-goose/issues/46).
+- **It does not lay out a bed.** It names a family and its crops per bed and season. Area, spacing, neighbours and succession are the work of the [bed layout plan](bed-layout-plan.md) and the [succession plan](succession-plan.md), which read this plan.
 - **It does not give dates.** Sowing and harvest windows come from the [garden plan](garden-plan.md). Each crop is keyed as `species_key/cultivar_key`, the same prefix as a garden-plan run, so the two can be read side by side.
 - **It does not recall.** No family, interval or demand order comes from general knowledge, and companions are not read as a rotation rule.
 

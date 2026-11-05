@@ -13,7 +13,7 @@ This spec specifies two steps. Collecting the rotation history reads each crop's
 
 Everything about the tool surface below is quoted from [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) and from [the species baseline process](../species-baseline-verification/en.md), whose measurements were taken against the reference instance on 2026-08-07 and 2026-08-16. **Nothing here was re-measured when this spec was written**: the `kamerplanter` MCP server was unreachable in the session that drafted it (`INVALID_CONFIG`). A tool or field name is quoted from those specs; whether it still exists, and what a response carries beyond what they record, is unestablished until a `tools/list` and a read-only call against a reachable instance say so.
 
-Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; this spec applies them and does not restate them. [The plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs, and its runs stay `rotation: unknown`, because a run is assigned no bed and a rotation verdict exists only per bed. Bed layout, area, spacing, companion placement and succession are nolte/kamerplanter-goose#46, which reads this spec's output. The `-apply` half of nolte/kamerplanter-goose#47 is tracked in nolte/kamerplanter-goose#68. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
+Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; this spec applies them and does not restate them. [The plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs, and its runs stay `rotation: unknown`, because a run is assigned no bed and a rotation verdict exists only per bed. Bed layout, area, spacing, companion placement and succession are [the bed layout and succession planning spec](../bed-layout-and-succession-planning/en.md) (nolte/kamerplanter-goose#46), which reads this spec's output. The `-apply` half of nolte/kamerplanter-goose#47 is tracked in nolte/kamerplanter-goose#68. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
 
 Readers: authors of garden skills and recipes in this repository, the author of bed layout who consumes the rotation plan, and anyone reviewing a rotation before acting on it.
 
@@ -29,7 +29,7 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 ## Non-Goals
 
 - Recording a rotation, assigning a future crop to a bed, or creating a planting run. The measured catalog has no tool for it (section G)
-- Bed layout, area and capacity, spacing, companion placement and succession — nolte/kamerplanter-goose#46
+- Bed layout, area and capacity, spacing, companion placement and succession — [bed layout and succession planning](../bed-layout-and-succession-planning/en.md)
 - Planting dates: those are [the planting calendar](../plant-planning-and-planting-calendar/en.md)
 - Choosing crops: that is [crop selection](../site-analysis-and-crop-selection/en.md)
 - A family, a rotation interval, a demand order or a soil effect from general knowledge. A value comes from a recorded field or from the caller, or it is unknown
@@ -142,7 +142,7 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 
 | Consumer | Reads |
 |----------|-------|
-| Bed layout (nolte/kamerplanter-goose#46) | per bed and season: the bed, the season, the selected family group or `open` or `occupied`, the crops as `species_key/cultivar_key` with their verdicts, the conflicts |
+| [Bed layout and succession](../bed-layout-and-succession-planning/en.md) (nolte/kamerplanter-goose#46) | per bed and season: the bed, the season, the selected family group or `open` or `occupied`, the crops as `species_key/cultivar_key` with their verdicts, the conflicts |
 | A person reviewing a [plant planning](../plant-planning-and-planting-calendar/en.md) plan | per crop: the beds and seasons it is placed in, joined to the planting runs on the `species_key/cultivar_key` prefix |
 
 - **MUST** return the six blocks in this order with these names, and **MUST NOT** return a field that was not read, listing an unread field as absent with its reason

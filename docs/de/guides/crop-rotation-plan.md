@@ -72,7 +72,7 @@ Je Beet und Saison wählt der Lauf eine Familie, bevorzugt `clear`, dann `cautio
 ## Was der Plan nicht tut
 
 - **Er hält nichts fest.** Es gibt kein Werkzeug, um ihn festzuhalten.
-- **Er teilt kein Beet auf.** Er nennt eine Familie und ihre Kulturen je Beet und Saison. Fläche, Abstände, Nachbarn und Folgesaaten sind Aufgabe der Beetaufteilung, geführt in [#46](https://github.com/nolte/kamerplanter-goose/issues/46).
+- **Er teilt kein Beet auf.** Er nennt eine Familie und ihre Kulturen je Beet und Saison. Fläche, Abstände, Nachbarn und Folgesaaten sind Aufgabe des [Beetplans](bed-layout-plan.md) und des [Folgesaatplans](succession-plan.md), die diesen Plan lesen.
 - **Er nennt keine Termine.** Aussaat- und Erntefenster kommen aus dem [Gartenplan](garden-plan.md). Jede Kultur ist als `species_key/cultivar_key` geschlüsselt, dasselbe Präfix wie ein Durchlauf des Gartenplans, sodass beide nebeneinander gelesen werden können.
 - **Er erinnert sich nicht.** Keine Familie, kein Abstand und keine Bedarfsreihenfolge stammt aus Allgemeinwissen, und Nachbarn werden nicht als Fruchtfolgeregel gelesen.
 

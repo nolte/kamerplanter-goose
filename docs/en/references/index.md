@@ -45,6 +45,8 @@ Each recipe has a guide of its own, linked from its name.
 | [`garden-plan`](../guides/garden-plan.md) | no | Planting-run proposals for chosen crops, for review; applies nothing |
 | [`season-plan`](../guides/season-plan.md) | no | The plan laid on twelve months, with its successions |
 | [`crop-rotation-plan`](../guides/crop-rotation-plan.md) | no | One plant family per bed and season, with verdicts and conflicts; records nothing |
+| [`succession-plan`](../guides/succession-plan.md) | no | Sequential and staggered successions per bed for one season; records nothing |
+| [`bed-layout-plan`](../guides/bed-layout-plan.md) | no | Runs per bed with capacity per month, conflicts and runs not placed; records nothing |
 | [`plant-master-data-check`](../guides/plant-master-data-check.md) | no | Which plants lack the master data a later analysis would need |
 | [`domain-review`](../guides/domain-review.md) | to `.audits/` only | Reviews a recipe or spec as one grower persona |
 | [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **yes** | Analyses one queued diary entry and submits the result |
@@ -73,6 +75,9 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `plant-planning` | Planting-run proposals with identifiers, rationale and confidence; calls no tool |
 | `rotation-history-collect` | Each crop's family, demand class and green-manure suitability, and the plants and inspections per location, archived included |
 | `crop-rotation-planning` | One family per bed and season, with a verdict and its rule for every crop considered and every conflict named; calls no tool |
+| `companion-spacing-collect` | Each crop's catalog companions with their scores, and its seed density as context only |
+| `succession-planning` | Which runs can follow each other in one bed, and staggered sowings at the caller's interval; calls no tool |
+| `bed-layout-planning` | Which run stands in which bed, its need, and the capacity per bed and month; calls no tool |
 | `diary-measurements-read` | The recorded measurements of one plant's diary, with a report of how much was read |
 | `care-planning` | The domain results put into one list ordered by urgency, with what has no action; calls no tool |
 | `watering-decision` | Water now, wait, or insufficient evidence, from the plant's present state; calls no tool |
