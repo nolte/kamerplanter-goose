@@ -67,6 +67,10 @@ prompt: |
     `mcp__kamerplanter__assign_species_phase_sequence`.
   - Call NO Home Assistant tool at all. Sensor readings say nothing about
     whether a record is filled in.
+  - Forbidden on Home Assistant: turning anything on or off, setting a value,
+    and running a script, scene, or automation.
+  - Two Home Assistant intents have no classified effect, so a read-only run
+    must not call them. Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print an API key or a token.
   - Do NOT call `mcp__kamerplanter__get_plant` per plant. The list response
     already carries every field this recipe checks; a per-plant call costs a

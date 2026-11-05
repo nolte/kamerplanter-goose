@@ -50,9 +50,9 @@ prompt: |
     Forbidden on Home Assistant: any tool that turns something on or off, sets
     a value, or runs a script, scene, or automation. That side stays a category
     because its catalog is assembled per instance and cannot be enumerated here.
-  - Two Home Assistant tools have no classified effect and are also forbidden
-    here, by name: `TimeTillErnte` and `time_till`. Their descriptions do not
-    say whether they act, so a read-only run must not call them.
+  - Two Home Assistant tools have no classified effect: their descriptions do
+    not say whether they act, so a read-only run must not call them.
+    Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print the value of an API key or token, not even partially.
   - Do not stop at the first failure. If a step fails, record it and continue
     with the remaining steps.

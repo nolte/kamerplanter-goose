@@ -273,6 +273,111 @@ def missing_from_policy(
     )
 
 
+# Home Assistant's catalog is assembled per instance, so its actuating side
+# cannot be forbidden by name the way the twelve are. A read-only recipe
+# forbids it by category behind a literal marker instead, and the marker's
+# paragraph has to name every category — the words prove the categories are
+# named, the marker carries the meaning (#75).
+HA_CATEGORY_MARKER = "Forbidden on Home Assistant:"
+HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
+
+# Two intents on the reference instance whose effect is unclassified
+# (spec/mcp/home-assistant-mcp-server/en.md). Until the operator classifies
+# them, a read-only recipe forbids both by name and calls neither.
+HA_UNCLASSIFIED_INTENTS = ("TimeTillErnte", "time_till")
+
+
+# The markers a read-only recipe's policy is read at: `Permitted by name:` is
+# not policy there, for the reason `calls_state_changing_tools` gives.
+READ_ONLY_MARKERS = ("Forbidden by name:",)
+
+
+def ha_category_paragraphs(prompt: str) -> list[str]:
+    """The paragraph each `Forbidden on Home Assistant:` marker opens.
+
+    A paragraph runs from the marker to the end of its line, then across the
+    following lines until a blank (whitespace-only) line or a bullet indented
+    at most as deep as the line carrying the marker. A deeper bullet continues
+    it, so the categories may be listed as nested bullets. Text before the
+    marker on its own line is not part of it.
+
+    Deliberately simpler than `policy_spans`: that one bounds a run of names,
+    this one bounds prose, so a prose line continues it where it would end a
+    name block.
+    """
+    paragraphs = []
+    for match in re.finditer(re.escape(HA_CATEGORY_MARKER), prompt):
+        line_start = prompt.rfind("\n", 0, match.start()) + 1
+        marker_line = prompt[line_start:]
+        marker_indent = len(marker_line) - len(marker_line.lstrip())
+        newline = prompt.find("\n", match.end())
+        if newline == -1:
+            paragraphs.append(prompt[match.end():])
+            continue
+        lines = [prompt[match.end():newline]]
+        for line in prompt[newline + 1:].split("\n"):
+            if not line.strip():
+                break
+            if BULLET_PREFIX_PATTERN.match(line) and (
+                len(line) - len(line.lstrip()) <= marker_indent
+            ):
+                break
+            lines.append(line)
+        paragraphs.append("\n".join(lines))
+    return paragraphs
+
+
+def ha_category_missing(prompt: str) -> list[str]:
+    """`HA_CATEGORY_TERMS` absent from every marker paragraph, sorted.
+
+    Case-insensitive substring match over the union of all marker paragraphs,
+    with every whitespace run collapsed to one space first, so a category may
+    wrap across a line and the categories may be split across two markers. No
+    marker means all five are missing.
+
+    Known limits, accepted: the terms are keywords, not structure — a paragraph
+    can name all five and forbid nothing, and the marker is what carries the
+    prohibition. A substring also matches inside a longer word (`scenery`).
+    Both can only pass a recipe that names the categories badly, never fail one
+    that names them well.
+    """
+    text = " ".join(" ".join(ha_category_paragraphs(prompt)).split()).lower()
+    return sorted(term for term in HA_CATEGORY_TERMS if term not in text)
+
+
+def ha_intents_outside_policy(
+    text: str, markers: tuple[str, ...] = POLICY_MARKERS
+) -> list[str]:
+    """`HA_UNCLASSIFIED_INTENTS` named outside every block of `markers`, sorted.
+
+    Matched as `tool_pattern` matches a tool — bare or `mcp__<server>__`
+    prefixed, never inside a longer name. A read-only recipe passes
+    `READ_ONLY_MARKERS`, as the write-guard does; a skill passes both.
+    """
+    remainder = outside_policy(text, markers)
+    return sorted(
+        intent
+        for intent in HA_UNCLASSIFIED_INTENTS
+        if tool_pattern(intent).search(remainder)
+    )
+
+
+def ha_intents_missing_from_policy(
+    prompt: str, markers: tuple[str, ...] = POLICY_MARKERS
+) -> list[str]:
+    """`HA_UNCLASSIFIED_INTENTS` not named inside any block of `markers`, sorted.
+
+    The complement question to the one above, for the reason
+    `missing_from_policy` gives: an absent name is outside nothing.
+    """
+    inside = policy_text(prompt, markers)
+    return sorted(
+        intent
+        for intent in HA_UNCLASSIFIED_INTENTS
+        if not tool_pattern(intent).search(inside)
+    )
+
+
 SKILL_SERVER_REFERENCE = "mcp__kamerplanter__"
 
 
@@ -752,6 +857,57 @@ def check_recipe(path: Path, findings: Findings) -> None:
             "block.",
         )
 
+    # Home Assistant (#75), for read-only recipes only: an `-apply` recipe
+    # forbids every Home Assistant tool outright. `extensions.yaml` loads the
+    # server into every run, so every read-only recipe is selected, not only
+    # those that mention it. The category marker and the intent block are read
+    # in `prompt` alone, for the reason the twelve are; a promptless recipe
+    # already has its finding. A call is a call wherever it sits, so the
+    # outside-policy read covers the whole body, as the write-guard's does.
+    if not is_apply:
+        if prompt_text.strip():
+            if not ha_category_paragraphs(prompt_text):
+                findings.error(
+                    where,
+                    f"has no `{HA_CATEGORY_MARKER}` marker in its `prompt`. "
+                    "The Home Assistant catalog is assembled per instance, so "
+                    "a read-only recipe cannot forbid its actuating tools by "
+                    "name and has to forbid them by category "
+                    "(spec/mcp/home-assistant-mcp-server/en.md). Open one "
+                    f"paragraph with the marker and name in it: "
+                    f"{', '.join(HA_CATEGORY_TERMS)}.",
+                )
+            elif omitted := ha_category_missing(prompt_text):
+                findings.error(
+                    where,
+                    f"its `{HA_CATEGORY_MARKER}` paragraph omits "
+                    f"{', '.join(omitted)}. A Home Assistant category left "
+                    "unnamed is one the per-instance catalog may still offer "
+                    "(spec/mcp/home-assistant-mcp-server/en.md). The "
+                    "paragraph ends at a blank line or at a bullet no deeper "
+                    "than the marker's line.",
+                )
+            if absent := ha_intents_missing_from_policy(prompt_text, READ_ONLY_MARKERS):
+                findings.error(
+                    where,
+                    "leaves unclassified Home Assistant intents out of its "
+                    f"`Forbidden by name:` block ({', '.join(absent)}). Their "
+                    "effect is unclassified, so a read-only recipe forbids "
+                    "them by name in `prompt` "
+                    "(spec/mcp/home-assistant-mcp-server/en.md); a prose "
+                    "prohibition is not a block.",
+                )
+        if named := ha_intents_outside_policy(body, READ_ONLY_MARKERS):
+            findings.error(
+                where,
+                f"calls unclassified Home Assistant intents ({', '.join(named)}) "
+                "outside a `Forbidden by name:` block. Under the policy-block "
+                "convention a name outside every block is a call, and a "
+                "read-only recipe must not call either while their effect is "
+                "unclassified (spec/mcp/home-assistant-mcp-server/en.md). Move "
+                "the name into the block and keep the explanation out of it.",
+            )
+
     # A recipe that writes a file says so, suffix or not. `-apply` is reserved
     # for backend state, so a report-writing recipe has nothing else to warn
     # with — and a reader who granted the run on the strength of "read-only"
@@ -945,6 +1101,19 @@ def check_skills(findings: Findings) -> None:
                 "name:` run, or — if the skill really writes — list the tool "
                 "under `Permitted by name:` and load it only from `-apply` "
                 "recipes.",
+            )
+        # A skill composes into the recipe's context, so an intent it names in
+        # instruction text is a call in every recipe that loads it (#75).
+        intents = ha_intents_outside_policy(skill_instruction_text(text))
+        if intents:
+            findings.error(
+                f".claude/skills/{skill}",
+                f"names unclassified Home Assistant intents ({', '.join(intents)}) "
+                "in instruction text outside a policy block, which makes them "
+                "calls in every recipe that loads the skill. Their effect is "
+                "unclassified (spec/mcp/home-assistant-mcp-server/en.md): keep "
+                "them inside a `Forbidden by name:` run, or move an "
+                "explanatory sentence verbatim under `## Gotchas`.",
             )
         for allowed in stale_skill_allowances(text, skill):
             findings.error(
@@ -1698,6 +1867,212 @@ PERMITTED_SPLIT = (
     + "."
 )
 
+# One shape per way the Home Assistant category paragraph can be bounded wrong:
+# (name, prompt, expected paragraph count, expected missing terms). The count
+# pins "no marker" apart from "marker with nothing after it", which
+# `ha_category_missing` alone cannot tell apart.
+HA_CATEGORY_CASES = [
+    (
+        "no marker is no paragraph, and every category is missing",
+        "  - Call NO Home Assistant tool. Do not turn anything on or off, set a\n"
+        "    value, or run a script, scene, or automation.",
+        0,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "a marker naming every category on its line is complete",
+        "  - Forbidden on Home Assistant: on or off, value, script, scene, automation.",
+        1,
+        [],
+    ),
+    (
+        "continuation lines belong to the paragraph",
+        "  - Forbidden on Home Assistant: any tool that turns something on or off,\n"
+        "    sets a value, or runs a script, scene, or automation.",
+        1,
+        [],
+    ),
+    (
+        "the categories match case-insensitively",
+        "  - Forbidden on Home Assistant: turning ON OR OFF, a Value, a Script, a\n"
+        "    Scene, an Automation.",
+        1,
+        [],
+    ),
+    (
+        "a blank line ends the paragraph",
+        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "\n"
+        "    Nor run a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script"],
+    ),
+    (
+        "a sibling bullet ends the paragraph",
+        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "  - Do not run a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script"],
+    ),
+    (
+        "a deeper bullet continues the paragraph",
+        "  - Forbidden on Home Assistant:\n"
+        "    - turning something on or off\n"
+        "    - setting a value\n"
+        "    - running a script, scene, or automation",
+        1,
+        [],
+    ),
+    # connectivity-check's shape: the marker opens a continuation line of a
+    # bullet, so the next bullet sits shallower than the marker's line.
+    (
+        "a shallower bullet after a continuation-line marker ends the paragraph",
+        "  - Call NO tool that changes state.\n"
+        "    Forbidden on Home Assistant: any tool that turns something on or off,\n"
+        "    sets a value, or runs a script or scene.\n"
+        "  - Never trigger an automation.",
+        1,
+        ["automation"],
+    ),
+    # Prompts are hard-wrapped, so a two-word category breaks across a line as
+    # often as not; whitespace runs are collapsed before the match.
+    (
+        "a category wrapped across lines still counts",
+        "  - Forbidden on Home Assistant: any tool that turns something on or\n"
+        "    off, sets a value, or runs a script, scene, or automation.",
+        1,
+        [],
+    ),
+    (
+        "categories before the marker on its line do not count",
+        "  - No script, scene, or automation. Forbidden on Home Assistant: on or\n"
+        "    off, value.",
+        1,
+        ["automation", "scene", "script"],
+    ),
+    (
+        "two markers split the categories between them",
+        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "  - Forbidden on Home Assistant: running a script, scene, or automation.",
+        2,
+        [],
+    ),
+    (
+        "a marker with nothing after it is a paragraph missing every category",
+        "  - Forbidden on Home Assistant:\n"
+        "  - Call no Kamerplanter write.",
+        1,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+]
+
+# One shape per way the unclassified-intent guard can misread a recipe body:
+# (name, text, expected outside policy, expected missing from policy), both
+# read at the read-only recipe's markers.
+HA_INTENT_CASES = [
+    (
+        "both intents inside the block are policy",
+        "  - Forbidden by name: `TimeTillErnte`, `time_till`.",
+        [],
+        [],
+    ),
+    # The prose form nine recipes carry on develop: a prohibition in English,
+    # which is outside every block and therefore reads as a call.
+    (
+        "a prose prohibition is outside policy and declares nothing",
+        "  - Call NO Home Assistant tool, and do not call `TimeTillErnte` or\n"
+        "    `time_till`: their effect is unclassified.",
+        ["TimeTillErnte", "time_till"],
+        ["TimeTillErnte", "time_till"],
+    ),
+    (
+        "one intent in the block and the other in prose",
+        "  - Forbidden by name: `TimeTillErnte`.\n"
+        "  - Do not call `time_till` either.",
+        ["time_till"],
+        ["time_till"],
+    ),
+    (
+        "a name after the block is outside it even when the block is complete",
+        "  - Forbidden by name: `TimeTillErnte`, `time_till`.\n"
+        "  - Step 4 - call `time_till` for the harvest estimate.",
+        ["time_till"],
+        [],
+    ),
+    (
+        "the prefixed form counts as the intent",
+        "  - Step 4 - call `mcp__home_assistant__time_till`.",
+        ["time_till"],
+        ["TimeTillErnte", "time_till"],
+    ),
+    # `_` is a word character, so a plain `\b` would also fail to separate a
+    # longer name; the boundary has to treat it as part of the name.
+    (
+        "a longer name containing an intent is not the intent",
+        "  - Read `time_till_days` and `TimeTillErnteSensor`.",
+        [],
+        ["TimeTillErnte", "time_till"],
+    ),
+    (
+        "a permitted block is not policy on a read-only recipe",
+        "  - Permitted by name: `TimeTillErnte`, `time_till`.",
+        ["TimeTillErnte", "time_till"],
+        ["TimeTillErnte", "time_till"],
+    ),
+    (
+        "an intent named in the category paragraph is outside policy",
+        "  - Forbidden on Home Assistant: on or off, value, script, scene,\n"
+        "    automation, and by name `TimeTillErnte` and `time_till`.",
+        ["TimeTillErnte", "time_till"],
+        ["TimeTillErnte", "time_till"],
+    ),
+]
+
+# The skill side of the same guard, read through `skill_instruction_text` and
+# both markers as `check_skills` will: (name, SKILL.md text, expected outside).
+HA_SKILL_INTENT_CASES = [
+    # harvest-planning's shape on develop.
+    (
+        "a prose prohibition in Hard rules is outside policy",
+        "## Hard rules\n\n"
+        "- Call no Home Assistant tool, and never `TimeTillErnte` or `time_till`.\n",
+        ["TimeTillErnte", "time_till"],
+    ),
+    (
+        "both intents in a Forbidden by name run are policy",
+        "## Hard rules\n\n"
+        "- Call no Home Assistant tool. Forbidden by name: `TimeTillErnte`, "
+        "`time_till`.\n",
+        [],
+    ),
+    (
+        "an intent explained under Gotchas is not instruction",
+        "## Hard rules\n\n"
+        "- Forbidden by name: `TimeTillErnte`, `time_till`.\n\n"
+        "## Gotchas\n\n"
+        "- `TimeTillErnte` looks like the answer to a harvest question.\n",
+        [],
+    ),
+    (
+        "an intent in a procedure step is outside policy",
+        "## Procedure\n\n1. Ask `time_till` for the estimate.\n\n"
+        "## Hard rules\n\n- Forbidden by name: `TimeTillErnte`, `time_till`.\n",
+        ["time_till"],
+    ),
+]
+
+# A read-only recipe that satisfies both Home Assistant rules. Every
+# `RECIPE_TEMPLATE` recipe is read-only, so after the guard lands every case
+# below that omits this fragment also reports the Home Assistant findings —
+# none of the earlier cases' forbidden needles occur in them, which is why
+# every Home Assistant finding names "Home Assistant" and none of those needles.
+HA_CATEGORY_BLOCK = (
+    "  - Forbidden on Home Assistant: any tool that turns something on or off,\n"
+    "    sets a value, or runs a script, scene, or automation."
+)
+HA_INTENT_BLOCK = "  - Forbidden by name: `TimeTillErnte`, `time_till`."
+HA_CLEAN = HA_CATEGORY_BLOCK + "\n" + HA_INTENT_BLOCK
+
 RECIPE_CASES = [
     (
         "a complete block reports nothing",
@@ -1766,6 +2141,99 @@ RECIPE_CASES = [
         ["calls state-changing tools", "rename the file", "declares 0 of the 12"],
         ["parses as empty"],
     ),
+    # The Home Assistant guard (#75). Each Home Assistant finding names "Home
+    # Assistant"; the needles below pin which one fires, and "Home Assistant"
+    # as a forbidden needle means none does.
+    (
+        "both Home Assistant rules met report no Home Assistant finding",
+        COMPLETE_BLOCK + "\n" + HA_CLEAN,
+        PLAIN_INSTRUCTIONS,
+        [],
+        ["Home Assistant"],
+    ),
+    (
+        "a prompt without the category marker is a finding",
+        COMPLETE_BLOCK + "\n" + HA_INTENT_BLOCK,
+        PLAIN_INSTRUCTIONS,
+        ["no `Forbidden on Home Assistant:` marker"],
+        ["paragraph omits"],
+    ),
+    (
+        "a marker missing a category names the category",
+        COMPLETE_BLOCK
+        + "\n  - Forbidden on Home Assistant: any tool that turns something on or off,\n"
+        "    sets a value, or runs a script or automation.\n"
+        + HA_INTENT_BLOCK,
+        PLAIN_INSTRUCTIONS,
+        ["paragraph omits scene"],
+        ["no `Forbidden on Home Assistant:` marker"],
+    ),
+    # Only `prompt` counts, for the reason the twelve's completeness check is
+    # scoped to it: `instructions` is not enforced on a headless run.
+    (
+        "the category marker in `instructions` does not count",
+        COMPLETE_BLOCK + "\n" + HA_INTENT_BLOCK,
+        HA_CATEGORY_BLOCK,
+        ["no `Forbidden on Home Assistant:` marker"],
+        [],
+    ),
+    (
+        "an intent named in prose in the prompt is a call",
+        COMPLETE_BLOCK
+        + "\n"
+        + HA_CLEAN
+        + "\n  - Do not call `TimeTillErnte` for a harvest date.",
+        PLAIN_INSTRUCTIONS,
+        ["calls unclassified Home Assistant intents (TimeTillErnte)"],
+        ["out of its `Forbidden by name:` block"],
+    ),
+    (
+        "an intent named in prose in `instructions` is a call too",
+        COMPLETE_BLOCK + "\n" + HA_CLEAN,
+        "  Do not call `time_till`.",
+        ["calls unclassified Home Assistant intents (time_till)"],
+        ["out of its `Forbidden by name:` block"],
+    ),
+    (
+        "one intent absent from the block is a finding naming it",
+        COMPLETE_BLOCK + "\n" + HA_CATEGORY_BLOCK + "\n  - Forbidden by name: `TimeTillErnte`.",
+        PLAIN_INSTRUCTIONS,
+        ["out of its `Forbidden by name:` block (time_till)"],
+        ["calls unclassified Home Assistant intents"],
+    ),
+    (
+        "both intents forbidden only in `instructions` are missing from the prompt",
+        COMPLETE_BLOCK + "\n" + HA_CATEGORY_BLOCK,
+        HA_INTENT_BLOCK,
+        ["out of its `Forbidden by name:` block (TimeTillErnte, time_till)"],
+        ["calls unclassified Home Assistant intents"],
+    ),
+    # The prose form on develop: categories without the marker, intents in an
+    # English prohibition. Both rules fire, neither hides the other.
+    (
+        "the prose form on develop fails both rules",
+        COMPLETE_BLOCK
+        + "\n  - Call NO Home Assistant tool. Specifically, do not turn anything on or\n"
+        "    off, do not set a value, do not run a script, scene, or automation, and\n"
+        "    do not call `TimeTillErnte` or `time_till`.",
+        PLAIN_INSTRUCTIONS,
+        [
+            "no `Forbidden on Home Assistant:` marker",
+            "calls unclassified Home Assistant intents (TimeTillErnte, time_till)",
+            "out of its `Forbidden by name:` block (TimeTillErnte, time_till)",
+        ],
+        [],
+    ),
+    # The rule is for read-only recipes; an `-apply` recipe forbids every Home
+    # Assistant tool outright and is not selected at all.
+    (
+        "an -apply recipe reports no Home Assistant finding",
+        COMPLETE_BLOCK + "\n  - Call NO Home Assistant tool at all, not `TimeTillErnte` either.",
+        PLAIN_INSTRUCTIONS,
+        [],
+        ["Home Assistant"],
+        "selftest-apply.yaml",
+    ),
 ]
 
 
@@ -1775,19 +2243,22 @@ def indent_block(text: str) -> str:
     )
 
 
-def recipe_case_findings(prompt_body: str, instructions_body: str) -> list[str]:
+def recipe_case_findings(
+    prompt_body: str, instructions_body: str, filename: str = "selftest-check.yaml"
+) -> list[str]:
     """Run the real `check_recipe` over a synthetic recipe built on disk.
 
-    The filename carries no `-apply` suffix, so this is the read-only path —
-    the only one that calls the write-guard with `is_apply=False`, and
+    The default filename carries no `-apply` suffix, so this is the read-only
+    path — the only one that calls the write-guard with `is_apply=False`, and
     therefore the only place the marker choice for `Permitted by name:` is
-    observable at all.
+    observable at all. A case passes an `-apply` filename only to show a guard
+    does not select it.
     """
     text = RECIPE_TEMPLATE.format(instructions=indent_block(instructions_body))
     if prompt_body.strip():
         text += PROMPT_FIELD.format(prompt=indent_block(prompt_body))
     with tempfile.TemporaryDirectory() as tmp:
-        path = Path(tmp) / "selftest-check.yaml"
+        path = Path(tmp) / filename
         path.write_text(text, encoding="utf-8")
         findings = Findings()
         check_recipe(path, findings)
@@ -1850,8 +2321,52 @@ def run_self_test() -> int:
         return 1
     print(f"OK — {len(PERMITTING_LOAD_CASES)} permitting-load cases hold.")
 
-    for name, prompt_body, instructions_body, required, forbidden in RECIPE_CASES:
-        reported = "\n".join(recipe_case_findings(prompt_body, instructions_body))
+    for name, prompt, count, expected in HA_CATEGORY_CASES:
+        paragraphs = len(ha_category_paragraphs(prompt))
+        actual = ha_category_missing(prompt)
+        if paragraphs != count or actual != sorted(expected):
+            failures += 1
+            print(
+                f"  FAIL {name}\n       expected {count} paragraph(s) / missing "
+                f"{sorted(expected)}, got {paragraphs} / missing {actual}"
+            )
+    if failures:
+        print(f"\n{failures} of {len(HA_CATEGORY_CASES)} Home Assistant category case(s) failed.")
+        return 1
+    print(f"OK — {len(HA_CATEGORY_CASES)} Home Assistant category cases hold.")
+
+    for name, text, outside_expected, missing_expected in HA_INTENT_CASES:
+        outside = ha_intents_outside_policy(text, READ_ONLY_MARKERS)
+        missing = ha_intents_missing_from_policy(text, READ_ONLY_MARKERS)
+        if outside != sorted(outside_expected) or missing != sorted(missing_expected):
+            failures += 1
+            print(
+                f"  FAIL {name}\n       expected outside {sorted(outside_expected)} / "
+                f"missing {sorted(missing_expected)}, got outside {outside} / "
+                f"missing {missing}"
+            )
+    if failures:
+        print(f"\n{failures} of {len(HA_INTENT_CASES)} Home Assistant intent case(s) failed.")
+        return 1
+    print(f"OK — {len(HA_INTENT_CASES)} Home Assistant intent cases hold.")
+
+    for name, skill_text, expected in HA_SKILL_INTENT_CASES:
+        actual = ha_intents_outside_policy(skill_instruction_text(skill_text))
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(
+            f"\n{failures} of {len(HA_SKILL_INTENT_CASES)} Home Assistant skill "
+            "intent case(s) failed."
+        )
+        return 1
+    print(f"OK — {len(HA_SKILL_INTENT_CASES)} Home Assistant skill intent cases hold.")
+
+    for name, prompt_body, instructions_body, required, forbidden, *filename in RECIPE_CASES:
+        reported = "\n".join(
+            recipe_case_findings(prompt_body, instructions_body, *filename)
+        )
         for needle in required:
             if needle not in reported:
                 failures += 1

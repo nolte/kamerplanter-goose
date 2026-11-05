@@ -91,9 +91,9 @@ Both are custom intents of the reference instance and appear on no stock Home As
 - **MUST** discover the available tools at runtime and **MUST NOT** assume any named Home Assistant tool exists; every tool reference in a `prompt` is conditional ("prefer X if present, otherwise …")
 - **MUST** report an absent expected tool as an explicit step result, never silently substitute a different tool or answer from memory
 - **MUST** state required arguments in the `prompt` when calling a tool whose mandatory arguments matter — the server's `inputSchema` omits `required`, so the model cannot infer them
-- **MUST** forbid actuation in the `prompt` — not only in `instructions` — for any recipe that is not an `-apply` recipe, and **MUST** name the categories it forbids (turning devices on or off, setting values, running scripts, scenes, or automations)
+- **MUST** forbid actuation in the `prompt` — not only in `instructions` — for any recipe that is not an `-apply` recipe, and **MUST** name the categories it forbids (turning devices on or off, setting values, running scripts, scenes, or automations), in the marker form `spec/goose/recipe-project-pattern/` fixes
 - **MUST** name the authoritative source in its prompt when a recipe touches plant tasks, since the `Kamerplanter Tasks` to-do list mirrors data that Kamerplanter's own MCP server also serves
-- **MUST NOT** call `TimeTillErnte` or `time_till` from a read-only recipe while their effect is unclassified
+- **MUST NOT** call `TimeTillErnte` or `time_till` from a read-only recipe while their effect is unclassified; a read-only recipe names them inside its `Forbidden by name:` block, as `spec/goose/recipe-project-pattern/` fixes
 - **SHOULD** prefer `GetLiveContext` for state reads, since it is the documented state-query entry point and backs the published resource
 - **SHOULD** treat a shrinking tool list as an instance-side failure worth reporting: an integration platform that raises is skipped silently upstream
 - **MAY** read the `homeassistant://assist/context-snapshot` resource instead of calling `GetLiveContext` when a recipe wants the whole snapshot rather than a filtered view
