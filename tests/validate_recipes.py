@@ -823,7 +823,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
         # Keying the suppression on `missing` alone had also removed a check
         # `develop` has. Measured: a recipe with no `prompt` that calls
         # `archive_plant` from `instructions` reported twice on `develop` and
-        # once here, because `missing` is all twelve for an empty prompt while
+        # once here, because `missing` is the whole set for an empty prompt while
         # completeness stays silent for the same reason.
         block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
             missing
@@ -850,8 +850,9 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # grown three times — four names, then seven, then twelve, then sixteen. A
     # list written against an earlier count is a subset today, and the guard
     # above cannot see that: it reads names OUTSIDE a policy block, and an
-    # absent name is outside nothing. Measured on 2026-09-14: every recipe here names all twelve, so
-    # this check starts green and stays a floor.
+    # absent name is outside nothing. Measured on 2026-09-14: every recipe
+    # here named all twelve then, so this check started green and stays a
+    # floor.
     #
     # Scoped to `prompt`, never to `body`. The MUST is about the prompt
     # precisely because `instructions` is not enforced on a headless run, so
@@ -871,7 +872,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # markers either way.
     #
     # What this therefore does NOT bound is what an `-apply` recipe may
-    # declare permitted: one that puts all twelve under `Permitted by name:`
+    # declare permitted: one that puts the whole set under `Permitted by name:`
     # passes completeness, measured. Bounding that needs a per-recipe
     # allowance register, which this branch removed deliberately after it
     # produced findings in every round it existed. Tracked in #34.

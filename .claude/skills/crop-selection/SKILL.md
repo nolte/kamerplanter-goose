@@ -94,7 +94,7 @@ UNKNOWN SITE PARAMETERS: <as listed by site-analysis>
 - Never treat a missing list, a missing field or a missing companion entry as evidence either way.
 - Never report a pool read from `list_species` as the catalog.
 - Never report a field the skill did not read.
-- Pass `tenant` where a tool takes it; `get_species_info` does not.
+- Pass `tenant` where a tool takes it, `list_species` and `get_species_info` included: since 2026-11-05 they take an optional `tenant` that adds the garden's own catalog entries to the shared ones, so a sample without it leaves the garden's own species out.
 - Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`, `mcp__kamerplanter__clone_nutrient_plan`, `mcp__kamerplanter__set_nutrient_plan_phase_targets`, `mcp__kamerplanter__create_substrate_mix`, `mcp__kamerplanter__set_plant_substrate`.
 - Report a tool error verbatim, mark the affected constraint `undetermined` with the error as the reason, and continue.
 

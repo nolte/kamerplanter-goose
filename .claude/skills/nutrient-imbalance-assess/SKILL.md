@@ -47,7 +47,7 @@ An empty result after a real read is ordinary. It puts the assessment at tier 3 
 
 ### 3. Read the substrate
 
-Call `mcp__kamerplanter__list_substrates` and match the plant's medium. `ph_base`, `ec_base_ms`, `buffer_capacity`, and `cec_meq_per_100g` decide how far a reading may drift before it means anything, and how fast a correction will act.
+Call `mcp__kamerplanter__list_substrates` with `tenant` and match the plant's medium; without `tenant` a mix the garden created itself is missing from the list. `ph_base`, `ec_base_ms`, `buffer_capacity`, and `cec_meq_per_100g` decide how far a reading may drift before it means anything, and how fast a correction will act.
 
 The same weekly dose is unremarkable in a high-CEC, well-buffered medium and an oversupply in an inert one. A plan's `recommended_substrate_type` states which it assumed; a mismatch with the actual medium undermines every target comparison and is a finding in its own right.
 
