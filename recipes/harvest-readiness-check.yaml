@@ -75,6 +75,9 @@ parameters:
     description: >-
       The date to judge against (YYYY-MM-DD). Empty uses the date the growth
       stage assessment fixed; with none, no timing and no gate is computed.
+      Give it with observations: an observation carries no date, so with
+      observations and no as_of the harvest-month position and the gate are
+      not computed.
 
 # No `extensions:` block on purpose — see extensions.yaml.
 
@@ -132,6 +135,12 @@ prompt: |
     growth stage or a photo alone, never compute a harvest date from days to
     maturity, and never invent an observation, a treatment date, a yield or a
     date.
+  - If an own observation is given and the assessment date is empty, compute
+    neither the harvest-month position nor the safety-interval gate: report
+    both as `not computed (observation undated)`, and never fall back to an
+    older diary date for them.
+  - A treatment whose safety interval cannot be read never counts as passed:
+    the gate is then unknown unless another treatment blocks.
   - Report a tool error verbatim as a step result and continue with the rest.
 
   Step 1 — Context.
@@ -194,6 +203,6 @@ prompt: |
   any tool error reported verbatim.
 
   Close with one line, on a single line:
-  `HARVEST READINESS: <ready | approaching | not ready | not harvestable | insufficient evidence> (gate: <clear | blocked until <date> | unknown>) — {{ plant_key }}`
+  `HARVEST READINESS: <ready | approaching | not ready | not harvestable | insufficient evidence> (gate: <clear | blocked until <date> | unknown | not computed>) — {{ plant_key }}`
   If a step failed and no judgement could be reached, close instead with
   `HARVEST READINESS: not assessed — {{ plant_key }}`.

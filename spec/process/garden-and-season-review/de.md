@@ -36,8 +36,8 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 ### A. Eingaben
 
-- **MUSS [MUST]** den Gartenkontext-Block von `garden-context`, die Pflanzenkontext-Blöcke von `plant-context-collect` (einschließlich Pflegeprotokoll und Inspektionen) und die Leseberichte von `diary-measurements-read` so übernehmen, wie sie sind, und **DARF [MAY]** Übergabeblöcke des Wachstumsstadiums, Ergebnisse der Ernteplanung und vom Aufrufer gelieferte Nährstoff- oder Schädlingsergebnisse so übernehmen, wie sie sind
-- **MUSS [MUST]** als vom Aufrufer geliefert, mit `caller` gekennzeichnet, nur Tatsachen annehmen, für die der Server keine Quelle hat: Erträge als `plant_key:amount unit`, Notizen zu einer Pflanze oder zur Saison, das Wetter der Saison und das Beurteilungsdatum
+- **MUSS [MUST]** den Gartenkontext-Block von `garden-context`, die Pflanzenkontext-Blöcke von `plant-context-collect` (einschließlich Pflegeprotokoll und Inspektionen) und die Leseberichte von `diary-measurements-read` so übernehmen, wie sie sind, und **DARF [MAY]** Übergabeblöcke des Wachstumsstadiums und vom Aufrufer gelieferte Nährstoff- oder Schädlingsergebnisse so übernehmen, wie sie sind; die Rückschau-Rezepte **DÜRFEN NICHT [MUST NOT]** die Ernteplanung selbst ausführen
+- **MUSS [MUST]** als vom Aufrufer geliefert, mit `caller` gekennzeichnet, nur Tatsachen annehmen, für die der Server keine Quelle hat: Erträge als `plant_key:amount unit`, Ernteergebnisse als `plant_key:<readiness result>[:YYYY-MM-DD]` (meist aus den Schlusszeilen von Prüfungen der Erntereife übernommen), Notizen zu einer Pflanze oder zur Saison, das Wetter der Saison und das Beurteilungsdatum, und **MUSS [MUST]** das Ernteergebnis einer Pflanze nur aus einem solchen Ernteergebnis füllen, sonst fehlt es
 - **MUSS [MUST]** einen Ertrag des Aufrufers als Stufe 3 lesen, eine bestätigte Beobachtung, und dabei die offene Frage zum Gewicht einer Aussage des Aufrufers weitertragen, und **DARF NICHT [MUST NOT]** einen `measurements`-Schlüssel des Tagebuchs als Ertrag lesen
 - **MUSS [MUST]** jede fehlende Eingabe als fehlend mit Grund melden, `no source` oder `not collected`, und **DARF NICHT [MUST NOT]** sie auffüllen
 
@@ -45,8 +45,8 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **MUSS [MUST]** zwei Umfänge anbieten: `garden`, den Garten bis zum Beurteilungsdatum, und `season`, eine begrenzte Zeitspanne
 - **MUSS [MUST]** die Zeitspanne im Saisonumfang als Jahr `YYYY` annehmen, gelesen als `YYYY-01-01..YYYY-12-31`, oder als `YYYY-MM-DD..YYYY-MM-DD` mit einem Beginn nicht nach dem Ende, und **MUSS [MUST]** den Lauf anhalten und das Problem nennen, wenn die Zeitspanne fehlt oder ungültig ist
-- **MUSS [MUST]** im Saisonumfang die Pflanzen des Gartens mit `include_archived: true` auflisten, die Auflistung als `complete`, `partial: <reason>` oder `failed: <error verbatim>` melden und jede Pflanze so als `archived` oder `live` kennzeichnen, wie die Auflistung sie liefert
-- **MUSS [MUST]** höchstens fünf genannte Pflanzen in der angegebenen Reihenfolge betrachten und **MUSS [MUST]** die übrigen mit Grund als nicht betrachtet aufführen; ohne genannte Pflanzen **MUSS [MUST]** sie nur die Gartenebene betrachten und den Parameter nennen, der die Pflanzen liefern würde
+- **MUSS [MUST]** im Saisonumfang die Pflanzen des Gartens mit `include_archived: true` auflisten, die Auflistung als `complete`, `partial: <reason>` oder `failed: <error verbatim>` melden jede Pflanze so als `archived` oder `live` kennzeichnen, wie die Auflistung sie liefert, und **MUSS [MUST]** jede archivierte Pflanze der Auflistung melden, auch wenn Pflanzen genannt wurden
+- **MUSS [MUST]** höchstens fünf genannte Pflanzen betrachten, die ersten fünf nach Pflanzenschlüssel als Text, und **MUSS [MUST]** die übrigen mit Grund als nicht betrachtet aufführen; ohne genannte Pflanzen **MUSS [MUST]** sie nur die Gartenebene betrachten und den Parameter nennen, der die Pflanzen liefern würde
 - **MUSS [MUST]** je Pflanze den ältesten und den jüngsten geöffneten Tagebucheintrag gegenüber der Zeitspanne nennen und **MUSS [MUST]** sagen, wenn die Zeitspanne nicht abgedeckt ist, ohne weiter zu blättern
 
 ### C. Der Verlaufsdatensatz
@@ -63,13 +63,13 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **MUSS [MUST]** Ergebnisse von Bewässerung und Düngung nur aus den Bestätigungen und Aufschüben des Pflegeprotokolls nehmen und **MUSS [MUST]** Pflege mit einem Ergebnis nur als „passt zu“ verknüpfen, nie als Ursache
 - **MUSS [MUST]** die Schädlings- und Nährstoffgeschichte nur aus den erfassten Inspektionen und vom Aufrufer gelieferten Ergebnissen nehmen und **MUSS [MUST]** die Pflanzengesundheit als `not available (nolte/kamerplanter-goose#48)` melden
-- **MUSS [MUST]** jeder Lehre genau eine Art geben: eine Beobachtung mit ihrer Quelle oder eine Empfehlung für den nächsten Zyklus mit den vier Blöcken der Entscheidungsrichtlinie
+- **MUSS [MUST]** jeder Lehre genau eine Art geben: eine Beobachtung mit ihrer Quelle oder eine Empfehlung für den nächsten Zyklus mit den vier Blöcken der Entscheidungsrichtlinie, und **MUSS [MUST]** die Lehren nach Pflanzenschlüssel, dann Feld, dann Art nummerieren, nie nach dem Text der Aussage
 - **MUSS [MUST]** eine Empfehlung auf mindestens einen Posten der Stufe 1 bis 3 oder eine Aussage des Aufrufers stützen und **DARF NICHT [MUST NOT]** sie allein auf Allgemeinwissen stützen
 
 ### F. Der Block für den nächsten Zyklus
 
-- **MUSS [MUST]** `crops` im Format liefern, das die Planungsrezepte annehmen (`species_key[:cultivar_key]`, durch Kommas getrennt), jede Kultur gekennzeichnet mit `keep`, `reconsider` oder `no evidence` und dem Beleg, auf dem das ruht
-- **MUSS [MUST]** `goals` und `constraints` als freien Text liefern, nur aus den Lehren und den Notizen des Aufrufers gezogen, und `harvest_window` in den Monatsworten des Aufrufers, nur aus Ernteergebnissen und Aussagen des Aufrufers gezogen, jedes mit Grund als fehlend, wenn nichts es liefert
+- **MUSS [MUST]** `crops` im Format liefern, das die Planungsrezepte annehmen (`species_key[:cultivar_key]`, durch Kommas getrennt), jede Kultur gekennzeichnet mit `keep`, `reconsider` oder `no evidence` und dem Beleg, auf dem das ruht: `reconsider`, wenn ein Posten der Stufe 1 bis 3 oder eine Aussage des Aufrufers ein Problem festhält, mit Vorrang vor `keep`; `keep` nur, wenn der Aufrufer einen Erfolg meldet (einen Ertrag, den der Aufrufer als Erfolg kennzeichnet, oder eine Notiz) und kein Problem festgehalten ist; sonst `no evidence`, auch für eine bloße Ertragszahl
+- **MUSS [MUST]** `goals` als freien Text liefern, nur aus den Lehren und den Notizen des Aufrufers gezogen, `constraints` als freien Text, der nur erfasste oder vom Aufrufer genannte Beobachtungen zu Standort und Umgebung trägt und nie eine Lehre, und `harvest_window` in den Monatsworten des Aufrufers, nur aus Ernteergebnissen und Aussagen des Aufrufers gezogen, jedes mit Grund als fehlend, wenn nichts es liefert; `;` und `:` sind reservierte Trennzeichen in den Parametern des Aufrufers, und freier Text, der sie enthält, wird wörtlich und ungeparst gemeldet
 - **MUSS [MUST]** Zeilen zur Standortgeschichte `location_name:season:species_key[:cultivar_key]` liefern, gekennzeichnet mit „location, not bed“
 - **DARF NICHT [MUST NOT]** den Block irgendwohin schreiben; er wird als Text übergeben
 
@@ -88,8 +88,8 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ## Akzeptanzkriterien
 
 - [ ] Eine Rückschau hat den Umfang `garden` oder `season`, und eine fehlende oder ungültige Saisonspanne hält den Lauf an und nennt das Problem
-- [ ] Eine Saisonrückschau listet archivierte Pflanzen auf, meldet die Auflistung als vollständig, teilweise oder fehlgeschlagen und kennzeichnet jede Pflanze als archiviert oder lebend
-- [ ] Höchstens fünf Pflanzen werden betrachtet, die übrigen werden als nicht betrachtet genannt, und ohne Pflanzen wird nur die Gartenebene betrachtet
+- [ ] Eine Saisonrückschau listet archivierte Pflanzen auf, auch wenn Pflanzen genannt sind, meldet die Auflistung als vollständig, teilweise oder fehlgeschlagen und kennzeichnet jede Pflanze als archiviert oder lebend
+- [ ] Höchstens fünf Pflanzen werden betrachtet, ausgewählt nach Pflanzenschlüssel als Text, die übrigen werden als nicht betrachtet genannt, und ohne Pflanzen wird nur die Gartenebene betrachtet
 - [ ] Jede betrachtete Pflanze hat einen Verlaufsdatensatz mit den festen Feldern, geordnet nach Pflanzenschlüssel, jedes vorhanden mit seiner Quelle oder fehlend mit seinem Grund
 - [ ] Die Tagebuchabdeckung wird gegenüber der Zeitspanne genannt, und eine Zeitspanne, die der Tagebuch-Lesezugriff nicht abdeckt, wird benannt
 - [ ] Ertrag kommt nur vom Aufrufer, auf Stufe 3, und kein Tagebuchschlüssel wird als Ertrag gelesen
@@ -97,7 +97,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Kein Pflegeergebnis wird als durch Pflege verursacht genannt; eine Verknüpfung lautet „passt zu“
 - [ ] Pflanzengesundheit wird als `not available (nolte/kamerplanter-goose#48)` gemeldet, und die Rückschau führt keine Beurteilung des gegenwärtigen Zustands aus
 - [ ] Jede Lehre ist eine Beobachtung oder eine Empfehlung mit Beleg, Konfidenz, Unsicherheit und fehlenden Daten
-- [ ] Der Block für den nächsten Zyklus trägt `crops`, `goals`, `constraints` und `harvest_window` in den Formaten der Planungsrezepte und Zeilen zur Standortgeschichte, gekennzeichnet mit „location, not bed“
+- [ ] Der Block für den nächsten Zyklus trägt `crops`, `goals`, `constraints` und `harvest_window` in den Formaten der Planungsrezepte, `reconsider` hat Vorrang vor `keep`, `keep` braucht einen vom Aufrufer gemeldeten Erfolg, `constraints` trägt keine Lehre, und Zeilen zur Standortgeschichte sind mit „location, not bed“ gekennzeichnet
 - [ ] Nichts wird geschrieben: keine Datei, kein Tagebucheintrag
 - [ ] Zwei Läufe über dieselbe Eingabe liefern an einer festen Vorlage dieselben Fakten, und das Ergebnis sagt, was nicht zugesichert wird
 - [ ] Der Skill ruft kein Tool auf, keines der Rezepte ruft ein zustandsänderndes oder ein Home-Assistant-Tool auf, der Prompt jedes Rezepts verbietet alle zwölf namentlich, und kein `-apply`-Geschwister wird ausgeliefert

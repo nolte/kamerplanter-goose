@@ -38,14 +38,14 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **MUSS [MUST]** den Pflanzenkontext-Block von `plant-context-collect` so übernehmen, wie er ist, und **DARF NICHT [MUST NOT]** ein Tool aufrufen, um zu holen, was er schon enthält; **DARF [MAY]** den Leseberichts-Block und die Messwerte von `diary-measurements-read`, die Befunde von `plant-photo-read`, die Beurteilung des Wachstumsstadiums mit ihrem Übergabeblock für die Ernteplanung, die Wetterbefunde und den Gartenkontext-Block von `garden-context` so übernehmen, wie sie sind
 - **MUSS [MUST]** als vom Aufrufer geliefert, mit `caller` gekennzeichnet, nur Tatsachen annehmen, für die der Server keine Quelle hat: die eigene Beobachtung der Person an der Pflanze, die vorgesehene Verwendung, Wetter und Vorhersage, die ausgebrachten Behandlungen als `treatment_key:YYYY-MM-DD`, die Lagerbedingungen, die verfügbare Erntekapazität und das Beurteilungsdatum
-- **MUSS [MUST]** das Beurteilungsdatum vom Aufrufer nehmen oder, ohne eines, so, wie die Beurteilung des Wachstumsstadiums es festgelegt hat, und **DARF NICHT [MUST NOT]** das aktuelle Datum lesen
+- **MUSS [MUST]** das Beurteilungsdatum vom Aufrufer nehmen oder, ohne eines, so, wie die Beurteilung des Wachstumsstadiums es festgelegt hat, **MUSS [MUST]** weder die Position im Monatsfenster noch die Erntesperre berechnen, wenn die eigene Beobachtung der Person ohne ein Beurteilungsdatum vom Aufrufer geliefert wird, beide als `not computed (observation undated)` melden und dafür nie auf ein älteres Tagebuchdatum zurückgreifen, und **DARF NICHT [MUST NOT]** das aktuelle Datum lesen
 - **MUSS [MUST]** jede fehlende Eingabe als fehlend mit Grund melden, `no source` oder `not collected`, und **DARF NICHT [MUST NOT]** sie auffüllen
 
 ### B. Das Ergebnis zur Erntereife
 
 - **MUSS [MUST]** genau eines von `ready`, `approaching`, `not ready`, `not harvestable` und `insufficient evidence` liefern
 - **MUSS [MUST]** `not harvestable` liefern, wenn der Artdatensatz `allows_harvest: false` trägt, und **MUSS [MUST]** dann nichts weiter über die Reife urteilen
-- **MUSS [MUST]** `ready`, `approaching` und `not ready` auf ein beobachtetes Reifemerkmal der Stufe 1 bis 3 stützen (ein Tagebuch-Messwert, eine erfasste Inspektion oder die eigene Beobachtung der Person, mit `caller` gekennzeichnet) oder auf eine Fotolesung, die eine zeitliche Erwartung bestätigt, und **MUSS [MUST]** dieses Merkmal nennen
+- **MUSS [MUST]** `ready`, `approaching` und `not ready` auf ein beobachtetes Reifemerkmal der Stufe 1 bis 3 stützen (ein Tagebuch-Messwert, eine erfasste Inspektion oder die eigene Beobachtung der Person, mit `caller` gekennzeichnet) oder auf eine Fotolesung, die eine zeitliche Erwartung bestätigt, **MUSS [MUST]** dieses Merkmal nennen und **MUSS [MUST]** die Konfidenz eines Ergebnisses, das auf einer Fotolesung und einer Vorannahme der Stufe 4 ruht, als `level 4 prior + photo reading (level 3 corroboration)` angeben
 - **MUSS [MUST]** das Monatsfenster aus den `harvest_months` des gewählten Eintrags von `growing_periods[]`, die Position gegenüber `days_to_maturity` und Ergebnis und Richtung des Wachstumsstadiums als Vorannahmen der Stufe 4 lesen, die **DÜRFEN NICHT [MUST NOT]** allein entscheiden, und eine Fotolesung als Lesung ohne Stufe, die **DARF NICHT [MUST NOT]** allein entscheiden
 - **MUSS [MUST]** `insufficient evidence` liefern, wenn `allows_harvest` fehlt, wenn kein Reifemerkmal vorliegt oder wenn nur Vorannahmen oder eine unbestätigte Fotolesung etwas zur Reife sagen, und **MUSS [MUST]** die Beobachtung nennen, die es liefern würde
 - **MUSS [MUST]** ein verwendungsbezogenes Merkmal (etwa für die Lagerung oder für die Saatgutgewinnung) nur vom Aufrufer oder als Allgemeinwissen der Stufe 8, gekennzeichnet als nicht aus dem Datenbestand, nennen und **DARF NICHT [MUST NOT]** es allein entscheiden lassen
@@ -56,23 +56,24 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **MUSS [MUST]** das Erntefenster nur aus den `harvest_months` des zutreffenden Eintrags von `growing_periods[]` nehmen und sagen, welcher es ist, und **DARF NICHT [MUST NOT]** die Monate der obersten Ebene verwenden, wenn Perioden vorhanden sind
 - **MUSS [MUST]** die Tage seit `planted_on` gegenüber dem `days_to_maturity` der Sorte als Position führen, **MUSS [MUST]** sagen, dass weder festgehalten ist, ab wann `days_to_maturity` zählt, noch was `planted_on` bezeichnet, und **DARF NICHT [MUST NOT]** daraus ein Erntedatum berechnen
 - **MUSS [MUST]** die Position des Wachstumsstadiums aus dem Übergabeblock so übernehmen, wie sie geliefert wird, und **MUSS [MUST]** sie mit Grund als fehlend melden, wenn die Beurteilung des Wachstumsstadiums nicht lief
+- **MUSS [MUST]** die aufsummierten Wachstumsgradtage aus dem Übergabeblock mit ihren Eingaben als Vorannahme mit `no level` führen, **MUSS [MUST]** `GDD target for maturity: no source` nennen und **DARF NICHT [MUST NOT]** sie entscheiden lassen
 
 ### D. Lesezugriffe
 
-- **DARF [MAY]** `get_harvest_readiness` einmal je Pflanze nur mit der Pflanze und dem Garten aufrufen, **MUSS [MUST]** seine Antwort so melden, wie sie zurückkam, ohne einen Feldnamen anzunehmen und ohne eine Stufe zuzuweisen, und **MUSS [MUST]** einen `validation.error` wörtlich melden und ohne ihn weitermachen
+- **MUSS [MUST]** `get_harvest_readiness` einmal je Pflanze, nur mit der Pflanze und dem Garten, aufrufen, wenn das Tool vorhanden ist, und **MUSS [MUST]** ein fehlendes Tool als ausdrückliches Ergebnis mit seinem Namen melden; **MUSS [MUST]** seine Antwort so melden, wie sie zurückkam, ohne einen Feldnamen anzunehmen und ohne eine Stufe zuzuweisen, und **MUSS [MUST]** einen `validation.error` wörtlich melden und ohne ihn weitermachen
 - **MUSS [MUST]** `get_treatment` für jede vom Aufrufer gelieferte Behandlung aufrufen, und nur für diese, und **MUSS [MUST]** nur ihr `safety_interval_days` lesen
 
 ### E. Wetter und Wartezeit
 
 - **MUSS [MUST]** Wetter nur vom Aufrufer nehmen, über die Beurteilung der Wetterwirkung ohne Home-Assistant-Lesezugriff, und **MUSS [MUST]** nur Expositionen, deren Wirkung den Erntezeitpunkt betrifft, in die Erntereife einfließen lassen, als Risiko und nie als Reifemerkmal
-- **MUSS [MUST]** über dem Ergebnis eine Erntesperre melden: `blocked until <date>`, wenn das Datum einer ausgebrachten Behandlung zuzüglich ihres `safety_interval_days` nach dem Beurteilungsdatum liegt, `clear`, wenn die Wartezeit jeder gelieferten Behandlung abgelaufen ist, und `unknown (no treatment date supplied)` ohne Behandlungsangabe
+- **MUSS [MUST]** über dem Ergebnis eine Erntesperre melden: `blocked until <date>`, wenn das Datum einer ausgebrachten Behandlung zuzüglich ihres `safety_interval_days` nach dem Beurteilungsdatum liegt, `unknown (<reason>)`, wenn keine Behandlung sperrt und die Wartezeit irgendeiner gelieferten Behandlung unbekannt ist (ihr Lesezugriff schlug fehl oder sie trägt kein `safety_interval_days`), `clear` nur, wenn die Wartezeit jeder gelieferten Behandlung bekannt und abgelaufen ist, und `unknown (no treatment date supplied)` ohne Behandlungsangabe, mit dem Vorrang `blocked` vor `unknown` vor `clear`
 - **DARF NICHT [MUST NOT]** aus dem Pflegeprotokoll, den Inspektionen oder dem Tagebuch schließen, dass eine Behandlung ausgebracht wurde oder nicht
 
 ### F. Der Ernteplan
 
-- **MUSS [MUST]** für höchstens fünf genannte Pflanzen planen, in der angegebenen Reihenfolge, und **MUSS [MUST]** die übrigen mit Grund als nicht geplant aufführen
+- **MUSS [MUST]** für höchstens fünf genannte Pflanzen planen, die ersten fünf nach Pflanzenschlüssel als Text, **MUSS [MUST]** die übrigen mit Grund als nicht geplant aufführen und **MUSS [MUST]** eine Pflanze, die nicht gelesen werden kann, als `not planned (<error verbatim>)` aufführen
 - **MUSS [MUST]**, wenn keine Pflanzen genannt sind, die Kulturen und Pflanzläufe des Gartens aus dem Gartenkontext nur als Kontext melden, kein Fenster und keine Erntereife berechnen und den Parameter nennen, der die Pflanzen liefern würde
-- **MUSS [MUST]** die geplanten Pflanzen nach dem Startmonat des Fensters ordnen, eine Pflanze mit unbekanntem Fenster nach jeder bekannten, dann nach Erntereife (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`), dann nach Pflanzenschlüssel, sodass die Ordnung eine totale Ordnung auf dem Inhalt ist
+- **MUSS [MUST]** die geplanten Pflanzen nach dem Startmonat des Fensters ordnen, eine Pflanze mit unbekanntem Fenster nach jeder bekannten, dann nach Erntereife (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`), dann nach Pflanzenschlüssel, sodass die Ordnung eine totale Ordnung auf dem Inhalt ist; der Fensterbeginn ist der Kalendermonat des ersten Fenstermonats innerhalb der Saison, daher wird ein Fenster, das die Jahresgrenze überschreitet, nach diesem Kalendermonat eingeordnet
 - **MUSS [MUST]** die Arbeitslast als Pflanzen je Startmonat des Fensters und Pflanzen mit `ready` oder `approaching` zählen, **MUSS [MUST]** Stunden oder Aufwand nur aus einer vom Aufrufer gelieferten Kapazität nennen und **MUSS [MUST]** „über der Kapazität“ nur dann nennen, wenn diese Kapazität in derselben Einheit wie die Zählungen angegeben ist
 - **MUSS [MUST]** Lager- und Verwendungsbedingungen als `not modeled in the measured catalog` melden, sofern der Aufrufer sie nicht geliefert hat, und sie dann mit `caller` kennzeichnen
 - **MUSS [MUST]** die Erntesperre jeder Pflanze in den Plan übernehmen und **DARF NICHT [MUST NOT]** eine gesperrte Pflanze vor ihrem Sperrdatum als erntbar einordnen
@@ -99,12 +100,12 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - [ ] Ein Ergebnis zur Erntereife ist eines von `ready`, `approaching`, `not ready`, `not harvestable` und `insufficient evidence`
 - [ ] Ein Ergebnis `ready`, `approaching` oder `not ready` nennt das Reifemerkmal der Stufe 1 bis 3 oder die bestätigte Fotolesung, auf dem es ruht
-- [ ] Kein Ergebnis ruht allein auf den Erntemonaten, der Position gegenüber `days_to_maturity`, dem Wachstumsstadium oder einer Fotolesung
+- [ ] Kein Ergebnis ruht allein auf den Erntemonaten, der Position gegenüber `days_to_maturity`, den aufsummierten Wachstumsgradtagen, dem Wachstumsstadium oder einer Fotolesung, und eine undatierte Beobachtung berechnet keine Position im Monatsfenster und keine Sperre
 - [ ] Kein Erntedatum wird aus `days_to_maturity` berechnet, und das Erntefenster stammt aus den `harvest_months` der gewählten Wachstumsperiode
 - [ ] Die Antwort von `get_harvest_readiness` wird so gemeldet, wie sie zurückkam, ohne Stufe und ohne angenommenes Feld, und ein Fehler daraus hält den Lauf nicht an
 - [ ] Wetter kommt nur vom Aufrufer, nur als Risiko für den Erntezeitpunkt, und kein Home-Assistant-Tool wird aufgerufen
-- [ ] Die Erntesperre ist `blocked until <date>`, `clear` oder `unknown (no treatment date supplied)` und ruht nur auf `get_treatment` und vom Aufrufer gelieferten Daten
-- [ ] Ein Ernteplan umfasst höchstens fünf Pflanzen, nennt die übrigen als nicht geplant und meldet ohne Pflanzen nur den Gartenkontext
+- [ ] Die Erntesperre ist `blocked until <date>`, `unknown (<reason>)` oder `clear`, in diesem Vorrang, ist nur dann `clear`, wenn die Wartezeit jeder gelieferten Behandlung bekannt ist, und ruht nur auf `get_treatment` und vom Aufrufer gelieferten Daten
+- [ ] Ein Ernteplan umfasst höchstens fünf Pflanzen, ausgewählt nach Pflanzenschlüssel als Text, nennt die übrigen und jede nicht lesbare Pflanze als nicht geplant und meldet ohne Pflanzen nur den Gartenkontext
 - [ ] Die Reihenfolge des Plans ist Fensterstart, dann Erntereife, dann Pflanzenschlüssel, und ändert sich nicht, wenn sich die Reihenfolge der Eingabe ändert
 - [ ] Die Arbeitslast besteht nur aus Zählungen, sofern der Aufrufer keine Kapazität geliefert hat, und die Lagerung ist `not modeled in the measured catalog`, sofern der Aufrufer sie nicht geliefert hat
 - [ ] Jedes Ergebnis nennt Beleg, Konfidenz, Unsicherheit und fehlende Daten und liefert Befunde in der Einklinkform der Pflegeplanung

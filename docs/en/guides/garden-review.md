@@ -42,15 +42,16 @@ goose run --recipe garden-review \
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `plants` | no | the garden level only: crops, planting runs and due tasks |
 | `yields` | no | every yield is absent |
+| `harvest_results` | no | every harvest result is absent; give `plant_key:result[:YYYY-MM-DD]`, for example copied from `harvest-readiness-check` closing lines |
 | `notes` | no | nothing from you about plants or the garden |
 | `weather` | no | the season's weather is absent; it is context only either way |
 | `as_of` | no | the date of the newest diary entry read |
 
-At most five plants are reviewed, in the order given. Each plant's diary is read for at most eight entries, and the review says how far back that reached.
+At most five plants are reviewed: the first five by plant key, sorted as text. `;` and `:` separate the entries of `yields`, `harvest_results` and `notes`; a free-text part that contains them is shown verbatim and not parsed further. Each plant's diary is read for at most eight entries, and the review says how far back that reached.
 
 ## Read the outcome
 
-The report shows six blocks: the header, one history record per plant, cultivar performance, the lessons (each an observation, or a recommendation with evidence, confidence, uncertainty and missing data), the next-cycle block, and the domain status. Each crop in the next-cycle block is marked `keep`, `reconsider` or `no evidence`.
+The report shows six blocks: the header, one history record per plant, cultivar performance, the lessons (each an observation, or a recommendation with evidence, confidence, uncertainty and missing data), the next-cycle block, and the domain status. Each crop in the next-cycle block is marked `reconsider` when a record or your note names a problem with it, which wins over everything else; `keep` only when you report a success (a note, or a yield you call a success) and no problem is recorded; and `no evidence` otherwise. A yield figure on its own is `no evidence`. `constraints` carries only site and environmental observations; lessons go to `goals`.
 
 | Closing line | Means |
 |--------------|-------|

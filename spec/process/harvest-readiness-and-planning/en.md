@@ -38,14 +38,14 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 
 - **MUST** take the plant context block from `plant-context-collect` as given and **MUST NOT** call a tool to fetch what it already holds; **MAY** take the read report and measurements from `diary-measurements-read`, the findings of `plant-photo-read`, the growth-stage assessment with its hand-off block for harvest planning, the weather findings and the garden context block from `garden-context` as given
 - **MUST** accept as caller-supplied, marked `caller`, only facts the server has no source for: the person's own observation of the plant, the intended use, the weather and forecast, the applied treatments as `treatment_key:YYYY-MM-DD`, the storage conditions, the available harvest capacity and the assessment date
-- **MUST** take the assessment date from the caller or, without one, as the growth-stage assessment fixed it, and **MUST NOT** read the current date
+- **MUST** take the assessment date from the caller or, without one, as the growth-stage assessment fixed it, **MUST** compute neither the month-window position nor the harvest gate when the person's own observation is supplied without an assessment date from the caller, reporting both as `not computed (observation undated)` and never falling back to an older diary date for them, and **MUST NOT** read the current date
 - **MUST** report each absent input as absent with its reason, `no source` or `not collected`, and **MUST NOT** fill it
 
 ### B. The readiness result
 
 - **MUST** return exactly one of `ready`, `approaching`, `not ready`, `not harvestable` and `insufficient evidence`
 - **MUST** return `not harvestable` when the species record carries `allows_harvest: false`, and **MUST** then judge nothing further about maturity
-- **MUST** rest `ready`, `approaching` and `not ready` on an observed maturity indicator at level 1 to 3 (a diary measurement, a recorded inspection, or the person's own observation marked `caller`), or on a photo reading corroborated by a timing expectation, and **MUST** name that indicator
+- **MUST** rest `ready`, `approaching` and `not ready` on an observed maturity indicator at level 1 to 3 (a diary measurement, a recorded inspection, or the person's own observation marked `caller`), or on a photo reading corroborated by a timing expectation, **MUST** name that indicator, and **MUST** state the confidence of a result resting on a photo reading and a level 4 prior as `level 4 prior + photo reading (level 3 corroboration)`
 - **MUST** read the month window of the selected `growing_periods[]` entry's `harvest_months`, the position against `days_to_maturity`, and the growth-stage result and direction as level 4 priors that **MUST NOT** decide alone, and a photo reading as a reading with no level that **MUST NOT** decide alone
 - **MUST** return `insufficient evidence` when `allows_harvest` is absent, when no maturity indicator exists, or when only priors or an uncorroborated photo reading speak to maturity, and **MUST** name the observation that would supply it
 - **MUST** state a use-specific indicator (for example for storage or for seed saving) only from the caller or as general knowledge labelled level 8 and not from the record, and **MUST NOT** let it decide alone
@@ -56,23 +56,24 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 - **MUST** take the harvest window only from the `harvest_months` of the `growing_periods[]` entry that applies, saying which, and **MUST NOT** use the top-level months when periods exist
 - **MUST** carry the days since `planted_on` against the cultivar's `days_to_maturity` as a position, **MUST** state that neither what `days_to_maturity` counts from nor what `planted_on` denotes is recorded, and **MUST NOT** compute a harvest date from it
 - **MUST** take the growth-stage position from the hand-off block as returned, and **MUST** report it absent with its reason when the growth-stage assessment did not run
+- **MUST** carry the accumulated growing degree days from the hand-off block, with their inputs, as a prior with `no level`, **MUST** state `GDD target for maturity: no source`, and **MUST NOT** let them decide
 
 ### D. Reads
 
-- **MAY** call `get_harvest_readiness` once per plant with the plant and the garden only, **MUST** report its response as returned, assuming no field name and assigning no level, and **MUST** report a `validation.error` verbatim and continue without it
+- **MUST** call `get_harvest_readiness` once per plant, with the plant and the garden only, when the tool is present, and **MUST** report an absent tool as an explicit result naming it; **MUST** report its response as returned, assuming no field name and assigning no level, and **MUST** report a `validation.error` verbatim and continue without it
 - **MUST** call `get_treatment` for each treatment the caller supplied, and only for those, and **MUST** read only its `safety_interval_days`
 
 ### E. Weather and the safety interval
 
 - **MUST** take weather only from the caller, through the weather-impact assessment with no Home Assistant read, and **MUST** feed only exposures whose impact is harvest timing into readiness, as a risk and never as a maturity indicator
-- **MUST** report a harvest gate on top of the result: `blocked until <date>` when an applied treatment's date plus its `safety_interval_days` lies after the assessment date, `clear` when every supplied treatment's interval has passed, and `unknown (no treatment date supplied)` without treatment input
+- **MUST** report a harvest gate on top of the result: `blocked until <date>` when an applied treatment's date plus its `safety_interval_days` lies after the assessment date, `unknown (<reason>)` when no treatment blocks and any supplied treatment's interval is unknown (its read failed or carries no `safety_interval_days`), `clear` only when every supplied treatment's interval is known and has passed, and `unknown (no treatment date supplied)` without treatment input, with the precedence `blocked` over `unknown` over `clear`
 - **MUST NOT** infer from the care log, the inspections or the diary that a treatment was or was not applied
 
 ### F. The harvest plan
 
-- **MUST** plan for at most five named plants, in the order given, and **MUST** list the rest as not planned with the reason
+- **MUST** plan for at most five named plants, the first five by plant key as text, **MUST** list the rest as not planned with the reason, and **MUST** list a plant that cannot be read as `not planned (<error verbatim>)`
 - **MUST**, with no plants named, report the garden's crops and planting runs from the garden context as context only, compute no window and no readiness, and name the parameter that would supply the plants
-- **MUST** order the planned plants by window start month, a plant whose window is unknown after every known one, then by readiness (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`), then by plant key, so that the order is a total order on content
+- **MUST** order the planned plants by window start month, a plant whose window is unknown after every known one, then by readiness (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`), then by plant key, so that the order is a total order on content; the window start is the calendar month of the window's first month within the season, so a window that crosses the year boundary sorts by that calendar month
 - **MUST** count workload as plants per month of window start and plants `ready` or `approaching`, **MUST** state hours or effort only from a caller-supplied capacity, and **MUST** state "over capacity" only when that capacity is given in the same unit as the counts
 - **MUST** report storage and use constraints as `not modeled in the measured catalog` unless the caller supplied them, and then mark them `caller`
 - **MUST** carry each plant's harvest gate into the plan, and **MUST NOT** order a blocked plant as harvestable before its gate date
@@ -99,12 +100,12 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 
 - [ ] A readiness result is one of `ready`, `approaching`, `not ready`, `not harvestable` and `insufficient evidence`
 - [ ] A `ready`, `approaching` or `not ready` result names the level 1 to 3 maturity indicator, or the corroborated photo reading, it rests on
-- [ ] No result rests on the harvest months, the position against `days_to_maturity`, the growth stage or a photo reading alone
+- [ ] No result rests on the harvest months, the position against `days_to_maturity`, the accumulated growing degree days, the growth stage or a photo reading alone, and an undated observation computes no month-window position and no gate
 - [ ] No harvest date is computed from `days_to_maturity`, and the harvest window comes from the selected growing period's `harvest_months`
 - [ ] The `get_harvest_readiness` response is reported as returned, with no level and no assumed field, and an error from it does not stop the run
 - [ ] Weather enters only from the caller, only as a harvest-timing risk, and no Home Assistant tool is called
-- [ ] The harvest gate is `blocked until <date>`, `clear` or `unknown (no treatment date supplied)`, and rests only on `get_treatment` and caller-supplied dates
-- [ ] A harvest plan covers at most five plants, names the rest as not planned, and with no plants reports garden context only
+- [ ] The harvest gate is `blocked until <date>`, `unknown (<reason>)` or `clear`, in that precedence, is `clear` only when every supplied treatment's interval is known, and rests only on `get_treatment` and caller-supplied dates
+- [ ] A harvest plan covers at most five plants, selected by plant key as text, names the rest and every unreadable plant as not planned, and with no plants reports garden context only
 - [ ] The plan order is window start, then readiness, then plant key, and does not change when the order of the input changes
 - [ ] Workload is counts only unless the caller supplied capacity, and storage is `not modeled in the measured catalog` unless the caller supplied it
 - [ ] Every result states its evidence, confidence, uncertainty and missing data, and returns findings in the care planning plug-in shape

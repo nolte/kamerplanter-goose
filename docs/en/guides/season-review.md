@@ -18,7 +18,7 @@ The run **only reads**. It writes the review nowhere — no file, no diary entry
 ## Before you start
 
 - **Start the run from this repository checkout.** The recipe loads the project skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `growth-stage-assessment`, `decision-policy` and `garden-review` from `.claude/skills/`. Started elsewhere, the skills are lost silently.
-- **Run it once without `plants` first.** It then lists the season's plants, archived ones marked, so you can pick up to five to review.
+- **Run it once without `plants` first.** It then lists the season's plants, archived ones marked, so you can pick up to five to review. Archived plants are listed on every run, also when you name plants; only the named ones (the first five by plant key, sorted as text) are reviewed.
 
 ## Run it
 
@@ -28,7 +28,8 @@ goose run --recipe season-review \
   --params tenant=my-garden \
   --params plants=42,43,51 \
   --params yields="42:1.2 kg,43:14 fruit" \
-  --params notes="51: bolted in the June heat; a wet, cool spring"
+  --params harvest_results="42:ready:2026-09-20,43:ready:2026-08-10" \
+  --params notes="42: best leeks so far; 43: blossom end rot in July; a wet, cool spring"
 ```
 
 | Parameter | Required | Effect when omitted |
@@ -37,6 +38,7 @@ goose run --recipe season-review \
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `plants` | no | no plant is reviewed; the season's plants are listed so you can name them |
 | `yields` | no | every yield is absent; the record has no yield field |
+| `harvest_results` | no | every harvest result is absent; give `plant_key:result[:YYYY-MM-DD]`, for example copied from `harvest-readiness-check` closing lines |
 | `notes` | no | nothing from you about plants or the season |
 | `weather` | no | the season's weather is absent; it is context only either way |
 | `as_of` | no | the growth stage is judged against the newest diary entry read |
@@ -49,26 +51,28 @@ The `NEXT CYCLE` block is shown verbatim. Its `crops`, `goals`, `constraints` an
 
 ```text
 NEXT CYCLE
-  crops:            solanum_lycopersicum:san_marzano, allium_porrum
+  crops:            allium_porrum,solanum_lycopersicum:san_marzano,lactuca_sativa
+    allium_porrum: keep — notes (caller): best leeks so far; no problem recorded
     solanum_lycopersicum:san_marzano: reconsider — notes (caller): blossom end rot in July
-    allium_porrum: keep — yield 1.2 kg (caller, level 3)
+    lactuca_sativa: no evidence — no success or problem recorded
   goals:            fewer losses to blossom end rot
-  constraints:      wet June; slugs
-  harvest_window:   August to October
+  constraints:      a wet, cool spring
+  harvest_window:   August to September
   location history (location, not bed):
-    bed-north:2026:solanum_lycopersicum:san_marzano
+    bed-north:2026:allium_porrum
+    bed-south:2026:solanum_lycopersicum:san_marzano
 ```
 
 ```sh
 goose run --recipe garden-plan \
   --params tenant=my-garden \
-  --params crops="solanum_lycopersicum:san_marzano,allium_porrum" \
+  --params crops="allium_porrum,solanum_lycopersicum:san_marzano,lactuca_sativa" \
   --params goals="fewer losses to blossom end rot" \
-  --params constraints="wet June; slugs" \
-  --params harvest_window="August to October"
+  --params constraints="a wet, cool spring" \
+  --params harvest_window="August to September"
 ```
 
-A crop marked `reconsider` stays in the list: whether to drop it is your decision, and [`crop-selection`](crop-selection.md) checks the alternatives. The location history lines name locations, not beds: the record has no bed source.
+`reconsider` wins over `keep`; `keep` needs a success you report, and a yield figure alone is `no evidence`. `constraints` carries only site and environmental observations; lessons go to `goals`. `;` and `:` are separators in your parameters, and free text containing them is shown verbatim and not parsed. A crop marked `reconsider` stays in the list: whether to drop it is your decision, and [`crop-selection`](crop-selection.md) checks the alternatives. The location history lines name locations, not beds: the record has no bed source.
 
 ## Read the outcome
 

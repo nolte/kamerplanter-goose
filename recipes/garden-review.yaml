@@ -17,9 +17,9 @@ parameters:
     requirement: optional
     default: ""
     description: >-
-      Plant instance keys, comma-separated. At most five are reviewed, in the
-      order given; the rest are reported as not reviewed. Empty reviews the
-      garden level only.
+      Plant instance keys, comma-separated. At most five are reviewed, the
+      first five by plant key as text; the rest are reported as not reviewed.
+      Empty reviews the garden level only.
 
   - key: yields
     input_type: string
@@ -29,6 +29,17 @@ parameters:
       What you harvested, comma-separated, each plant_key:amount unit, for
       example "42:1.2 kg,43:14 fruit". The record has no yield field; this is
       the only source.
+
+  - key: harvest_results
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Harvest readiness results you already have, comma-separated, each
+      plant_key:result or plant_key:result:YYYY-MM-DD, for example
+      "42:ready:2026-08-10,43:approaching" — typically copied from the final
+      lines of harvest-readiness-check runs. This review runs no harvest check
+      itself; without it every harvest result is absent.
 
   - key: notes
     input_type: string
@@ -79,6 +90,7 @@ prompt: |
   What the caller supplied (empty means not given):
   - plant keys: "{{ plants }}"
   - yields: "{{ yields }}"
+  - harvest results: "{{ harvest_results }}"
   - notes: "{{ notes }}"
   - the season's weather: "{{ weather }}"
   - review up to: "{{ as_of }}"
@@ -113,12 +125,13 @@ prompt: |
 
   Step 2 — Which plants.
   Split "{{ plants }}" at the commas, trim each key, drop empty entries and
-  duplicates, and keep the order given. The first five are reviewed; every
-  further key is `not reviewed (limit of five)`. If the list is empty, no
-  plant is reviewed and step 3 is SKIP. Never call a per-plant tool for a
-  plant that is not on the list. Split "{{ yields }}" at the commas and
-  "{{ notes }}" at the semicolons, and give each plant only the entries that
-  name its key; a note naming no key is about the garden.
+  duplicates, and sort the keys as text. The first five in that order are
+  reviewed; every further key is `not reviewed (limit of five)`. If the list
+  is empty, no plant is reviewed and step 3 is SKIP. Never call a per-plant
+  tool for a plant that is not on the list. Split "{{ yields }}" and
+  "{{ harvest_results }}" at the commas and "{{ notes }}" at the semicolons,
+  and give each plant only the entries that name its key; a note naming no
+  key is about the garden.
 
   Step 3 — Per plant.
   For each plant to review, in order:
@@ -139,8 +152,8 @@ prompt: |
   Step 5 — Review.
   Load the skill `garden-review` and follow it in scope `garden` with the
   garden context of step 1, the per-plant blocks of step 3, the plants not
-  reviewed, and the caller's yields, notes, weather and date above, passing
-  only the ones that are not empty. It makes no tool call.
+  reviewed, and the caller's yields, harvest results, notes, weather and date
+  above, passing only the ones that are not empty. It makes no tool call.
 
   Step 6 — Report.
   Build the report only from what the skills returned. Print this and nothing

@@ -47,7 +47,7 @@ goose run --recipe harvest-readiness-check \
 | `weather` | no | the weather risk is `no source`; nothing is read from Home Assistant |
 | `temperatures` | no | no growing degree days for the growth stage |
 | `treatments` | no | the harvest gate is `unknown (no treatment date supplied)` |
-| `as_of` | no | the date the growth stage assessment fixed; with none, no timing and no gate |
+| `as_of` | no | the date the growth stage assessment fixed; with none, no timing and no gate. **Give it with `observations`**: your observation carries no date, so without `as_of` the harvest-month position and the gate are `not computed (observation undated)` |
 
 ## What it decides
 
@@ -61,8 +61,9 @@ goose run --recipe harvest-readiness-check \
 | only the calendar, the plant's age, the growth stage or an unbacked photo | `insufficient evidence` |
 
 - **Weather is a risk, never ripeness.** A frost or a storm you report becomes a harvest-timing risk next to the answer; it never moves the answer.
-- **The gate needs your dates.** The record holds no application dates, so the gate reads only the treatments you list and their safety interval from `get_treatment`.
-- **The readiness tool is reported as it comes back.** `get_harvest_readiness` is called, but its fields are not recorded anywhere here, so it carries no weight and an error from it does not stop the run.
+- **The gate needs your dates.** The record holds no application dates, so the gate reads only the treatments you list and their safety interval from `get_treatment`. One blocking treatment blocks the harvest. A treatment whose interval cannot be read makes the gate `unknown`, never `clear`: `clear` needs every listed interval known and passed.
+- **Growing degree days are context.** If the growth stage computed them from your temperatures, they are shown as a prior with no level; no growing-degree-day target for maturity is recorded, so they never decide.
+- **The readiness tool is reported as it comes back.** `get_harvest_readiness` is called when the server offers it (its absence is reported by name), but its fields are not recorded anywhere here, so it carries no weight and an error from it does not stop the run.
 
 ## Read the outcome
 
@@ -74,6 +75,8 @@ goose run --recipe harvest-readiness-check \
 | `HARVEST READINESS: not ready (gate: …) — <plant_key>` | not ripening yet |
 | `HARVEST READINESS: not harvestable (gate: …) — <plant_key>` | the species is not grown for a harvest |
 | `HARVEST READINESS: insufficient evidence (gate: …) — <plant_key>` | nothing says how the crop looks now; the report names what would |
+| `… (gate: unknown) — <plant_key>` | no treatment was listed, or one listed treatment's interval could not be read |
+| `… (gate: not computed) — <plant_key>` | an observation was given without `as_of`, or there is no date at all |
 | `HARVEST READINESS: not assessed — <plant_key>` | a step failed and no judgement could be reached |
 
 To order several plants, use [`harvest-plan`](harvest-plan.md).

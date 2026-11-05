@@ -5,15 +5,15 @@ description: "Assembles a retrospective of one Kamerplanter garden — scope gar
 
 # Review a garden or a season
 
-Looks back over what was recorded and what the person says, and hands the result forward. It makes no tool call: the garden comes from `garden-context`, each plant from `plant-context-collect` (its care log and inspections included), the diary coverage from `diary-measurements-read`, and, where the caller supplies them, the growth stage from `growth-stage-assessment`, the harvest results from `harvest-planning` and nutrient or pest results from `nutrient-imbalance-assess` and `pest-pressure-assess`. The weight of a claim is `decision-policy`. It runs no assessment of a plant's present state, and it writes nothing: the review is text, handed to a person and to the next planning run.
+Looks back over what was recorded and what the person says, and hands the result forward. It makes no tool call: the garden comes from `garden-context`, each plant from `plant-context-collect` (its care log and inspections included), the diary coverage from `diary-measurements-read`, and, where the caller supplies them, the growth stage from `growth-stage-assessment`, the harvest results as the caller copied them from earlier harvest readiness checks, and nutrient or pest results from `nutrient-imbalance-assess` and `pest-pressure-assess`. The weight of a claim is `decision-policy`. It runs no assessment of a plant's present state, and it writes nothing: the review is text, handed to a person and to the next planning run.
 
 ## Input
 
 - **Scope**: `garden` or `season`. For `season`, the span as the caller gave it, and the plant listing with archived plants and its status (`complete`, `partial: <reason>`, `failed: <error verbatim>`).
 - **The garden context block** from `garden-context`: crops, planting runs, due tasks, absent fields.
-- **Per reviewed plant, at most five**: the plant context block, the diary read report with the dates of the entries it opened; optionally a growth-stage assessment with its hand-off block, a harvest-readiness block, and nutrient or pest results.
+- **Per reviewed plant, at most five**: the plant context block, the diary read report with the dates of the entries it opened; optionally a growth-stage assessment with its hand-off block, and nutrient or pest results.
 - **Not reviewed**: each plant key that was named but not reviewed, with the reason.
-- **Caller facts**, each optional, marked `caller`: yields as `plant_key:amount unit`; notes on a plant or on the season; the season's weather; the assessment date.
+- **Caller facts**, each optional, marked `caller`: yields as `plant_key:amount unit`; harvest results as `plant_key:<readiness result>[:YYYY-MM-DD]`, typically copied from the final lines of earlier harvest readiness checks; notes on a plant or on the season; the season's weather; the assessment date. `;` and `:` are the separators of these parameters: a free-text part that contains them is reported verbatim and not parsed further.
 
 Without the garden context block, stop and say that `garden-context` must run first.
 
@@ -37,7 +37,7 @@ One record per reviewed plant, ordered by plant key as text. Each field is prese
 | inspections | the recorded inspections, each with its date and what it names (level 3); an empty list is no recorded pest, not a clean bill of health |
 | diary coverage | listed, opened, with no `measurements`; the oldest and newest opened date; in scope `season`, `covers span` or `does not cover <start or end>` |
 | growth stage | the hand-off block's result and direction, as returned, or absent |
-| harvest result | the harvest-readiness result and gate, as returned, or absent |
+| harvest result | the caller's harvest result for this plant, its readiness result and date as given, marked `caller`; otherwise absent (`no source: no harvest result supplied`) |
 | yield | the caller's `plant_key:amount unit`, level 3, marked `caller`; never a diary `measurements` key |
 | notes | the caller's notes for this plant, marked `caller` |
 
@@ -60,8 +60,12 @@ Care and outcome are linked only as "consistent with" (rule 1 of `decision-polic
 
 Build the next-cycle block from the records and lessons only:
 
-- **crops**: every `species_key[:cultivar_key]` reviewed, comma-separated in plant-key order without duplicates, the format the planning recipes take. Mark each `keep` (a level 1 to 3 item or a caller statement records a success), `reconsider` (one records a problem), or `no evidence`, with the items it rests on. With no plant reviewed, list the garden context's crops, each `no evidence (not reviewed)`.
-- **goals** and **constraints**: free text, drawn only from the lessons and the caller's notes; absent with the reason when nothing supplies them.
+- **crops**: every `species_key[:cultivar_key]` reviewed, comma-separated with no spaces in plant-key order without duplicates, the format the planning recipes take. Mark each, with the items it rests on:
+  - `reconsider` when a level 1 to 3 item (an inspection, a snooze pattern) or a caller statement records a problem with it; this takes precedence over `keep`;
+  - `keep` only when the caller reports a success (a note, or a yield the caller marks as a success) and no problem is recorded;
+  - `no evidence` otherwise. A yield figure alone is `no evidence`: an amount says nothing about whether it was good. With no plant reviewed, list the garden context's crops, each `no evidence (not reviewed)`.
+- **goals**: free text, drawn only from the lessons and the caller's notes; absent with the reason when nothing supplies them.
+- **constraints**: free text carrying only recorded or caller-stated site and environmental observations (a wet June, slugs, shade); never a lesson, which goes to `goals` or stays in `LESSONS`. Absent with the reason when nothing supplies it.
 - **harvest_window**: in the caller's month words, drawn only from the harvest results' windows and the caller's statements; absent with the reason otherwise.
 - **location history**: one line per reviewed plant with a location name, `location_name:season:species_key[:cultivar_key]`, where `season` is the span's year or the span itself, labelled "location, not bed": the record has no bed source.
 
@@ -76,6 +80,7 @@ REVIEW HEADER
   garden:       <tenant> (given | discovered)
   scope:        garden (up to <date>, caller | newest entry) | season <span>
   listing:      complete | partial: <reason> | failed: <error verbatim> | not collected (scope garden)
+  archived:     <every plant the listing marks archived, key and species, reviewed or not> | none | not collected (scope garden)
   reviewed:     <plant keys>; not reviewed: <plant key: reason, each> | none named (garden level only; the plants parameter supplies them)
   absent:       <the blocks or fields that were not supplied, each with its reason>
   not claimed:  byte-identical prose outside the review facts
@@ -101,7 +106,7 @@ DOMAIN STATUS
   plant health: not available (nolte/kamerplanter-goose#48)
 ```
 
-The `<n>` of a lesson numbers lessons in the order of their statement text. Return no field that was not read. The facts two runs over the same blocks must agree on are the records, the groups, the lessons and their kinds, the next-cycle strings and the missing-data list; retrieval times and prose may differ.
+The `<n>` of a lesson numbers lessons by plant key (garden-wide lessons last), then by the history-record field the lesson rests on, in the order of the table in step 2, then by kind (observation before recommendation), never by statement text. Return no field that was not read. The facts two runs over the same blocks must agree on are the records, the groups, the lessons and their kinds, the next-cycle strings and the missing-data list; retrieval times and prose may differ.
 
 ## Hard rules
 

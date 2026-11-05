@@ -36,8 +36,8 @@ Readers: authors of garden skills and recipes in this repository, and the people
 
 ### A. Inputs
 
-- **MUST** take the garden context block from `garden-context`, the plant context blocks from `plant-context-collect` (care log and inspections included) and the diary read reports from `diary-measurements-read` as given, and **MAY** take growth-stage hand-off blocks, harvest-planning results and caller-supplied nutrient or pest results as given
-- **MUST** accept as caller-supplied, marked `caller`, only facts the server has no source for: yields as `plant_key:amount unit`, notes on a plant or the season, the season's weather and the assessment date
+- **MUST** take the garden context block from `garden-context`, the plant context blocks from `plant-context-collect` (care log and inspections included) and the diary read reports from `diary-measurements-read` as given, and **MAY** take growth-stage hand-off blocks and caller-supplied nutrient or pest results as given; the review recipes **MUST NOT** run the harvest planning themselves
+- **MUST** accept as caller-supplied, marked `caller`, only facts the server has no source for: yields as `plant_key:amount unit`, harvest results as `plant_key:<readiness result>[:YYYY-MM-DD]` (typically copied from the final lines of harvest readiness checks), notes on a plant or the season, the season's weather and the assessment date, and **MUST** fill a plant's harvest result only from such a harvest result, otherwise absent
 - **MUST** read a caller yield as level 3, a confirmed observation, carrying the open question on the weight of a caller statement, and **MUST NOT** read a diary `measurements` key as yield
 - **MUST** report each absent input as absent with its reason, `no source` or `not collected`, and **MUST NOT** fill it
 
@@ -45,8 +45,8 @@ Readers: authors of garden skills and recipes in this repository, and the people
 
 - **MUST** offer two scopes: `garden`, the garden up to the assessment date, and `season`, a bounded span
 - **MUST** take the span in season scope as a year `YYYY`, read as `YYYY-01-01..YYYY-12-31`, or as `YYYY-MM-DD..YYYY-MM-DD` with the start not after the end, and **MUST** stop the run and name the problem when the span is absent or invalid
-- **MUST**, in season scope, list the garden's plants with `include_archived: true`, report the listing as `complete`, `partial: <reason>` or `failed: <error verbatim>`, and mark each plant `archived` or `live` as the listing returns it
-- **MUST** review at most five named plants, in the order given, and **MUST** list the rest as not reviewed with the reason; with no plants named, **MUST** review the garden level only and name the parameter that would supply the plants
+- **MUST**, in season scope, list the garden's plants with `include_archived: true`, report the listing as `complete`, `partial: <reason>` or `failed: <error verbatim>`, mark each plant `archived` or `live` as the listing returns it, and **MUST** report every archived plant of the listing, also when plants were named
+- **MUST** review at most five named plants, the first five by plant key as text, and **MUST** list the rest as not reviewed with the reason; with no plants named, **MUST** review the garden level only and name the parameter that would supply the plants
 - **MUST** state, per plant, the oldest and newest diary entry opened against the span, and **MUST** say when the span is not covered, without paging further
 
 ### C. The history record
@@ -63,13 +63,13 @@ Readers: authors of garden skills and recipes in this repository, and the people
 
 - **MUST** take watering and fertilisation outcomes only from the care log's confirmations and snoozes, and **MUST** link care to a result only as "consistent with", never as a cause
 - **MUST** take pest and nutrient history only from the recorded inspections and caller-supplied results, and **MUST** report plant health as `not available (nolte/kamerplanter-goose#48)`
-- **MUST** give every lesson exactly one kind: an observation with its source, or a recommendation for the next cycle with the four blocks of the decision policy
+- **MUST** give every lesson exactly one kind: an observation with its source, or a recommendation for the next cycle with the four blocks of the decision policy, and **MUST** number the lessons by plant key, then field, then kind, never by statement text
 - **MUST** rest a recommendation on at least one item at level 1 to 3 or a caller statement, and **MUST NOT** rest it on general knowledge alone
 
 ### F. The next-cycle block
 
-- **MUST** return `crops` in the format the planning recipes take (`species_key[:cultivar_key]`, comma-separated), each crop marked `keep`, `reconsider` or `no evidence` with the evidence it rests on
-- **MUST** return `goals` and `constraints` as free text drawn only from the lessons and the caller's notes, and `harvest_window` in the caller's month words, drawn only from harvest results and caller statements, each absent with the reason when nothing supplies it
+- **MUST** return `crops` in the format the planning recipes take (`species_key[:cultivar_key]`, comma-separated), each crop marked `keep`, `reconsider` or `no evidence` with the evidence it rests on: `reconsider` when a level 1 to 3 item or a caller statement records a problem, taking precedence over `keep`; `keep` only when the caller reports a success (a yield the caller marks as a success, or a note) and no problem is recorded; `no evidence` otherwise, including for a yield figure alone
+- **MUST** return `goals` as free text drawn only from the lessons and the caller's notes, `constraints` as free text carrying only recorded or caller-stated site and environmental observations and never a lesson, and `harvest_window` in the caller's month words, drawn only from harvest results and caller statements, each absent with the reason when nothing supplies it; `;` and `:` are reserved separators in the caller's parameters, and free text containing them is reported verbatim and unparsed
 - **MUST** return location history lines `location_name:season:species_key[:cultivar_key]`, labelled "location, not bed"
 - **MUST NOT** write the block anywhere; it is handed over as text
 
@@ -88,8 +88,8 @@ Readers: authors of garden skills and recipes in this repository, and the people
 ## Acceptance Criteria
 
 - [ ] A review is in scope `garden` or `season`, and an absent or invalid season span stops the run with the problem named
-- [ ] A season review lists archived plants, reports the listing as complete, partial or failed, and marks each plant archived or live
-- [ ] At most five plants are reviewed, the rest are named as not reviewed, and with no plants only the garden level is reviewed
+- [ ] A season review lists archived plants, also when plants are named, reports the listing as complete, partial or failed, and marks each plant archived or live
+- [ ] At most five plants are reviewed, selected by plant key as text, the rest are named as not reviewed, and with no plants only the garden level is reviewed
 - [ ] Each reviewed plant has one history record with the fixed fields, ordered by plant key, each present with its source or absent with its reason
 - [ ] Diary coverage is stated against the span, and a span the diary read does not cover is named
 - [ ] Yield comes only from the caller, at level 3, and no diary key is read as yield
@@ -97,7 +97,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - [ ] No care outcome is stated as caused by care; a link reads "consistent with"
 - [ ] Plant health is reported as `not available (nolte/kamerplanter-goose#48)`, and no present-state assessment is run by the review
 - [ ] Every lesson is an observation or a recommendation with evidence, confidence, uncertainty and missing data
-- [ ] The next-cycle block carries `crops`, `goals`, `constraints` and `harvest_window` in the planning recipes' formats, and location history lines labelled "location, not bed"
+- [ ] The next-cycle block carries `crops`, `goals`, `constraints` and `harvest_window` in the planning recipes' formats, `reconsider` takes precedence over `keep`, `keep` needs a caller-reported success, `constraints` carries no lesson, and location history lines are labelled "location, not bed"
 - [ ] Nothing is written: no file, no diary entry
 - [ ] Two runs over the same input give the same facts on a fixed fixture, and the result says what is not claimed
 - [ ] The skill calls no tool, neither recipe calls a state-changing or Home Assistant tool, each recipe's prompt forbids all twelve by name, and no `-apply` sibling ships

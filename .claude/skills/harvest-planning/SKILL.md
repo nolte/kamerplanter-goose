@@ -22,7 +22,7 @@ Without the plant context block for a plant, judge nothing for it and say that `
 
 ### 1. Fix the assessment date
 
-Take it from the caller. Without one, take the date the growth-stage assessment fixed (its `assessed as of`). Without either, there is no assessment date: every comparison that needs one (the month window, the position against `days_to_maturity`, the safety-interval gate) is `not computed (no assessment date)`. Never read today's date.
+Take it from the caller. Without one, take the date the growth-stage assessment fixed (its `assessed as of`). **When the person's own observation is supplied and the caller gave no assessment date, compute neither the month-window position nor the safety-interval gate**: report both as `not computed (observation undated)`, because the observation that speaks to the present carries no date, and never fall back to an older diary date for them (the same exception `growth-stage-assessment` §1 makes). Without any date, every comparison that needs one (the month window, the position against `days_to_maturity`, the safety-interval gate) is `not computed (no assessment date)`. Never read today's date.
 
 ### 2. Is it harvestable at all
 
@@ -35,6 +35,7 @@ These are **priors**, level 4, and decide nothing alone:
 - **The harvest window**: the `harvest_months` of the `growing_periods[]` entry that applies, saying which; never the top-level months when periods exist, since those are the union. With several periods and nothing to choose between them, the window is `unknown (growing period not chosen)`. Compare the assessment month: before, inside or after the window.
 - **The maturity position**: from the hand-off block, "days since `planted_on`: n of `days_to_maturity` m". Carry it as a position. **Never compute a harvest date from it**: what `days_to_maturity` counts from, sowing or transplanting, is not recorded, and neither is what `planted_on` denotes.
 - **The growth stage**: the hand-off block's result and direction, as returned. Without the growth-stage assessment, this prior is absent with that reason.
+- **Accumulated growing degree days**: from the hand-off block, with their base, method and span, as returned, and `no level`: a derivation, not a source. State `GDD target for maturity: no source`; the sum is context and never decides.
 
 ### 4. Collect the maturity indicators
 
@@ -51,7 +52,7 @@ Discard a `measurements` key whose meaning or unit is ambiguous, and say that yo
 
 ### 5. Read the harvest readiness tool
 
-Call `mcp__kamerplanter__get_harvest_readiness` with the plant and the garden, and nothing else. Its arguments and its response fields are not recorded in any spec here: report the response as returned, assume no field name, and assign it **no level**. On a `validation.error` or any other error, report it verbatim and continue: no result depends on this call.
+If the tool is present, call `mcp__kamerplanter__get_harvest_readiness` once with the plant and the garden, and nothing else; if it is absent, say so by name as the result of this step (`not called (tool absent: get_harvest_readiness)`). Its arguments and its response fields are not recorded in any spec here: report the response as returned, assume no field name, and assign it **no level**. On a `validation.error` or any other error, report it verbatim and continue: no result depends on this call.
 
 ### 6. Read the weather risk
 
@@ -61,12 +62,16 @@ From the weather findings, take only the exposures whose impact area is harvest 
 
 For each treatment the caller supplied as `treatment_key:YYYY-MM-DD`, call `mcp__kamerplanter__get_treatment` with that key and read `safety_interval_days`, the pre-harvest Karenz. The gate date is the application date plus that many days.
 
+Each supplied treatment is first judged on its own: `blocked until <gate date>` when the gate date lies after the assessment date, `passed` when it lies on or before it, and `unknown (<reason>)` when its read failed, it carries no `safety_interval_days`, or there is no assessment date. The plant's gate is the aggregate, with the precedence `blocked` over `unknown` over `clear`:
+
 | What is known | Gate |
 |---------------|------|
 | no treatment supplied | `unknown (no treatment date supplied)` |
-| a gate date after the assessment date | `blocked until <latest gate date>` |
-| every gate date on or before the assessment date | `clear` |
-| a treatment whose read failed or carries no `safety_interval_days`, or no assessment date | `unknown (<reason>)` for that treatment; a block from another treatment still stands |
+| any treatment `blocked until` a date | `blocked until <latest gate date>`, whatever the others are |
+| no treatment blocked, and any treatment `unknown` | `unknown (<reason of each unknown treatment>)` |
+| every treatment `passed` | `clear` |
+
+A failed read is never a passed interval: `a:2026-07-01,b:2026-08-20` with the read of `b` failing is `unknown`, not `clear`, even when `a` has passed. The undated-observation case of step 1 gives `not computed (observation undated)` instead.
 
 Never infer from the care log, the inspections or the diary that a treatment was or was not applied: no described field records an application date.
 
@@ -79,7 +84,7 @@ Never infer from the care log, the inspections or the diary that a treatment was
 | an indicator at level 1 to 3 that the crop is ripe for the intended use | `ready` |
 | an indicator at level 1 to 3 of development toward ripeness that has not reached it | `approaching` |
 | an indicator at level 1 to 3 that the crop is not developing toward ripeness yet | `not ready` |
-| a photo reading of ripeness, corroborated by a timing prior of step 3 | `ready`, `approaching` or `not ready` |
+| a photo reading of ripeness, corroborated by a timing prior of step 3 | `ready`, `approaching` or `not ready`, with the confidence stated as `level 4 prior + photo reading (level 3 corroboration)` |
 | only priors, the readiness tool's response, or an uncorroborated photo reading | `insufficient evidence` |
 | no maturity indicator | `insufficient evidence` |
 
@@ -91,9 +96,9 @@ Apply `decision-policy`: evidence (level, source, retrieved-at, one entry each),
 
 ### 10. Plan, for scope `plan`
 
-- **Which plants**: at most five, in the order given; every further plant is `not planned (limit of five)`. With none given, report the crops and planting runs from the garden context as context only, compute no window and no readiness, and name the `plants` parameter as what would supply them.
+- **Which plants**: at most five, the first five by plant key as text; every further plant is `not planned (limit of five)`, and a plant whose context could not be read is `not planned (<error verbatim>)`; both count as not planned. With none given, report the crops and planting runs from the garden context as context only, compute no window and no readiness, and name the `plants` parameter as what would supply them.
 - **Readiness per plant**: steps 1 to 9 for each.
-- **Order**: by the window's start month, the first month of the selected period's `harvest_months` as recorded, a plant with an unknown window after every known one; then by readiness (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`); then by plant key, as text. The order of the input has no effect. A plant whose gate is `blocked until <date>` is listed with its gate and never as harvestable before that date.
+- **Order**: by the window's start month, the first month of the selected period's `harvest_months` as recorded, a plant with an unknown window after every known one; then by readiness (`ready`, `approaching`, `not ready`, `insufficient evidence`, `not harvestable`); then by plant key, as text. The window start is the calendar month of the window's first month within the season, so a window that crosses the year boundary (for example November to February) sorts by its calendar start month; that is intended, not a defect. The order of the input has no effect. A plant whose gate is `blocked until <date>` is listed with its gate and never as harvestable before that date.
 - **Workload**: count plants per window start month, and plants `ready` or `approaching`. State hours or effort only from the caller's capacity, and "over capacity" only when that capacity is in the same unit as the counts (for example plants per week); otherwise say the counts cannot be compared with it.
 - **Storage and use**: the caller's storage conditions and intended use, marked `caller`; without them, `not modeled in the measured catalog`. No yield, harvest amount or shelf life is recorded, so none is stated.
 
@@ -109,10 +114,10 @@ HARVEST READINESS
   result:         ready | approaching | not ready | not harvestable | insufficient evidence
   intended use:   <caller words> | not stated
   indicators:     <each, with level and source> | none
-  priors:         window <months, period, before | inside | after> | unknown (<reason>); maturity position <n of m> | not computed (<reason>); growth stage <result, direction> | absent (<reason>)
-  readiness tool: <as returned> | error <verbatim> | not called (<reason>)   level: no level
+  priors:         window <months, period, before | inside | after> | unknown (<reason>) | not computed (<reason>); maturity position <n of m> | not computed (<reason>); growth stage <result, direction> | absent (<reason>); accumulated GDD <value, base, method, span> | absent (<reason>), level: no level, GDD target for maturity: no source
+  readiness tool: <as returned> | error <verbatim> | not called (tool absent: get_harvest_readiness)   level: no level
   weather risk:   <harvest-timing exposures, threshold, level> | none | no source
-  gate:           clear | blocked until <date> | unknown (<reason>)
+  gate:           clear | blocked until <date> | unknown (<reason>) | not computed (<reason>)
   evidence:       <level, source, retrieved-at, one entry each>
   confidence:     <the level it rests on, or: no level applies>
   uncertainty:    <what would change the result>
@@ -135,7 +140,7 @@ Return no field that was not read. The facts two runs over the same input must a
 
 ## Hard rules
 
-- Never decide a result from the harvest months, the maturity position, the growth stage, the readiness tool's response or a photo reading alone.
+- Never decide a result from the harvest months, the maturity position, the accumulated growing degree days, the growth stage, the readiness tool's response or a photo reading alone.
 - Never compute a harvest date from `days_to_maturity`.
 - Never assume a field of `get_harvest_readiness`, and never give its response a level.
 - Never fill a yield, a storage limit, an effort, a treatment date or an indicator, and never infer that a treatment was applied.

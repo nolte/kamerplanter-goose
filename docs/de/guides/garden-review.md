@@ -42,15 +42,16 @@ goose run --recipe garden-review \
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug über `list_tenants` |
 | `plants` | nein | nur die Gartenebene: Kulturen, Pflanzläufe und fällige Aufgaben |
 | `yields` | nein | jeder Ertrag fehlt |
+| `harvest_results` | nein | jedes Ernteergebnis fehlt; gib `plant_key:result[:YYYY-MM-DD]` an, etwa aus Schlusszeilen von `harvest-readiness-check` übernommen |
 | `notes` | nein | nichts von dir zu Pflanzen oder zum Garten |
 | `weather` | nein | das Wetter der Saison fehlt; es ist in jedem Fall nur Kontext |
 | `as_of` | nein | das Datum des jüngsten gelesenen Tagebucheintrags |
 
-Höchstens fünf Pflanzen werden betrachtet, in der angegebenen Reihenfolge. Das Tagebuch jeder Pflanze wird für höchstens acht Einträge gelesen, und die Rückschau sagt, wie weit zurück das reichte.
+Höchstens fünf Pflanzen werden betrachtet: die ersten fünf nach Pflanzenschlüssel, als Text sortiert. `;` und `:` trennen die Einträge von `yields`, `harvest_results` und `notes`; ein Freitextteil, der sie enthält, wird wörtlich gezeigt und nicht weiter geparst. Das Tagebuch jeder Pflanze wird für höchstens acht Einträge gelesen, und die Rückschau sagt, wie weit zurück das reichte.
 
 ## Das Ergebnis lesen
 
-Der Bericht zeigt sechs Blöcke: den Kopf, einen Verlaufsdatensatz je Pflanze, die Leistung der Sorten, die Lehren (jede eine Beobachtung oder eine Empfehlung mit Beleg, Konfidenz, Unsicherheit und fehlenden Daten), den Block für den nächsten Zyklus und den Domänenstatus. Jede Kultur im Block für den nächsten Zyklus ist mit `keep`, `reconsider` oder `no evidence` gekennzeichnet.
+Der Bericht zeigt sechs Blöcke: den Kopf, einen Verlaufsdatensatz je Pflanze, die Leistung der Sorten, die Lehren (jede eine Beobachtung oder eine Empfehlung mit Beleg, Konfidenz, Unsicherheit und fehlenden Daten), den Block für den nächsten Zyklus und den Domänenstatus. Jede Kultur im Block für den nächsten Zyklus ist mit `reconsider` gekennzeichnet, wenn ein Datensatz oder deine Notiz ein Problem mit ihr nennt, was allem anderen vorgeht; mit `keep` nur, wenn du einen Erfolg meldest (eine Notiz oder einen Ertrag, den du als Erfolg bezeichnest) und kein Problem festgehalten ist; sonst mit `no evidence`. Eine bloße Ertragszahl ist `no evidence`. `constraints` trägt nur Beobachtungen zu Standort und Umgebung; Lehren gehen in `goals`.
 
 | Schlusszeile | Bedeutet |
 |--------------|----------|

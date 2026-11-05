@@ -17,9 +17,10 @@ parameters:
     requirement: optional
     default: ""
     description: >-
-      Plant instance keys, comma-separated. At most five are planned, in the
-      order given; the rest are reported as not planned. Empty plans nothing
-      and reports the garden's crops and planting runs as context.
+      Plant instance keys, comma-separated. At most five are planned, the
+      first five by plant key as text; the rest are reported as not planned.
+      Empty plans nothing and reports the garden's crops and planting runs as
+      context.
 
   - key: observations
     input_type: string
@@ -81,7 +82,8 @@ parameters:
     description: >-
       The date to plan against (YYYY-MM-DD). Empty uses the date each growth
       stage assessment fixed; with none, no timing and no gate is computed for
-      that plant.
+      that plant. A plant with an observation and no as_of gets no
+      harvest-month position and no gate: the observation carries no date.
 
 # No `extensions:` block on purpose — see extensions.yaml.
 
@@ -137,6 +139,12 @@ prompt: |
     growth stage alone, never compute a harvest date from days to maturity,
     and never invent an observation, a treatment date, a yield, a storage
     limit, an effort or a date.
+  - If a plant has an own observation and the assessment date is empty,
+    compute neither its harvest-month position nor its safety-interval gate:
+    report both as `not computed (observation undated)`, and never fall back
+    to an older diary date for them.
+  - A treatment whose safety interval cannot be read never counts as passed:
+    that plant's gate is then unknown unless another treatment blocks.
   - Report a tool error verbatim as a step result and continue with the rest.
 
   Step 1 — Garden.
@@ -146,10 +154,10 @@ prompt: |
 
   Step 2 — Which plants.
   Split "{{ plants }}" at the commas, trim each key, drop empty entries and
-  duplicates, and keep the order given. The first five are planned; every
-  further key is `not planned (limit of five)`. If the list is empty, no plant
-  is planned, steps 3 and 4 are SKIP, and the plan reports the garden's crops
-  and planting runs from step 1 as context only. Never call a per-plant tool
+  duplicates, and sort the keys as text. The first five in that order are
+  planned; every further key is `not planned (limit of five)`. If the list
+  is empty, no plant is planned, steps 3 and 4 are SKIP, and the plan
+  reports the garden's crops and planting runs from step 1 as context only. Never call a per-plant tool
   for a plant that is not on the list. Split "{{ observations }}" at the
   semicolons and "{{ treatments }}" at the commas, and give each plant only
   the entries that name its key.
@@ -171,8 +179,8 @@ prompt: |
      and follow it with that context and that weather, with no Home Assistant
      read permitted and no placement. Keep its findings. Otherwise the
      weather risk is no source.
-  A plant that does not exist or cannot be read is reported with the tool
-  error verbatim and skipped; the other plants are still planned.
+  A plant that does not exist or cannot be read is `not planned (<the tool
+  error verbatim>)` and skipped; the other plants are still planned.
 
   Step 5 — Plan.
   Load the skill `harvest-planning` and follow it in scope `plan` with the
@@ -200,5 +208,6 @@ prompt: |
   Close with one line, on a single line:
   `HARVEST PLAN: <n> planned, <m> not planned — <slug>`
   where `<n>` is the number of plants in the plan order and `<m>` the number
-  listed as not planned. If every step failed, close instead with
+  listed as not planned, over the limit and unreadable alike. If every step
+  failed, close instead with
   `HARVEST PLAN: not planned — <slug>`.

@@ -25,9 +25,9 @@ parameters:
     default: ""
     description: >-
       Plant instance keys, comma-separated, archived ones included. At most
-      five are reviewed, in the order given; the rest are reported as not
-      reviewed. Empty reviews the garden level only and lists the plants the
-      season holds.
+      five are reviewed, the first five by plant key as text; the rest are
+      reported as not reviewed. Empty reviews the garden level only and lists
+      the plants the season holds. Archived plants are listed either way.
 
   - key: yields
     input_type: string
@@ -36,6 +36,17 @@ parameters:
     description: >-
       What you harvested, comma-separated, each plant_key:amount unit. The
       record has no yield field; this is the only source.
+
+  - key: harvest_results
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Harvest readiness results you already have, comma-separated, each
+      plant_key:result or plant_key:result:YYYY-MM-DD, for example
+      "42:ready:2026-08-10,43:approaching" — typically copied from the final
+      lines of harvest-readiness-check runs. This review runs no harvest check
+      itself; without it every harvest result is absent.
 
   - key: notes
     input_type: string
@@ -89,6 +100,7 @@ prompt: |
   - season: "{{ season }}"
   - plant keys: "{{ plants }}"
   - yields: "{{ yields }}"
+  - harvest results: "{{ harvest_results }}"
   - notes: "{{ notes }}"
   - the season's weather: "{{ weather }}"
   - growth stage date: "{{ as_of }}"
@@ -139,14 +151,16 @@ prompt: |
 
   Step 4 — Which plants.
   Split "{{ plants }}" at the commas, trim each key, drop empty entries and
-  duplicates, and keep the order given. The first five are reviewed; every
-  further key is `not reviewed (limit of five)`. If the list is empty, no
-  plant is reviewed, step 5 is SKIP, and the report lists the plants of step
-  3 whose `planted_on` falls on or before the season's end, so a person can
-  name them. Never call a per-plant tool for a plant that is not on the
-  list. Split "{{ yields }}" at the commas and "{{ notes }}" at the
-  semicolons, and give each plant only the entries that name its key; a note
-  naming no key is about the season.
+  duplicates, and sort the keys as text. The first five in that order are
+  reviewed; every further key is `not reviewed (limit of five)`. If the list
+  is empty, no plant is reviewed, step 5 is SKIP, and the report lists the
+  plants of step 3 whose `planted_on` falls on or before the season's end, so
+  a person can name them. Whether or not plants are named, every plant step 3
+  marks archived is reported, marked archived; it is reviewed only if it is
+  among the reviewed keys. Never call a per-plant tool for a plant that is
+  not on the list. Split "{{ yields }}" and "{{ harvest_results }}" at the
+  commas and "{{ notes }}" at the semicolons, and give each plant only the
+  entries that name its key; a note naming no key is about the season.
 
   Step 5 — Per plant.
   For each plant to review, in order:
@@ -168,8 +182,8 @@ prompt: |
   Load the skill `garden-review` and follow it in scope `season` with the
   span of step 1, the garden context of step 2, the listing of step 3 and its
   status, the per-plant blocks of step 5, the plants not reviewed, and the
-  caller's yields, notes and weather above, passing only the ones that are
-  not empty. It makes no tool call.
+  caller's yields, harvest results, notes and weather above, passing only
+  the ones that are not empty. It makes no tool call.
 
   Step 8 — Report.
   Build the report only from what the skills and step 3 returned. Print this
@@ -184,8 +198,10 @@ prompt: |
   one line. Then the review exactly as the skill returned it, in its six
   blocks in order: the header, the history records, cultivar performance,
   the lessons, the next-cycle block and the domain status. Show the
-  NEXT CYCLE block verbatim. When no plant was named, then the plants of the
-  season from step 3, each with its key, species and archived or live. Then,
+  NEXT CYCLE block verbatim. Then every archived plant of step 3, each with
+  its key, species and whether it was reviewed, also when plants were named;
+  when no plant was named, also the live plants of the season, each with its
+  key and species. Then,
   per plant reviewed, its read report line, and any tool error reported
   verbatim.
 

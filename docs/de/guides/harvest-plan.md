@@ -8,7 +8,7 @@ last_updated: 2026-11-05
 
 # Ernteplan
 
-`harvest-plan` bringt die Ernten von bis zu fünf Pflanzen in eine Reihenfolge: **welche zuerst kommt, in welchen Monat die Arbeit fällt und was sie sperrt oder begrenzt.** Für jede Pflanze gibt es dieselbe Reife-Antwort wie [`harvest-readiness-check`](harvest-readiness-check.md) — reif, nahe der Reife, nicht reif, nicht erntbar oder zu wenig Beleg — dazu ihr Erntefenster und ihre Sperre durch die Wartezeit, und ordnet die Pflanzen dann nach Fensterbeginn, dann nach Reife, dann nach Pflanzenschlüssel.
+`harvest-plan` bringt die Ernten von bis zu fünf Pflanzen in eine Reihenfolge: **welche zuerst kommt, in welchen Monat die Arbeit fällt und was sie sperrt oder begrenzt.** Für jede Pflanze gibt es dieselbe Reife-Antwort wie [`harvest-readiness-check`](harvest-readiness-check.md) — reif, nahe der Reife, nicht reif, nicht erntbar oder zu wenig Beleg — dazu ihr Erntefenster und ihre Sperre durch die Wartezeit, und ordnet die Pflanzen dann nach Fensterbeginn, dann nach Reife, dann nach Pflanzenschlüssel. Der Fensterbeginn ist der Kalendermonat des ersten Fenstermonats, daher wird ein Fenster von November bis Februar unter November eingeordnet.
 
 Der Lauf **liest nur**. Er erntet nichts und plant nichts ein, erfasst keine Ernte und keinen Ertrag, hat kein Anwendungsrezept und ruft kein Home-Assistant-Tool auf.
 
@@ -47,15 +47,15 @@ goose run --recipe harvest-plan \
 | `capacity` | nein | die Arbeitslast besteht nur aus Zählungen |
 | `weather` | nein | das Wetterrisiko ist `no source` |
 | `treatments` | nein | jede Sperre ist `unknown (no treatment date supplied)` |
-| `as_of` | nein | das Datum des Wachstumsstadiums je Pflanze; ohne eines keine Zeitrechnung und keine Sperre für diese Pflanze |
+| `as_of` | nein | das Datum des Wachstumsstadiums je Pflanze; ohne eines keine Zeitrechnung und keine Sperre für diese Pflanze. Eine Pflanze mit Beobachtung und ohne `as_of` bekommt keine Position in den Erntemonaten und keine Sperre |
 
-Höchstens fünf Pflanzen werden geplant, in der angegebenen Reihenfolge; die übrigen werden als nicht geplant aufgeführt. Eine Pflanze, die eine Wartezeit sperrt, wird mit ihrem Sperrdatum aufgeführt und nie davor eingeordnet.
+Höchstens fünf Pflanzen werden geplant: die ersten fünf nach Pflanzenschlüssel, als Text sortiert, sodass dieselbe Liste immer dieselben fünf ergibt. Die übrigen und jede Pflanze, die nicht gelesen werden kann (mit dem Fehler), werden als nicht geplant aufgeführt. Eine Sperre ist nur dann `clear`, wenn die Wartezeit jeder aufgeführten Behandlung bekannt und abgelaufen ist. Eine Pflanze, die eine Wartezeit sperrt, wird mit ihrem Sperrdatum aufgeführt und nie davor eingeordnet.
 
 ## Das Ergebnis lesen
 
 | Schlusszeile | Bedeutet |
 |--------------|----------|
-| `HARVEST PLAN: <n> planned, <m> not planned — <slug>` | `<n>` Pflanzen stehen in der Reihenfolge; `<m>` wurden über die Grenze hinaus genannt oder konnten nicht gelesen werden |
+| `HARVEST PLAN: <n> planned, <m> not planned — <slug>` | `<n>` Pflanzen stehen in der Reihenfolge; `<m>` wurden über die Grenze hinaus genannt oder konnten nicht gelesen werden, beide gezählt |
 | `HARVEST PLAN: not planned — <slug>` | jeder Schritt ist fehlgeschlagen |
 
 ## Quellen

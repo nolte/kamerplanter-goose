@@ -8,7 +8,7 @@ last_updated: 2026-11-05
 
 # Harvest plan
 
-`harvest-plan` puts the harvests of up to five plants in one order: **which comes first, which month the work falls in, and what blocks or limits it.** For each plant it gives the same readiness answer as [`harvest-readiness-check`](harvest-readiness-check.md) — ready, approaching, not ready, not harvestable or not enough evidence — plus its harvest window and its safety-interval gate, then orders the plants by window start, then readiness, then plant key.
+`harvest-plan` puts the harvests of up to five plants in one order: **which comes first, which month the work falls in, and what blocks or limits it.** For each plant it gives the same readiness answer as [`harvest-readiness-check`](harvest-readiness-check.md) — ready, approaching, not ready, not harvestable or not enough evidence — plus its harvest window and its safety-interval gate, then orders the plants by window start, then readiness, then plant key. The window start is the calendar month of the window's first month, so a window from November to February sorts under November.
 
 The run **only reads**. It harvests and schedules nothing, records no harvest or yield, has no apply recipe and calls no Home Assistant tool.
 
@@ -47,15 +47,15 @@ goose run --recipe harvest-plan \
 | `capacity` | no | workload is counts only |
 | `weather` | no | the weather risk is `no source` |
 | `treatments` | no | every gate is `unknown (no treatment date supplied)` |
-| `as_of` | no | each plant's growth stage date; with none, no timing and no gate for that plant |
+| `as_of` | no | each plant's growth stage date; with none, no timing and no gate for that plant. A plant with an observation and no `as_of` gets no harvest-month position and no gate |
 
-At most five plants are planned, in the order given; the rest are listed as not planned. A plant blocked by a safety interval is listed with its gate date and is never put before it.
+At most five plants are planned: the first five by plant key, sorted as text, so the same list always gives the same five. The rest, and every plant that cannot be read (with the error), are listed as not planned. A gate is `clear` only when every listed treatment's interval is known and passed. A plant blocked by a safety interval is listed with its gate date and is never put before it.
 
 ## Read the outcome
 
 | Closing line | Means |
 |--------------|-------|
-| `HARVEST PLAN: <n> planned, <m> not planned — <slug>` | `<n>` plants are in the order; `<m>` were named beyond the limit or could not be read |
+| `HARVEST PLAN: <n> planned, <m> not planned — <slug>` | `<n>` plants are in the order; `<m>` were named beyond the limit or could not be read, both counted |
 | `HARVEST PLAN: not planned — <slug>` | every step failed |
 
 ## Sources
