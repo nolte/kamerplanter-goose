@@ -55,7 +55,7 @@ goose run --recipe plant-health-assessment \
 | `competing explanations` | two or more candidates are supported, and the report says what would separate them |
 | `suspicion only` | nothing is supported, but at least one candidate is a suspicion |
 | `no abnormality reported` | the sources that were read report nothing abnormal |
-| `insufficient evidence` | there was no symptom source at all, or no check could say anything |
+| `insufficient evidence` | there was no symptom source at all, no check could say anything, or something abnormal was reported that no check could place |
 
 - **Weather is an exposure, not a symptom.** Exposures are listed in a block of their own, and a symptom is linked to one only as "consistent with". The `environment` candidate is therefore a suspicion at most.
 - **The health item is an observation.** In the [daily garden check](daily-garden-check.md) it sits beside the other checks' items and cites them; it never repeats their recommendations, so nothing is counted twice.

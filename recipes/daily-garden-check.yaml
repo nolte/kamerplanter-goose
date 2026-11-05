@@ -105,7 +105,9 @@ prompt: |
   3. Load the skill `nutrient-imbalance-assess` and follow it against that
      context and those measurements. Keep its report as it returned it.
   4. Load the skill `pest-pressure-assess` and follow it against that context.
-     Keep its report as it returned it.
+     Keep its report as it returned it. Its candidate, tier and tests reach
+     the care plan as an observation only; every measure for this plant comes
+     from item 10, never from this report.
   5. Load the skill `watering-decision` and follow it with that context and
      those measurements. Keep its decision and its finding as it returned them.
      It makes no tool call.
@@ -130,7 +132,10 @@ prompt: |
      item 4, the context of item 1, the hand-off blocks of items 7 and 9, and
      no planned harvest date and no setting. Its own reads are the catalogue
      records of the candidate the pest report names, nothing else. Keep its
-     plan and its findings as it returned them.
+     plan and its findings as it returned them; they are the only source of a
+     pest or disease measure (monitoring or treatment) for this plant. If this
+     item did not run or failed, say so, and the pest report of item 4 is
+     mapped by the care plan as before.
   A plant that does not exist or cannot be read is reported with the tool error
   verbatim and skipped; the other plants are still checked.
 

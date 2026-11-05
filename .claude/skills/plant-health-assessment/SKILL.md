@@ -45,22 +45,22 @@ Every class gets exactly one status:
 |--------|------|
 | `supported` | the owning domain returned its own positive result **and** at least one further evidence item that is not the presenting symptom supports it, with no higher-level contradiction |
 | `suspicion` | it rests on a single symptom, a photo reading, priors, or a "consistent with" link only |
-| `contradicted` | the owning domain's own negative result, or a named item at a higher level, contradicts it |
-| `not assessable` | the owning domain did not run or returned nothing, with the reason |
+| `contradicted` | the owning domain's own negative result for a candidate it tested, or a named item at a higher level, contradicts it |
+| `not assessable` | the owning domain did not run, returned nothing, or tested no candidate of this class, with the reason |
 
 Where each class takes its status from:
 
 | Class | Owning source | Its own positive result | Its own negative result |
 |-------|---------------|-------------------------|-------------------------|
 | `nutrient` | the nutrient report, and the fertilisation finding | a direction the report establishes, with the tier it names | the report rules an imbalance out |
-| `pest` | the pest report, pest candidate | status `identified` | status `rejected`, or no pest candidate tenable |
-| `disease` | the pest report, disease candidate | status `identified` | status `rejected`, or no disease candidate tenable |
+| `pest` | the pest report, pest candidate | status `identified` | status `rejected` for a pest candidate it tested |
+| `disease` | the pest report, disease candidate | status `identified` | status `rejected` for a disease candidate it tested |
 | `water` | the watering finding, the care log's watering confirmations, moisture measurements | decision `water now` (a measured dry state) | decision `wait` on a measured state within the target |
 | `environment` | the weather hand-off | none: a "consistent with" link is a suspicion at most | every factor `no exposure in the supplied data` |
 | `development` | the growth-stage result, read against the phase definition and the species months | a stage at level 1 to 3 in which the presenting change is expected (for example senescing lower leaves in fruit) | a stage at level 1 to 3 in which the change is not expected |
 | `abiotic handling/site` | the caller's observation, the care log (a repeatedly snoozed repotting) | none: no process owns it, so a suspicion at most | none |
 
-**Never upgrade a domain's result.** A pest or disease candidate the pest process left `not contradicted` is a `suspicion` here and keeps the words `not contradicted`; a nutrient direction it left undetermined stays undetermined and is a `suspicion` at most. Carry the tier and the tests not run exactly as the report gave them. A candidate resting on one symptom is a suspicion, as rule 1 of `decision-policy` requires.
+**Never upgrade a domain's result.** A pest or disease candidate the pest process left `not contradicted` is a `suspicion` here and keeps the words `not contradicted`; a nutrient direction it left undetermined stays undetermined and is a `suspicion` at most. Carry the tier and the tests not run exactly as the report gave them. **A pest report that tested no pest (or no disease) candidate leaves that class `not assessable`**, with the reason "no candidate tested": an empty inspection history means nobody looked, not that nothing is there, and only a `rejected` for a tested candidate makes the class `contradicted`. A candidate resting on one symptom is a suspicion, as rule 1 of `decision-policy` requires.
 
 ### 4. Decide the overall result
 
@@ -73,12 +73,13 @@ In this order, the first that applies:
 | `leading explanation` | exactly one class is `supported` |
 | `competing explanations` | two or more classes are `supported` |
 | `suspicion only` | no class is `supported`, and at least one is `suspicion` |
+| `insufficient evidence` | every other case: an abnormality is reported, and no class is `supported` or `suspicion`; name the observation that would let a class be assessed |
 
 The **surviving candidates** are those `supported` or `suspicion`. A `leading explanation` still lists every surviving suspicion beside it. No result is ever called a diagnosis, and none is worded as certain.
 
 ### 5. Name what would discriminate
 
-For each pair of surviving candidates, name the one observation that would tell them apart, stated as something a person can do or record: "the leaf undersides at 1280, for mites against a nutrient pattern"; "a substrate moisture reading, for drought against root damage"; "whether new growth is affected, for a mobile against an immobile nutrient". When the observation is general knowledge rather than a recorded method, label it level 8, not from the record.
+For each pair of surviving candidates, name the one observation that would tell them apart, stated as something a person can do or record: "the person checks the leaf undersides with a hand lens, for mites against a nutrient pattern"; "a substrate moisture reading, for drought against root damage"; "whether new growth is affected, for a mobile against an immobile nutrient". When the observation is general knowledge rather than a recorded method, label it level 8, not from the record.
 
 ### 6. Weigh it
 

@@ -55,7 +55,7 @@ goose run --recipe plant-health-assessment \
 | `competing explanations` | zwei oder mehr Kandidaten sind gestützt, und der Bericht sagt, was sie trennen würde |
 | `suspicion only` | nichts ist gestützt, aber mindestens ein Kandidat ist eine Vermutung |
 | `no abnormality reported` | die gelesenen Quellen melden nichts Auffälliges |
-| `insufficient evidence` | es gab gar keine Symptomquelle, oder keine Prüfung konnte etwas sagen |
+| `insufficient evidence` | es gab gar keine Symptomquelle, keine Prüfung konnte etwas sagen, oder etwas Auffälliges wurde gemeldet, das keine Prüfung einordnen konnte |
 
 - **Wetter ist eine Exposition, kein Symptom.** Expositionen stehen in einem eigenen Block, und ein Symptom wird mit einer nur als „consistent with“ verknüpft. Der Kandidat `environment` ist daher höchstens eine Vermutung.
 - **Der Gesundheitseintrag ist eine Beobachtung.** In der [täglichen Gartenprüfung](daily-garden-check.md) steht er neben den Einträgen der anderen Prüfungen und zitiert sie; er wiederholt nie ihre Empfehlungen, damit nichts doppelt gezählt wird.

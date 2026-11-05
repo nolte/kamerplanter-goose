@@ -141,7 +141,8 @@ prompt: |
 
   Step 5 — Pests and diseases.
   Load the skill `pest-pressure-assess` and follow it against the context of
-  step 1 and the symptoms supplied. Keep its report as it returned it,
+  step 1, the symptoms supplied and the photo findings of step 3 if there
+  were any, as visible symptoms read from an image. Keep its report as it returned it,
   including the status, the tier and the tests not run.
 
   Step 6 — Growth stage.

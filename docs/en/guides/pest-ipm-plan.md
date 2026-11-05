@@ -17,9 +17,9 @@ The run **only reads**. It treats nothing, releases nothing and records nothing,
 
 ## Expect "treatment not justified"
 
-A treatment is reached only at the pest check's own threshold: a recorded inspection naming the organism, or a photo showing it together with catalogue data that do not contradict it. A described symptom alone does not reach it. **Below the threshold the plan stops after the cultural and mechanical stage** and names the monitoring method that would raise the evidence — a sticky trap, a look at the leaf undersides, an inspection of the affected part. That is the ordinary result, and the monitoring step is the useful part.
+A treatment is reached only at the pest check's own threshold: a recorded inspection naming the organism, or a photo showing it together with catalogue data that do not contradict it. This recipe reads no photo, so here the threshold is met only by a recorded inspection; for photo evidence, run the [plant health assessment](plant-health-assessment.md) with `entry_key`. A described symptom alone does not reach it. **Below the threshold the plan stops after the cultural and mechanical stage** and names the monitoring method that would raise the evidence — a sticky trap, checking the leaf undersides yourself with a hand lens, an inspection of the affected part. That is the ordinary result, and the monitoring step is the useful part.
 
-Monitoring methods, and a pest's preference for dry or humid air, are **not recorded** in the pest catalogue; the plan labels them as general knowledge. A disease is better served: its record names the environmental triggers, and the environmental correction quotes them.
+Monitoring methods, and a pest's preference for dry or humid air, are **not recorded** in the pest catalogue; the plan labels them as general knowledge. A disease is better served: its record names the environmental triggers, and the environmental correction quotes them. **An environmental side that was not assessed blocks every treatment**: correct the environment before treating the plant. This recipe runs no health assessment, so for a pest the environmental side is always not assessed here, and a pest treatment is never recommendable from this recipe alone; the report says what would assess it.
 
 ## Before you start
 
@@ -53,11 +53,11 @@ goose run --recipe pest-ipm-plan \
 
 Every treatment in the plan carries a fixed block:
 
-- **Prerequisites**: the identification meets the threshold, with its tier; the earlier stages are done or unavailable, with the reason; whether the plant may be harvested, and the time left until the harvest; and the product label and local plant-protection rules, which are **not in the record** and are yours to check.
+- **Prerequisites**: the identification meets the threshold, with its tier; the earlier stages are done or unavailable, with the reason; whether the plant may be harvested, and the time left until the harvest; and the product label and local plant-protection rules, which are **not in the record**: always listed as "confirm before applying", and yours to check. They do not decide whether a treatment is recommendable; the other prerequisites do.
 - **Safety constraints**, quoted from the record exactly as it holds them, never scaled or converted: the safety interval in days, the protective equipment, the dosage per litre, the application method and the active ingredient.
-- **Exclusions**: a treatment whose safety interval is longer than the time left until the harvest is **excluded**. On a plant that may be harvested, a treatment is **not recommendable** when the time to harvest is not known, because its interval cannot be checked. Two treatments sharing an active ingredient are never offered as alternatives.
+- **Exclusions**: a treatment whose safety interval is longer than the time left until the harvest is **excluded**. On a plant that may be harvested, a treatment is **not recommendable** when the time to harvest is not known, or when the record carries no safety interval for it, because its interval cannot be checked. A missing interval is never read as zero. Two treatments sharing an active ingredient are never offered as alternatives.
 
-The time to harvest is your `harvest_date` minus `as_of`, or, without a harvest date, the cultivar's days to maturity minus the days since planting. It is never taken from the server's harvest-readiness tool, whose answer is not recorded anywhere here.
+The time to harvest is your `harvest_date` minus `as_of`, or, without a harvest date, the cultivar's days to maturity minus the days since planting. That fallback assumes one harvest at maturity and ignores an early or continuous harvest — baby leaf, herbs, cut-and-come-again — so give `harvest_date` for those. It is never taken from the server's harvest-readiness tool, whose answer is not recorded anywhere here.
 
 Biological measures come before chemical ones, and a beneficial is checked against what it actually preys on. That a broad-spectrum product wipes out a beneficial release is general knowledge the record does not carry; the plan states it as such.
 

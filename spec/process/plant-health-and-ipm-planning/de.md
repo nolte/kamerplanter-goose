@@ -20,7 +20,7 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 ## Ziele
 
 - Mehrere Belegquellen werden zu einem Bild der Gesundheit einer Pflanze zusammengefasst, und jede Kandidaten-Erklärung sagt, worauf sie ruht
-- Konkurrierende Erklärungen bleiben nebeneinander stehen, wenn der Beleg sie nicht trennt, mit der Beobachtung, die es täte
+- Konkurrierende Erklärungen bleiben nebeneinander stehen, wenn der Beleg sie nicht trennt, mit der Beobachtung, die sie trennen würde
 - Konfidenz und Unsicherheit sind für jeden Kandidaten und für das Ergebnis als Ganzes ausdrücklich
 - Die bestehenden Diagnose-Skills werden wiederverwendet, und kein Urteil einer Domäne wird neu ausgeführt, aufgewertet oder doppelt gezählt
 - Ein IPM-Plan bevorzugt Bestätigung, dann Umweltkorrektur, dann kulturelle und mechanische Maßnahmen, und erreicht eine gezielte Behandlung nur, wenn die Schwelle des Schädlingsprozesses erreicht ist
@@ -51,8 +51,8 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 - **MUSS [MUST]** genau diese Kandidatenklassen betrachten: `nutrient`, `pest`, `disease`, `water`, `environment`, `development` und `abiotic handling/site`
 - **MUSS [MUST]** jedem Kandidaten genau einen Status geben: `supported`, `suspicion`, `contradicted` oder `not assessable`
 - **MUSS [MUST]** `supported` nur geben, wenn die zuständige Domäne ihr eigenes positives Ergebnis geliefert hat und mindestens ein weiteres Belegstück, das nicht das auffällige Symptom ist, ihn stützt, ohne Widerspruch auf einer höheren Stufe
-- **MUSS [MUST]** `suspicion` einem Kandidaten geben, der nur auf einem einzelnen Symptom, einer Fotolesung, Vorannahmen oder einer „consistent with“-Verknüpfung ruht, `contradicted` einem Kandidaten, dem das eigene negative Ergebnis der zuständigen Domäne oder ein benanntes Belegstück einer höheren Stufe widerspricht, und `not assessable` einem Kandidaten, dessen Domäne nicht lief oder nichts lieferte, mit dem Grund
-- **MUSS [MUST]** genau ein Gesamtergebnis liefern: `leading explanation`, `competing explanations`, `suspicion only`, `no abnormality reported` oder `insufficient evidence`
+- **MUSS [MUST]** `suspicion` einem Kandidaten geben, der nur auf einem einzelnen Symptom, einer Fotolesung, Vorannahmen oder einer „consistent with“-Verknüpfung ruht, `contradicted` einem Kandidaten, dem das eigene negative Ergebnis der zuständigen Domäne für einen von ihr geprüften Kandidaten (bei einem Schädling oder einer Krankheit das `rejected` des Schädlingsprozesses; ein leerer Inspektionsverlauf ist nie eines) oder ein benanntes Belegstück einer höheren Stufe widerspricht, und `not assessable` einem Kandidaten, dessen Domäne nicht lief, nichts lieferte oder keinen Kandidaten dieser Klasse prüfte, mit dem Grund
+- **MUSS [MUST]** genau ein Gesamtergebnis liefern: `leading explanation`, `competing explanations`, `suspicion only`, `no abnormality reported` oder `insufficient evidence`, bestimmt in einer festen Reihenfolge, die keinen Fall offen lässt, sodass eine gemeldete Auffälligkeit ohne einen Kandidaten mit `supported` oder `suspicion` `insufficient evidence` ist
 - **DARF NICHT [MUST NOT]** das Ergebnis einer Domäne aufwerten: Ein Schädlingskandidat, den der Schädlingsprozess `not contradicted` ließ, bleibt `not contradicted`, eine Nährstoffrichtung, die er unbestimmt ließ, bleibt unbestimmt, und die Gesundheitsschicht führt keine Leiter, keinen Falsifikationstest und keine Verweigerungsschwelle eines anderen Prozesses erneut aus
 - **DARF NICHT [MUST NOT]** ein Ergebnis eine Diagnose nennen und **MUSS [MUST]** einen Kandidaten, der auf einem Symptom ruht, als Vermutung kennzeichnen, wie Regel 1 der Entscheidungsrichtlinie es verlangt
 
@@ -76,12 +76,12 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 
 ### E. Voraussetzungen und Sicherheitsauflagen einer Behandlung
 
-- **MUSS [MUST]** jeder Maßnahme in der Stufe der gezielten Behandlung einen Block der Voraussetzungen geben: Die Bestimmung erreicht die Schädlingsschwelle, mit benannter Stufe; jede frühere Stufe ist erledigt oder nicht verfügbar, mit dem Grund; und die Erntesituation, `allows_harvest` und die Zeit bis zur Ernte
-- **MUSS [MUST]** die Zeit bis zur Ernte nur aus dem geplanten Erntedatum des Aufrufers oder aus der Ernte-Übergabe des Wachstumsstadiums nehmen (Tage seit `planted_on` gegen `days_to_maturity`) und **DARF NICHT [MUST NOT]** sie aus `get_harvest_readiness` nehmen, dessen Antwortfelder nicht festgehalten sind
+- **MUSS [MUST]** jeder Maßnahme in der Stufe der gezielten Behandlung einen Block der Voraussetzungen geben: Die Bestimmung erreicht die Schädlingsschwelle, mit benannter Stufe; jede frühere Stufe ist erledigt oder nicht verfügbar, mit dem Grund, wobei eine nicht beurteilte Umweltkorrektur keines von beiden ist und die Maßnahme sperrt, bis geliefert ist, was sie beurteilen würde; und die Erntesituation, `allows_harvest` und die Zeit bis zur Ernte
+- **MUSS [MUST]** die Zeit bis zur Ernte nur aus dem geplanten Erntedatum des Aufrufers oder aus der Ernte-Übergabe des Wachstumsstadiums nehmen (Tage seit `planted_on` gegen `days_to_maturity`), **MUSS [MUST]** als Unsicherheit nennen, dass dieser Ersatzweg eine frühe oder fortlaufende Ernte (Babyleaf, Kräuter) übergeht, und **DARF NICHT [MUST NOT]** sie aus `get_harvest_readiness` nehmen, dessen Antwortfelder nicht festgehalten sind
 - **MUSS [MUST]** jeder solchen Maßnahme einen Block der Sicherheitsauflagen geben, der `safety_interval_days`, `protective_equipment[]`, `dosage_per_liter`, `application_method` und `active_ingredient` wörtlich aus dem Datenbestand zitiert, und **DARF NICHT [MUST NOT]** einen davon skalieren, umrechnen oder erfinden
-- **MUSS [MUST]** eine Maßnahme ausschließen, deren `safety_interval_days` die verbleibende Zeit bis zur Ernte übersteigt, und **MUSS [MUST]** eine Maßnahme als „not recommendable: interval cannot be checked“ melden, wenn `allows_harvest` wahr ist und die Zeit bis zur Ernte nicht feststeht
+- **MUSS [MUST]** eine Maßnahme ausschließen, deren `safety_interval_days` die verbleibende Zeit bis zur Ernte übersteigt, und **MUSS [MUST]** eine Maßnahme als „not recommendable: interval cannot be checked“ melden, wenn `allows_harvest` wahr ist und entweder die Zeit bis zur Ernte nicht feststeht oder `safety_interval_days` nicht festgehalten ist (null oder fehlend)
 - **DARF NICHT [MUST NOT]** zwei Maßnahmen mit demselben `active_ingredient` als Alternativen anbieten und **MUSS [MUST]** sagen, dass die Aussage zum Wirkstoffwechsel nicht getroffen werden kann, wo `active_ingredient` `null` ist
-- **MUSS [MUST]** den Konflikt zwischen einer Nützlingsfreilassung und einer breit wirkenden Maßnahme als nicht festgehalten nennen, und das Produktetikett und die örtlichen Pflanzenschutzregeln als Voraussetzung außerhalb des Datenbestands
+- **MUSS [MUST]** den Konflikt zwischen einer Nützlingsfreilassung und einer breit wirkenden Maßnahme als nicht festgehalten nennen, und das Produktetikett und die örtlichen Pflanzenschutzregeln als Voraussetzung außerhalb des Datenbestands, die immer zur Bestätigung vor der Anwendung aufgeführt wird und nie für sich entscheidet, ob eine Maßnahme empfehlbar ist
 - **MUSS [MUST]** den geschlossenen oder offenen Bereich vom Aufrufer nehmen oder als erschlossen nennen, wie der Schädlingsprozess es verlangt
 
 ### F. Trennung von Exposition und Symptom
@@ -94,7 +94,7 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 - **MUSS [MUST]** neben dem Ergebnis Befunde in der Form liefern, die die Spezifikation zur Pflegeplanung in ihrem Abschnitt C festlegt
 - **MUSS [MUST]** die Gesundheitsbeurteilung nur als Beobachtungen liefern, ein Befund je Pflanze mit der Differenzialbetrachtung, der die Befunde der anderen Domänen nach Domäne zitiert und keine ihrer Empfehlungen wiederholt
 - **MUSS [MUST]** einen Übergabeblock für den IPM-Plan liefern, der die Kandidaten `environment` und `water` und den Schädlings- oder Krankheitskandidaten so enthält, wie der Schädlingsbericht ihn geliefert hat
-- **MUSS [MUST]** einem Überwachungsschritt für einen vorhandenen Kandidaten die Art Empfehlung geben, einem Umwelt- oder Kulturschritt die Art Empfehlung nur, wenn der Kandidat im Schädlingsbericht mindestens `not contradicted` ist, und sonst Beobachtung, und einer gezielten Behandlung die Art Empfehlung nur, wenn die Schwelle erreicht ist und jede Voraussetzung gilt
+- **MUSS [MUST]** einem Überwachungsschritt für einen vorhandenen Kandidaten die Art Empfehlung geben, einem Umwelt- oder Kulturschritt die Art Empfehlung nur, wenn der Kandidat im Schädlingsbericht mindestens `not contradicted` ist, und sonst Beobachtung, und einer gezielten Behandlung die Art Empfehlung nur, wenn die Schwelle erreicht ist, jede frühere Stufe erledigt oder nicht verfügbar ist und die Erntesituation es zulässt; Etikett und örtliche Regeln werden zur Bestätigung aufgeführt und entscheiden nichts
 - **MUSS [MUST]** die Folge eines Befunds fehlen lassen, wenn keine Eingabe eine nennt
 - **MUSS [MUST]** das Tool zum Festhalten einer Inspektion, `create_inspection`, als die Mutation nennen, die ein späterer Anwendungsschritt für einen Überwachungsschritt aufrufen würde, und `no tool measured` für eine Behandlung, und **DARF NICHT [MUST NOT]** eines davon aufrufen
 
@@ -122,7 +122,7 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 - [ ] Wetter kommt nur als Expositionen hinein, getrennt von Symptomen gehalten und nur als „consistent with“ verknüpft
 - [ ] Ein IPM-Plan hat die vier Stufen in Reihenfolge und erreicht eine gezielte Behandlung nur an der Schwelle des Schädlingsprozesses
 - [ ] Unterhalb der Schwelle nennt der Plan eine Überwachungsmethode, als nicht festgehalten gekennzeichnet
-- [ ] Jede gezielte Behandlung trägt ihre Voraussetzungen und ihre wörtlich zitierten Sicherheitsauflagen und wird ausgeschlossen oder nicht empfehlbar, wenn ihre Wartezeit die Zeit bis zur Ernte übersteigt oder sich nicht daran prüfen lässt
+- [ ] Jede gezielte Behandlung trägt ihre Voraussetzungen und ihre wörtlich zitierten Sicherheitsauflagen und wird ausgeschlossen oder nicht empfehlbar, wenn ihre Wartezeit die Zeit bis zur Ernte übersteigt oder sich nicht daran prüfen lässt, auch wenn die Wartezeit nicht festgehalten ist
 - [ ] Keine zwei Maßnahmen mit demselben Wirkstoff werden als Alternativen angeboten, und ein nicht zuordenbares `treatment_type` wird als solches gemeldet
 - [ ] Beide Skills liefern Befunde in der Einklinkform der Pflegeplanung, und ein Überwachungsschritt nennt `create_inspection` als Mutation, die nichts aufruft
 - [ ] Zwei Läufe über dieselbe Eingabe ergeben an einer festen Vorlage dieselben Fakten, und das Ergebnis sagt, was nicht beansprucht wird

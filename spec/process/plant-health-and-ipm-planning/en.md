@@ -20,7 +20,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 ## Goals
 
 - Several evidence sources are combined into one picture of a plant's health, and each candidate explanation says what it rests on
-- Competing explanations are kept side by side when the evidence does not separate them, with the observation that would
+- Competing explanations are kept side by side when the evidence does not separate them, with the observation that would separate them
 - Confidence and uncertainty are explicit for every candidate and for the result as a whole
 - The existing diagnostic skills are reused, and no domain's verdict is re-run, upgraded or counted twice
 - An IPM plan prefers confirmation, then environmental correction, then cultural and mechanical controls, and reaches a targeted treatment only when the pest process's threshold is met
@@ -51,8 +51,8 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - **MUST** consider exactly these candidate classes: `nutrient`, `pest`, `disease`, `water`, `environment`, `development` and `abiotic handling/site`
 - **MUST** give each candidate exactly one status: `supported`, `suspicion`, `contradicted` or `not assessable`
 - **MUST** give `supported` only when the owning domain returned its own positive result and at least one further evidence item that is not the presenting symptom supports it, with no contradiction at a higher level
-- **MUST** give `suspicion` to a candidate resting on a single symptom, a photo reading, priors, or a "consistent with" link only, `contradicted` to a candidate the owning domain's own negative result or a named item at a higher level contradicts, and `not assessable` to a candidate whose domain did not run or returned nothing, with the reason
-- **MUST** return exactly one overall result: `leading explanation`, `competing explanations`, `suspicion only`, `no abnormality reported` or `insufficient evidence`
+- **MUST** give `suspicion` to a candidate resting on a single symptom, a photo reading, priors, or a "consistent with" link only, `contradicted` to a candidate that the owning domain's own negative result for a candidate it tested (for a pest or disease, the pest process's `rejected`; an empty inspection history is never one) or a named item at a higher level contradicts, and `not assessable` to a candidate whose domain did not run, returned nothing or tested no candidate of that class, with the reason
+- **MUST** return exactly one overall result: `leading explanation`, `competing explanations`, `suspicion only`, `no abnormality reported` or `insufficient evidence`, determined in a fixed order that leaves no case open, so that an abnormality reported with no candidate `supported` or `suspicion` is `insufficient evidence`
 - **MUST NOT** upgrade a domain's result: a pest candidate the pest process left `not contradicted` stays `not contradicted`, a nutrient direction it left undetermined stays undetermined, and the health layer re-runs no ladder, falsification test or refusal threshold of another process
 - **MUST NOT** call any result a diagnosis, and **MUST** label a candidate resting on one symptom a suspicion, as rule 1 of the decision policy requires
 
@@ -76,12 +76,12 @@ Readers: authors of garden skills and recipes in this repository, and the people
 
 ### E. Treatment prerequisites and safety constraints
 
-- **MUST** give every measure in the targeted-treatment stage a prerequisites block: the identification meets the pest threshold, with the tier named; each earlier stage is done or unavailable, with the reason; and the harvest situation, `allows_harvest` and the time to harvest
-- **MUST** take the time to harvest only from the caller's planned harvest date or from the growth-stage harvest hand-off (days since `planted_on` against `days_to_maturity`), and **MUST NOT** take it from `get_harvest_readiness`, whose response fields are not recorded
+- **MUST** give every measure in the targeted-treatment stage a prerequisites block: the identification meets the pest threshold, with the tier named; each earlier stage is done or unavailable, with the reason, where an environmental correction that was not assessed is neither and blocks the measure until what would assess it is supplied; and the harvest situation, `allows_harvest` and the time to harvest
+- **MUST** take the time to harvest only from the caller's planned harvest date or from the growth-stage harvest hand-off (days since `planted_on` against `days_to_maturity`), **MUST** name as uncertainty that this fallback ignores an early or continuous harvest (baby leaf, herbs), and **MUST NOT** take it from `get_harvest_readiness`, whose response fields are not recorded
 - **MUST** give every such measure a safety-constraints block quoting `safety_interval_days`, `protective_equipment[]`, `dosage_per_liter`, `application_method` and `active_ingredient` verbatim from the record, and **MUST NOT** scale, convert or invent any of them
-- **MUST** exclude a measure whose `safety_interval_days` exceeds the time remaining to harvest, and **MUST** report a measure as "not recommendable: interval cannot be checked" when `allows_harvest` is true and the time to harvest is not established
+- **MUST** exclude a measure whose `safety_interval_days` exceeds the time remaining to harvest, and **MUST** report a measure as "not recommendable: interval cannot be checked" when `allows_harvest` is true and either the time to harvest is not established or `safety_interval_days` is not recorded (null or absent)
 - **MUST NOT** offer two measures sharing an `active_ingredient` as alternatives, and **MUST** say that the rotation claim cannot be made where `active_ingredient` is `null`
-- **MUST** state, as not recorded, the conflict between a beneficial release and a broad-spectrum measure, and the product label and local plant-protection rules as a prerequisite outside the record
+- **MUST** state, as not recorded, the conflict between a beneficial release and a broad-spectrum measure, and the product label and local plant-protection rules as a prerequisite outside the record, always listed for the person to confirm before applying and never by itself deciding whether a measure is recommendable
 - **MUST** take the enclosed or open setting from the caller, or state it as inferred, as the pest process requires
 
 ### F. Separation of exposure and symptom
@@ -94,7 +94,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - **MUST** return, besides the result, findings in the shape the care planning spec defines in its section C
 - **MUST** return the health assessment as observations only, one finding per plant holding the differential, which cites the other domains' findings by domain and restates none of their recommendations
 - **MUST** return a hand-off block for the IPM plan holding the `environment` and `water` candidates and the pest or disease candidate as the pest report returned it
-- **MUST** give a monitoring step for an existing candidate the kind recommendation, an environmental or cultural step the kind recommendation only when the candidate is at least `not contradicted` in the pest report and observation otherwise, and a targeted treatment the kind recommendation only when the threshold is met and every prerequisite holds
+- **MUST** give a monitoring step for an existing candidate the kind recommendation, an environmental or cultural step the kind recommendation only when the candidate is at least `not contradicted` in the pest report and observation otherwise, and a targeted treatment the kind recommendation only when the threshold is met, every earlier stage is done or unavailable, and the harvest situation allows it; the label and local rules are listed for confirmation and decide nothing
 - **MUST** leave the consequence of a finding absent unless an input states one
 - **MUST** name the inspection-recording tool, `create_inspection`, as the mutation a later apply step would call for a monitoring step, and `no tool measured` for a treatment, and **MUST NOT** call either
 
@@ -122,7 +122,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - [ ] Weather enters only as exposures, kept apart from symptoms and linked only as "consistent with"
 - [ ] An IPM plan has the four stages in order, and reaches a targeted treatment only at the pest process's threshold
 - [ ] Below the threshold the plan names a monitoring method, labelled as not recorded
-- [ ] Every targeted treatment carries its prerequisites and its safety constraints quoted verbatim, and is excluded or not recommendable when its interval exceeds or cannot be checked against the time to harvest
+- [ ] Every targeted treatment carries its prerequisites and its safety constraints quoted verbatim, and is excluded or not recommendable when its interval exceeds or cannot be checked against the time to harvest, including when the interval is not recorded
 - [ ] No two measures sharing an active ingredient are offered as alternatives, and an unplaceable `treatment_type` is reported as such
 - [ ] Both skills return findings in the care planning plug-in shape, and a monitoring step names `create_inspection` as a mutation that nothing calls
 - [ ] Two runs over the same input give the same facts on a fixed fixture, and the result says what is not claimed
