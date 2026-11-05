@@ -1,0 +1,178 @@
+version: "1.0.0"
+title: "Growth Stage Check"
+description: >-
+  Read-only: says whether one plant's recorded growth phase matches what is known about it (recorded stage consistent, recorded stage questionable with a direction ahead, behind or unclear, or insufficient evidence), from your own observation, the diary's measurements, an optional photo entry, its age since planting, its time in the phase and the cultivar and species expectations, and states the evidence, confidence, uncertainty and missing data. Growing degree days and photoperiod are computed only from a temperature series and a latitude or light schedule you supply, and never place a stage on their own. It changes no phase and records nothing: a questionable stage names the phase transition a person might record, and nothing calls it. It calls no Home Assistant tool. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to assess."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: observations
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you see on the plant now, in your words, for example "first flower
+      buds open". Without it, or a photo or a diary measurement, the answer is
+      insufficient evidence.
+
+  - key: entry_key
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A diary entry of this plant whose photos should be read. Empty reads no
+      photo.
+
+  - key: temperatures
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A daily temperature series since planting — date, minimum, maximum and
+      the unit — for growing degree days. The server has no source for it.
+
+  - key: latitude
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The garden's latitude in decimal degrees, for the outdoor day length.
+      The server has no field for it.
+
+  - key: light
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The indoor light schedule, hours of light per day, for a plant under
+      lamps or indoors.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to judge against (YYYY-MM-DD). Empty uses the date of the
+      newest diary entry read; with none, or when you give observations
+      without it, no timing is computed.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You assess whether one plant's recorded growth phase matches what is known
+  about it and report. You never change a phase, write a diary entry, or
+  record anything.
+
+  Skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour: which phase answer reads as normal and is
+  not, what the species record carries and what it does not. Do not repeat
+  their logic here.
+
+  "Insufficient evidence" is a legitimate outcome and usually the correct one.
+  A plant's age or its accumulated warmth is an expectation, not a look at the
+  plant. Do not manufacture a verdict to look useful.
+
+prompt: |
+  Assess the growth stage of plant "{{ plant_key }}" in garden "{{ tenant }}".
+  Read-only run. Use MCP tools only: do not shell out, do not fetch URLs, and
+  read or write no local file other than loading the named skills
+  (`plant-context-collect`, `diary-measurements-read`, `plant-photo-read`,
+  `decision-policy`, `growth-stage-assessment`) and the files they instruct
+  you to read.
+
+  What the caller supplied (empty means not given):
+  - own observation of the plant: "{{ observations }}"
+  - diary entry with photos: "{{ entry_key }}"
+  - daily temperature series: "{{ temperatures }}"
+  - latitude: "{{ latitude }}"
+  - indoor light schedule: "{{ light }}"
+  - assessment date: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation, and do
+    not call `TimeTillErnte` or `time_till`.
+  - Never print an API key or token, not even partially.
+  - Never place a stage from accumulated warmth, the plant's age or a photo
+    alone, and never invent an observation, a temperature, a phase key or a
+    date.
+  - If an own observation is given and the assessment date is empty, compute
+    no time-based comparison (days in the phase, days since planting, month
+    windows, growing degree days, day length) and say that the observation
+    carries no date.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Recorded measurements.
+  Load the skill `diary-measurements-read` and follow it for plant
+  "{{ plant_key }}" in garden "{{ tenant }}", or in the garden step 1 resolved
+  when that parameter is empty. Keep the measurements it returns and its read
+  report line.
+
+  Step 3 — Photos.
+  If "{{ entry_key }}" is not empty, load the skill `plant-photo-read` and
+  follow it for that entry against the context of step 1, and keep its
+  findings. Take the entry's date only from a diary entry step 2 actually
+  read with that key, and only if that entry belongs to plant
+  "{{ plant_key }}"; if it belongs to another plant, do not use its findings
+  and say so. Otherwise report the photo entry's date as absent and do not
+  use it as the assessment date. If "{{ entry_key }}" is empty, report this
+  step as SKIP.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 5 — Assess.
+  Load the skill `growth-stage-assessment` and follow it with the context of
+  step 1, the measurements and read report of step 2, the photo findings of
+  step 3 and the caller facts above, passing only the ones that are not
+  empty. It makes its two phase reads itself.
+
+  Step 6 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Growth Stage Check — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the assessment block exactly as the skill returned it (the
+  recorded stage or why it is absent, the phase history as returned, the
+  result and direction, the estimated stage, observations, expectations,
+  derivations, evidence, confidence, uncertainty, missing data), the hand-off
+  block for harvest planning, and the finding with its named mutation, which
+  nothing calls. Then the diary read report line, and any tool error reported
+  verbatim.
+
+  Close with one line, on a single line:
+  `GROWTH STAGE: <recorded stage consistent | recorded stage questionable (<direction>) | insufficient evidence> — {{ plant_key }}`
+  If a step failed and no assessment could be reached, close instead with
+  `GROWTH STAGE: not assessed — {{ plant_key }}`.

@@ -3,12 +3,12 @@ title: Tägliche Gartenprüfung
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-03
+last_updated: 2026-11-05
 ---
 
 # Tägliche Gartenprüfung
 
-Ein Garten hält viele kleine Fragen zugleich: Was ist fällig, was sieht falsch aus, was braucht nichts. `daily-garden-check` ist der tägliche Blick. Er liest einen Kamerplanter-Garten, führt die Nährstoff-, Schädlings-, Bewässerungs- und Düngeprüfung für die Pflanzen aus, die du nennst, und ordnet alles in einer Liste danach, was zuerst Aufmerksamkeit verdient. Jeder Eintrag sagt, ob er eine Beobachtung oder eine Empfehlung ist, worauf er ruht, wie sicher er ist und was ihn ändern würde. Was keine Handlung ergibt, weil der Beleg fehlt, steht ebenfalls dabei, mit der Beobachtung, die ihn liefern würde.
+Ein Garten hält viele kleine Fragen zugleich: Was ist fällig, was sieht falsch aus, was braucht nichts. `daily-garden-check` ist der tägliche Blick. Er liest einen Kamerplanter-Garten, führt die Nährstoff-, Schädlings-, Bewässerungs-, Dünge-, Wachstumsstadiums- und Wetterprüfung für die Pflanzen aus, die du nennst, und ordnet alles in einer Liste danach, was zuerst Aufmerksamkeit verdient. Jeder Eintrag sagt, ob er eine Beobachtung oder eine Empfehlung ist, worauf er ruht, wie sicher er ist und was ihn ändern würde. Was keine Handlung ergibt, weil der Beleg fehlt, steht ebenfalls dabei, mit der Beobachtung, die ihn liefern würde.
 
 Dieser Lauf **liest nur**. Er ändert keinen Datensatz, plant nichts ein und hat kein Anwendungsrezept. „Nichts zu tun“ ist ein zulässiges Ergebnis, und die Prüfung füllt die Liste nicht auf, damit sie nützlich aussieht.
 
@@ -17,7 +17,7 @@ Dieser Lauf **liest nur**. Er ändert keinen Datensatz, plant nichts ein und hat
 
 ## Bevor du beginnst
 
-- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `decision-policy` und `care-planning` aus `.claude/skills/`, und die Skill-Erkennung hängt vom Arbeitsverzeichnis des Goose-Prozesses ab. Aus einem anderen Verzeichnis gestartet, gehen die Skills stillschweigend verloren, und der Lauf liefert trotzdem eine plausible Antwort.
+- **Starte den Lauf aus diesem Repository-Checkout.** Das Rezept lädt die Projekt-Skills `garden-context`, `plant-context-collect`, `diary-measurements-read`, `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`, `fertilization-decision`, `growth-stage-assessment`, `weather-impact-analysis`, `decision-policy` und `care-planning` aus `.claude/skills/`, und die Skill-Erkennung hängt vom Arbeitsverzeichnis des Goose-Prozesses ab. Aus einem anderen Verzeichnis gestartet, gehen die Skills stillschweigend verloren, und der Lauf liefert trotzdem eine plausible Antwort.
 - Führe bei einer neuen Umgebung zuerst die [`connectivity-check`](connectivity-check.md) aus.
 
 ## Ausführen
@@ -25,13 +25,15 @@ Dieser Lauf **liest nur**. Er ändert keinen Datensatz, plant nichts ein und hat
 ```sh
 goose run --recipe daily-garden-check \
   --params tenant=my-garden \
-  --params plants="plant-1,plant-2"
+  --params plants="plant-1,plant-2" \
+  --params weather="heute Nacht klar, bis -2 °C; ab Donnerstag mild"
 ```
 
 | Parameter | Pflicht | Wirkung, wenn weggelassen |
 |-----------|:-------:|---------------------------|
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug über `list_tenants` |
 | `plants` | nein | nur die Gartenebene: fällige Aufgaben und Pflanzdurchläufe. Die Prüfungen je Pflanze laufen nicht |
+| `weather` | nein | jeder Wetterfaktor ist `no source`: Der Server hat keine Quelle, und diese Prüfung liest keine aus Home Assistant |
 
 `plants` ist eine durch Kommas getrennte Liste von Pflanzenschlüsseln. **Höchstens fünf werden geprüft**, in der Reihenfolge, in der du sie nennst; jeder weitere Schlüssel wird als nicht geprüft gemeldet. Die Grenze hält die Zahl der Aufrufe je Pflanze klein: Die Prüfung liest nie jede Pflanze eines Gartens.
 
@@ -43,10 +45,11 @@ goose run --recipe daily-garden-check \
 | Schädlinge | für die genannten Pflanzen geprüft |
 | Bewässerung | für die genannten Pflanzen geprüft |
 | Düngung | für die genannten Pflanzen geprüft |
+| Wachstumsstadium | für die genannten Pflanzen geprüft |
+| Wetter | für die genannten Pflanzen geprüft, aus dem `weather`, das du angibst |
 | Pflanzengesundheit und Schädlingsmanagement | **nicht verfügbar** (`plant-health-assessment`, `pest-ipm-planning`, [#48](https://github.com/nolte/kamerplanter-goose/issues/48)) |
-| Wachstumsstadium und Wetter | **nicht verfügbar** (`growth-stage-assessment`, `weather-impact-analysis`, [#49](https://github.com/nolte/kamerplanter-goose/issues/49)) |
 
-Die Bewässerungs- und die Düngeprüfung fügen keine eigenen Aufrufe hinzu: Sie arbeiten auf dem, was die anderen Prüfungen schon gesammelt haben, und liefern ihre Befunde in der eigenen Form des Pflegeplans. **Rechne damit, dass die Bewässerung bei `insufficient evidence` endet**, wenn für eine Pflanze kein Feuchtewert vorliegt; das ist das gewöhnliche Ergebnis (siehe die [Bewässerungsentscheidung](watering-decision.md) und die [Düngeentscheidung](fertilization-decision.md)). Eine nicht verfügbare Domäne wird im Bericht genannt und nie durch eine andere ersetzt. Sobald einer dieser Skills existiert, klinkt er sich hier ein, ohne dass sich die Regeln des Pflegeplans ändern.
+Die Bewässerungs- und die Düngeprüfung fügen keine eigenen Aufrufe hinzu: Sie arbeiten auf dem, was die anderen Prüfungen schon gesammelt haben, und liefern ihre Befunde in der eigenen Form des Pflegeplans. **Rechne damit, dass die Bewässerung bei `insufficient evidence` endet**, wenn für eine Pflanze kein Feuchtewert vorliegt; das ist das gewöhnliche Ergebnis (siehe die [Bewässerungsentscheidung](watering-decision.md) und die [Düngeentscheidung](fertilization-decision.md)). Die Prüfung des Wachstumsstadiums fügt je Pflanze zwei Phasen-Lesezugriffe hinzu und **endet meist ebenfalls bei `insufficient evidence`**, weil die tägliche Prüfung ihr keine eigene Beobachtung von dir übergibt (siehe die [Prüfung des Wachstumsstadiums](growth-stage-check.md)). Die Wetterprüfung fügt keinen Aufruf hinzu: Sie nimmt das Wetter nur von dir, nie aus Home Assistant, und hält jede Wetterwirkung von den Symptomen der Pflanze getrennt (siehe die [Prüfung der Wetterwirkung](weather-impact-check.md)). Die tägliche Prüfung hat keinen Parameter `placement` und weiß daher nicht, ob eine Pflanze draußen steht: **Jede Wetterexposition bleibt hier bedingt und erscheint als Beobachtung, nie als Empfehlung.** Führe die Prüfung der Wetterwirkung mit `placement` aus, wenn du eine willst. Eine nicht verfügbare Domäne wird im Bericht genannt und nie durch eine andere ersetzt. Sobald einer dieser Skills existiert, klinkt er sich hier ein, ohne dass sich die Regeln des Pflegeplans ändern.
 
 ## Was die Liste bedeutet
 
