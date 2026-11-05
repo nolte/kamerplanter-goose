@@ -10,7 +10,7 @@ last_updated: 2026-11-05
 
 A bed layout says which crop stands in which bed or container in a season, and whether it fits. `bed-layout-plan` takes the crops you want to grow, one season, your beds and containers with their area or volume, and, if you give them, the spacing and the number of plants per crop. It computes the planting runs, a crop rotation and the successions for that season, then places each run in a bed the rotation admits it to and checks the capacity of every bed month by month. Every placement says why it went where it did and which beds it did not go to; every run left out is listed with the reason.
 
-The layout is a **document for review**. It records nothing, and the Kamerplanter tools this repository has measured include none that creates a bed, records a bed assignment or a layout, or creates a planting run. The recipe that would record a layout, `bed-layout-plan-apply`, is tracked, blocked, in a follow-up issue split out of [#46](https://github.com/nolte/kamerplanter-goose/issues/46), and does not exist yet.
+The layout is a **document for review**. It records nothing, and the Kamerplanter tools this repository has measured include none that creates a bed, records a bed assignment or a layout, or creates a planting run. The recipe that would record a layout, `bed-layout-plan-apply`, is tracked, blocked, in [#74](https://github.com/nolte/kamerplanter-goose/issues/74) and does not exist yet.
 
 This run **only reads**. It changes no record.
 
@@ -86,7 +86,7 @@ The report shows which skills loaded, then a table of beds and placements, then 
 | Closing line | Means |
 |--------------|-------|
 | `LAYOUT: <p> placements, <o> over capacity, <n> not validated — <slug>` | how many runs were placed, and how many bed-and-month entries are over capacity or not validated |
-| `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)` | the layout cannot be recorded from here |
+| `APPLY: no write tool measured (nolte/kamerplanter-goose#74)` | the layout cannot be recorded from here |
 
 A pin always stands where you pinned it, even in a bed the rotation reports as `occupied`. When it overfills its bed or breaks an `avoid` or `exclude`, that is listed under the conflicts, never hidden. One exception: a pinned crop offered under both methods with no `planting_method` is not placed at all, and the conflicts list it as `pinned crop: method not chosen — set planting_method` until you choose.
 

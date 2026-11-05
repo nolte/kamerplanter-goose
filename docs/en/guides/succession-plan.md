@@ -10,7 +10,7 @@ last_updated: 2026-11-05
 
 A succession uses a bed twice in one season: one crop comes out, the next goes in, or one crop is sown in staggered sets so the harvest does not all arrive at once. `succession-plan` takes the crops you want to grow and one season, computes their planting runs and a crop rotation for that season, and proposes which runs can follow each other in the same bed and which can be sown in staggered sets. Every succession names both planting runs and the planting-calendar windows it rests on; every run without a succession is listed with the reason.
 
-The plan is a **document for review**. It records nothing, and the Kamerplanter tools this repository has measured include none that records a succession, a bed assignment or a planting run. The recipe that would record a layout, `bed-layout-plan-apply`, is tracked, blocked, in a follow-up issue split out of [#46](https://github.com/nolte/kamerplanter-goose/issues/46), and does not exist yet.
+The plan is a **document for review**. It records nothing, and the Kamerplanter tools this repository has measured include none that records a succession, a bed assignment or a planting run. The recipe that would record a layout, `bed-layout-plan-apply`, is tracked, blocked, in [#74](https://github.com/nolte/kamerplanter-goose/issues/74) and does not exist yet.
 
 This run **only reads**. It changes no record.
 
@@ -88,7 +88,7 @@ The report shows which skills loaded, then a table of successions, then the runs
 | Closing line | Means |
 |--------------|-------|
 | `SUCCESSION: <s> successions, <u> unknown — <slug>` | how many sequential successions and dated staggered successions the plan contains, and how many staggered entries lack an interval or runs have an unknown occupancy |
-| `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)` | the plan cannot be recorded from here |
+| `APPLY: no write tool measured (nolte/kamerplanter-goose#74)` | the plan cannot be recorded from here |
 
 ## How far "deterministic" goes
 

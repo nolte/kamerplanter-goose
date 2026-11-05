@@ -1,7 +1,7 @@
 version: "1.0.0"
 title: "Bed Layout Plan"
 description: >-
-  Read-only: a bed layout for one Kamerplanter garden and one season — which planting run stands in which bed or container, the area or volume it needs, the capacity per bed and month (within, over by, or not validated with the missing input), every conflict, and every run left out with its reason. A crop is placed only where the crop rotation plan admits it; the catalog's companion list ranks and is never a guarantee; spacing, quantities, capacity, bed attributes and incompatible pairs count only when you supply them. The layout is a document for review; it records nothing, and the measured catalog has no tool that could: bed-layout-plan-apply is tracked in the blocked follow-up split out of nolte/kamerplanter-goose#46. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+  Read-only: a bed layout for one Kamerplanter garden and one season — which planting run stands in which bed or container, the area or volume it needs, the capacity per bed and month (within, over by, or not validated with the missing input), every conflict, and every run left out with its reason. A crop is placed only where the crop rotation plan admits it; the catalog's companion list ranks and is never a guarantee; spacing, quantities, capacity, bed attributes and incompatible pairs count only when you supply them. The layout is a document for review; it records nothing, and the measured catalog has no tool that could: bed-layout-plan-apply is tracked in nolte/kamerplanter-goose#74. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
 
 parameters:
   - key: tenant
@@ -334,4 +334,4 @@ prompt: |
   where <p> counts the placed runs, <o> counts the bed-and-month entries over
   capacity, and <n> counts the bed-and-month entries not validated, and a
   second line,
-  `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)`.
+  `APPLY: no write tool measured (nolte/kamerplanter-goose#74)`.

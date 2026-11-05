@@ -143,7 +143,7 @@ NOT PLACED
 APPLY CONTRACT
   per placement: <what a later apply step would record: the bed and its capacity, the run, its need, the season, its predecessors in this bed in the order of successor of>
   The measured catalog has no tool that creates a bed, records a bed assignment or a layout, or creates a planting run. The write and setup tools it records are the twelve listed under Gotchas; none does. The one that moves a plant moves a plant that exists, while a layout places crops that are not plants yet, and the setup tool creates a site root, not a bed with an area.
-  The apply recipe, bed-layout-plan-apply, is tracked in the blocked follow-up split out of nolte/kamerplanter-goose#46.
+  The apply recipe, bed-layout-plan-apply, is tracked in nolte/kamerplanter-goose#74.
 ```
 
 Return no field that was not read; list an unread field as absent with its reason. The plan facts that two runs over the same blocks must agree on are the placements, the needs, the capacity per bed and month, the conflicts, the not-placed reasons, the successions placed and the levels; prose may differ, and this property is checked on a fixed fixture, not on a live garden.

@@ -100,7 +100,7 @@ NOT SUCCEEDED
 APPLY CONTRACT
   per succession: <what a later apply step would record: the slot, the runs in order, the sowing dates>
   The measured catalog has no tool that records a succession, a bed assignment, a layout or a planting run. The write and setup tools it records are the twelve listed under Gotchas; none does.
-  The apply recipe is tracked in the blocked follow-up split out of nolte/kamerplanter-goose#46.
+  The apply recipe is tracked in nolte/kamerplanter-goose#74.
 ```
 
 Return no field that was not read; list an unread field as absent with its reason. The plan facts that two runs over the same blocks must agree on are the successions (slot and both run identifiers, or run and dates), the not-succeeded reasons and the levels; prose may differ, and this property is checked on a fixed fixture, not on a live garden.

@@ -13,7 +13,7 @@ This spec specifies three steps. Collecting companions and density reads, once p
 
 Everything about the tool surface below is quoted from [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) and from [the species baseline process](../species-baseline-verification/en.md), whose measurements were taken against the reference instance on 2026-08-07 and 2026-08-16. **Nothing here was re-measured when this spec was written**: the `kamerplanter` MCP server was unreachable in the session that drafted it (`INVALID_CONFIG`). A tool or field name is quoted from those specs; whether it still exists, and what a response carries beyond what they record, is unestablished until a `tools/list` and a read-only call against a reachable instance say so.
 
-Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; [the plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs and their windows; [the crop rotation planning spec](../crop-rotation-planning/en.md) owns the family per bed and season and the rotation verdicts. This spec reads all three and restates none: it never recomputes a window and never re-derives a rotation. The `-apply` half of nolte/kamerplanter-goose#46 is split into a blocked follow-up issue that has no number yet. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
+Boundaries: [the garden decision policy](../garden-decision-policy/en.md) owns the weight a claim carries, the recommendation shape and the garden context; [the plant planning spec](../plant-planning-and-planting-calendar/en.md) owns the planting runs and their windows; [the crop rotation planning spec](../crop-rotation-planning/en.md) owns the family per bed and season and the rotation verdicts. This spec reads all three and restates none: it never recomputes a window and never re-derives a rotation. The `-apply` half of nolte/kamerplanter-goose#46 is split into nolte/kamerplanter-goose#74, blocked. The audit that decides which artifact owns what is nolte/kamerplanter-goose#39 and nothing here pre-empts it. [The recipe project pattern](../../goose/recipe-project-pattern/en.md) owns recipe mechanics and [the server spec](../../mcp/kamerplanter-mcp-server/en.md) owns transport, authentication and tenancy.
 
 Readers: authors of garden skills and recipes in this repository, and anyone reviewing a layout or a succession before acting on it.
 
@@ -102,7 +102,7 @@ The succession plan has four blocks, in this order and under these names: `SUCCE
 |----------|-------|
 | Bed layout | from the succession plan: each sequential succession's slot and its two run identifiers |
 | A person reviewing a layout | per bed: the placements, the capacity per month, the conflicts; per run: where it stands or why it does not |
-| The blocked `-apply` follow-up | the `APPLY CONTRACT` block of an approved layout |
+| The blocked `-apply` follow-up (nolte/kamerplanter-goose#74) | the `APPLY CONTRACT` block of an approved layout |
 
 - **MUST** return the blocks in these orders with these names, and **MUST NOT** return a field that was not read, listing an unread field as absent with its reason
 - **MUST** give every placement and every succession its rationale, confidence, uncertainty and missing data per [the garden decision policy](../garden-decision-policy/en.md), and **MUST** give it the level `caller` whenever any element of it comes from the caller, and the weakest level among its elements otherwise
@@ -118,7 +118,7 @@ The succession plan has four blocks, in this order and under these names: `SUCCE
 
 - **MUST** keep layout and succession planning read-only: the skills and recipes of this spec call no state-changing tool
 - **MUST** include in every plan an `APPLY CONTRACT` block that states, per placement or succession, what a later `-apply` recipe would have to record (the bed, its capacity, the run, its need, the season, its predecessors), and **MUST** state that the measured catalog has no tool that creates a bed, records a bed assignment or a layout, or creates a planting run: the write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site`, and none of them does; `set_plant_location` moves a plant that exists, a layout places crops that are not plants yet, and `create_site` creates a site root, not a bed with an area
-- **MUST** name the blocked follow-up split out of nolte/kamerplanter-goose#46 as the place where `bed-layout-plan-apply` is tracked, and **MUST NOT** ship a recipe with the `-apply` suffix that does not write what its description says
+- **MUST** name nolte/kamerplanter-goose#74 as the place where `bed-layout-plan-apply` is tracked, and **MUST NOT** ship a recipe with the `-apply` suffix that does not write what its description says
 - **MUST** leave recording a layout to a separate recipe that takes an approved layout, after a person has reviewed it
 
 ## Acceptance Criteria
@@ -148,13 +148,13 @@ The succession plan has four blocks, in this order and under these names: `SUCCE
 - [The plant planning spec](../plant-planning-and-planting-calendar/en.md) — the run identifier, the windows and the succession notes this spec reads
 - [The crop rotation planning spec](../crop-rotation-planning/en.md) — the rotation slots, the crop keys and the conflicts this spec reads
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
-- Issue nolte/kamerplanter-goose#46 — the layout factors and the five criteria are taken from its body; nolte/kamerplanter-goose#59 and #68 — the precedents for a blocked apply half; nolte/kamerplanter-goose#39 — the audit
+- Issue nolte/kamerplanter-goose#46 — the layout factors and the five criteria are taken from its body; nolte/kamerplanter-goose#74 — the blocked apply half; nolte/kamerplanter-goose#59 and #68 — the precedents for a blocked apply half; nolte/kamerplanter-goose#39 — the audit
 
 ## Open Questions
 
 - **What `score` means.** The companion list carries a `score` whose range and direction are not recorded. The layout ranks a higher numeric sum first, which assumes a higher score is a better pairing; the rationale says so. `get_species_info` on ten or more vegetable species, with the score compared to a documented source, would settle it.
 - **What `sowing_density_per_m2` counts.** It was observed on one species; whether it counts seeds or plants, and whether a cultivar carries it, is not recorded. Until it is, it is context only.
-- **Whether a live instance has a tool that records a bed, a layout or a planting run.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, in the blocked follow-up split out of nolte/kamerplanter-goose#46.
+- **Whether a live instance has a tool that records a bed, a layout or a planting run.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, in nolte/kamerplanter-goose#74.
 - **Crops that span the season boundary.** A run whose harvest reaches into the next year has unknown occupancy here, because one run plans one season. A multi-season layout would need the rotation plan's later seasons and is out of scope.
 - **How determinism is measured.** This spec defines the plan facts and requires them to be the same over the same input blocks. It is checked on a fixed fixture written out as text, repeated runs compared; that shows the property for that fixture and not for a live garden, and the number of runs needed to call it stable is not settled here.
 - **Where the audit, nolte/kamerplanter-goose#39, places layout relative to planting and rotation.** Whether collection, succession and layout stay three skills is the audit's decision.

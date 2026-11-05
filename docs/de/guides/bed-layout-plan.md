@@ -10,7 +10,7 @@ last_updated: 2026-11-05
 
 Eine Beetaufteilung sagt, welche Kultur in einer Saison in welchem Beet oder Gefäß steht und ob sie hineinpasst. `bed-layout-plan` nimmt die Kulturen, die Sie anbauen wollen, eine Saison, Ihre Beete und Gefäße mit ihrer Fläche oder ihrem Volumen und, wenn Sie sie angeben, den Abstand und die Zahl der Pflanzen je Kultur. Es berechnet die Pflanzdurchläufe, eine Fruchtfolge und die Folgesaaten für diese Saison, setzt dann jeden Durchlauf in ein Beet, in dem die Fruchtfolge ihn zulässt, und prüft die Kapazität jedes Beets Monat für Monat. Jede Platzierung sagt, warum sie dorthin ging und in welche Beete nicht; jeder ausgelassene Durchlauf wird mit dem Grund aufgeführt.
 
-Die Beetaufteilung ist ein **Dokument zur Prüfung**. Sie hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das ein Beet anlegt, eine Beetzuordnung oder eine Beetaufteilung festhält oder einen Pflanzdurchlauf anlegt. Das Rezept, das eine Beetaufteilung festhalten würde, `bed-layout-plan-apply`, wird blockiert in einem aus [#46](https://github.com/nolte/kamerplanter-goose/issues/46) ausgelagerten Folge-Issue geführt und existiert noch nicht.
+Die Beetaufteilung ist ein **Dokument zur Prüfung**. Sie hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das ein Beet anlegt, eine Beetzuordnung oder eine Beetaufteilung festhält oder einen Pflanzdurchlauf anlegt. Das Rezept, das eine Beetaufteilung festhalten würde, `bed-layout-plan-apply`, wird blockiert in [#74](https://github.com/nolte/kamerplanter-goose/issues/74) geführt und existiert noch nicht.
 
 Dieser Lauf **liest nur**. Er ändert keinen Datensatz.
 
@@ -86,7 +86,7 @@ Der Bericht zeigt, welche Skills geladen wurden, dann eine Tabelle der Beete und
 | Schlusszeile | Bedeutet |
 |--------------|----------|
 | `LAYOUT: <p> placements, <o> over capacity, <n> not validated — <slug>` | wie viele Durchläufe platziert wurden und wie viele Einträge je Beet und Monat über der Kapazität liegen oder ungeprüft sind |
-| `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)` | die Beetaufteilung lässt sich von hier aus nicht festhalten |
+| `APPLY: no write tool measured (nolte/kamerplanter-goose#74)` | die Beetaufteilung lässt sich von hier aus nicht festhalten |
 
 Eine Festlegung steht immer dort, wo Sie sie festgelegt haben, auch in einem Beet, das die Fruchtfolge als `occupied` meldet. Wenn sie ihr Beet überfüllt oder ein `avoid` oder `exclude` bricht, steht das unter den Konflikten und wird nie verborgen. Eine Ausnahme: Eine festgelegte Kultur, die unter beiden Methoden angeboten wird, ohne dass `planting_method` gesetzt ist, wird gar nicht platziert, und die Konflikte führen sie als `pinned crop: method not chosen — set planting_method`, bis Sie wählen.
 

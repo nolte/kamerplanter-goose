@@ -279,4 +279,4 @@ prompt: |
   counts the staggered entries whose interval was not supplied plus the runs
   not succeeded because their occupancy is unknown or spans the season
   boundary, and a second line,
-  `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)`.
+  `APPLY: no write tool measured (nolte/kamerplanter-goose#74)`.

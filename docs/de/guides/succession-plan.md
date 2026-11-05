@@ -10,7 +10,7 @@ last_updated: 2026-11-05
 
 Eine Folgesaat nutzt ein Beet in einer Saison zweimal: Eine Kultur kommt heraus, die nächste hinein, oder eine Kultur wird gestaffelt gesät, damit die Ernte nicht auf einmal kommt. `succession-plan` nimmt die Kulturen, die Sie anbauen wollen, und eine Saison, berechnet ihre Pflanzdurchläufe und eine Fruchtfolge für diese Saison und schlägt vor, welche Durchläufe im selben Beet aufeinander folgen können und welche gestaffelt gesät werden können. Jede Folgesaat nennt beide Pflanzdurchläufe und die Fenster des Pflanzkalenders, auf denen sie ruht; jeder Durchlauf ohne Folgesaat wird mit dem Grund aufgeführt.
 
-Der Plan ist ein **Dokument zur Prüfung**. Er hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das eine Folgesaat, eine Beetzuordnung oder einen Pflanzdurchlauf festhält. Das Rezept, das eine Beetaufteilung festhalten würde, `bed-layout-plan-apply`, wird blockiert in einem aus [#46](https://github.com/nolte/kamerplanter-goose/issues/46) ausgelagerten Folge-Issue geführt und existiert noch nicht.
+Der Plan ist ein **Dokument zur Prüfung**. Er hält nichts fest, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das eine Folgesaat, eine Beetzuordnung oder einen Pflanzdurchlauf festhält. Das Rezept, das eine Beetaufteilung festhalten würde, `bed-layout-plan-apply`, wird blockiert in [#74](https://github.com/nolte/kamerplanter-goose/issues/74) geführt und existiert noch nicht.
 
 Dieser Lauf **liest nur**. Er ändert keinen Datensatz.
 
@@ -88,7 +88,7 @@ Der Bericht zeigt, welche Skills geladen wurden, dann eine Tabelle der Folgesaat
 | Schlusszeile | Bedeutet |
 |--------------|----------|
 | `SUCCESSION: <s> successions, <u> unknown — <slug>` | wie viele aufeinanderfolgende und datierte gestaffelte Folgesaaten der Plan enthält und wie vielen gestaffelten Einträgen ein Abstand fehlt oder wie viele Durchläufe eine unbekannte Belegung haben |
-| `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)` | der Plan lässt sich von hier aus nicht festhalten |
+| `APPLY: no write tool measured (nolte/kamerplanter-goose#74)` | der Plan lässt sich von hier aus nicht festhalten |
 
 ## Wie weit „deterministisch“ reicht
 
