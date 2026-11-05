@@ -26,7 +26,7 @@ Readers: authors of garden skills and recipes in this repository, the author of 
 ## Non-Goals
 
 - Recording a harvest, a yield or a treatment: no `-apply` recipe. Upstream lists the harvest write tools as specified but unimplemented, and none is in the measured catalog
-- Recommending a treatment, or judging pest or disease pressure; that is [the pest pressure assessment](../pest-pressure-assessment/en.md), and plant health is nolte/kamerplanter-goose#48
+- Recommending a treatment, or judging pest or disease pressure; that is [the pest pressure assessment](../pest-pressure-assessment/en.md), and plant health is [the plant health and IPM planning spec](../plant-health-and-ipm-planning/en.md)
 - Judging the growth stage or the weather; that is [the growth stage and weather impact spec](../growth-stage-and-weather-impact/en.md)
 - Integrating harvest readiness into the daily garden check
 - A table of maturity indicators per species, a storage model or a yield model: none has a source

@@ -5,13 +5,13 @@ description: "Assembles a retrospective of one Kamerplanter garden — scope gar
 
 # Review a garden or a season
 
-Looks back over what was recorded and what the person says, and hands the result forward. It makes no tool call: the garden comes from `garden-context`, each plant from `plant-context-collect` (its care log and inspections included), the diary coverage from `diary-measurements-read`, and, where the caller supplies them, the growth stage from `growth-stage-assessment`, the harvest results as the caller copied them from earlier harvest readiness checks, and nutrient or pest results from `nutrient-imbalance-assess` and `pest-pressure-assess`. The weight of a claim is `decision-policy`. It runs no assessment of a plant's present state, and it writes nothing: the review is text, handed to a person and to the next planning run.
+Looks back over what was recorded and what the person says, and hands the result forward. It makes no tool call: the garden comes from `garden-context`, each plant from `plant-context-collect` (its care log and inspections included), the diary coverage from `diary-measurements-read`, and, where the caller supplies them, the growth stage from `growth-stage-assessment`, the harvest results as the caller copied them from earlier harvest readiness checks, nutrient or pest results from `nutrient-imbalance-assess` and `pest-pressure-assess`, and a plant health finding from `plant-health-assessment`. The weight of a claim is `decision-policy`. It runs no assessment of a plant's present state, and it writes nothing: the review is text, handed to a person and to the next planning run.
 
 ## Input
 
 - **Scope**: `garden` or `season`. For `season`, the span as the caller gave it, and the plant listing with archived plants and its status (`complete`, `partial: <reason>`, `failed: <error verbatim>`).
 - **The garden context block** from `garden-context`: crops, planting runs, due tasks, absent fields.
-- **Per reviewed plant, at most five**: the plant context block, the diary read report with the dates of the entries it opened; optionally a growth-stage assessment with its hand-off block, and nutrient or pest results.
+- **Per reviewed plant, at most five**: the plant context block, the diary read report with the dates of the entries it opened; optionally a growth-stage assessment with its hand-off block, nutrient or pest results, and a plant health finding.
 - **Not reviewed**: each plant key that was named but not reviewed, with the reason.
 - **Caller facts**, each optional, marked `caller`: yields as `plant_key:amount unit`; harvest results as `plant_key:<readiness result>[:YYYY-MM-DD]`, typically copied from the final lines of earlier harvest readiness checks; notes on a plant or on the season; the season's weather; the assessment date. `;` and `:` are the separators of these parameters: a free-text part that contains them is reported verbatim and not parsed further.
 
@@ -38,6 +38,7 @@ One record per reviewed plant, ordered by plant key as text. Each field is prese
 | diary coverage | listed, opened, with no `measurements`; the oldest and newest opened date; in scope `season`, `covers span` or `does not cover <start or end>` |
 | growth stage | the hand-off block's result and direction, as returned, or absent |
 | harvest result | the caller's harvest result for this plant, its readiness result and date as given, marked `caller`; otherwise absent (`no source: no harvest result supplied`) |
+| plant health | the caller's plant health finding for this plant, its overall result and surviving candidates as given, marked `caller`; otherwise absent (`no source: no plant health finding supplied`) |
 | yield | the caller's `plant_key:amount unit`, level 3, marked `caller`; never a diary `measurements` key |
 | notes | the caller's notes for this plant, marked `caller` |
 
@@ -54,7 +55,7 @@ Each lesson has exactly one kind:
 - an **observation**: what a record or the caller said, with its source and level;
 - a **recommendation** for the next cycle (keep, change or drop a crop, a location, a practice): it carries the four blocks of `decision-policy` (evidence, confidence, uncertainty, missing data) and rests on at least one item at level 1 to 3 or a caller statement. General knowledge alone carries no recommendation.
 
-Care and outcome are linked only as "consistent with" (rule 1 of `decision-policy`): "the snoozed feedings are consistent with the low yield the person reports" is a suspicion, never a cause. Pest and nutrient history come only from the inspections and the results the caller supplied; plant health is `not available (nolte/kamerplanter-goose#48)`. The season's weather, from the caller, is context at level 6 and never a cause either.
+Care and outcome are linked only as "consistent with" (rule 1 of `decision-policy`): "the snoozed feedings are consistent with the low yield the person reports" is a suspicion, never a cause. Pest, nutrient and plant health history come only from the inspections and the results the caller supplied. A plant health finding is an observation: it enters a lesson as one, citing its overall result, and never as a cause or a diagnosis. The season's weather, from the caller, is context at level 6 and never a cause either.
 
 ### 5. Hand the next cycle forward
 
@@ -103,7 +104,7 @@ NEXT CYCLE
 DOMAIN STATUS
   care log: read | absent (<reason>); inspections: read | absent (<reason>); diary: <coverage>
   growth stage: supplied | not supplied; harvest: supplied | not supplied; nutrient, pest: supplied | not supplied
-  plant health: not available (nolte/kamerplanter-goose#48)
+  plant health: supplied | not supplied
 ```
 
 The `<n>` of a lesson numbers lessons by plant key (garden-wide lessons last), then by the history-record field the lesson rests on, in the order of the table in step 2, then by kind (observation before recommendation), never by statement text. Return no field that was not read. The facts two runs over the same blocks must agree on are the records, the groups, the lessons and their kinds, the next-cycle strings and the missing-data list; retrieval times and prose may differ.
@@ -115,7 +116,7 @@ The `<n>` of a lesson numbers lessons by plant key (garden-wide lessons last), t
 - Never read a diary `measurements` key as yield, and never fill a yield, a field or a coverage.
 - Never score, rank or average cultivars, and never compare across units.
 - Never return a recommendation without its evidence, confidence, uncertainty and missing data.
-- Never report plant health as anything but not available, and never substitute another domain for it.
+- Never run, upgrade or restate a plant health finding, and never substitute another domain for an absent one.
 - Never read the current date into the facts, and never write the review anywhere.
 - Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. Call no Home Assistant tool.
 

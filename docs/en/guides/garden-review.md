@@ -20,7 +20,7 @@ The run **only reads**. It writes the review nowhere — no file, no diary entry
 - **Yield comes only from you.** The record has no yield field, and a diary measurement is never read as one. Give it as `plant_key:amount unit`.
 - **Care is never the cause.** A pattern in the care log is linked to an outcome only as "consistent with", a suspicion, never as the reason something happened.
 - **Cultivars stand side by side.** No score, no ranking, no average; two cultivars are compared only on the same field in the same unit.
-- **Plant health is not built yet** and is reported as not available. Pest history comes from the recorded inspections only; the review runs no assessment of a plant's present state.
+- **Plant health is not assessed here.** The review runs no plant health assessment and reports plant health as not supplied; run plant-health-assessment separately for a plant's present state. Pest history comes from the recorded inspections only; the review runs no assessment of a plant's present state.
 
 ## Before you start
 

@@ -20,7 +20,7 @@ Der Lauf **liest nur**. Er schreibt die Rückschau nirgendwohin — keine Datei,
 - **Ertrag kommt nur von dir.** Der Datenbestand hat kein Ertragsfeld, und ein Tagebuch-Messwert wird nie als Ertrag gelesen. Gib ihn als `plant_key:amount unit` an.
 - **Pflege ist nie die Ursache.** Ein Muster im Pflegeprotokoll wird mit einem Ergebnis nur als „passt zu“ verknüpft, als Verdacht, nie als Grund, warum etwas geschah.
 - **Sorten stehen nebeneinander.** Keine Punktzahl, keine Rangfolge, kein Durchschnitt; zwei Sorten werden nur auf demselben Feld in derselben Einheit verglichen.
-- **Pflanzengesundheit ist noch nicht gebaut** und wird als nicht verfügbar gemeldet. Die Schädlingsgeschichte stammt nur aus den erfassten Inspektionen; die Rückschau führt keine Beurteilung des gegenwärtigen Zustands einer Pflanze aus.
+- **Pflanzengesundheit wird hier nicht beurteilt.** Die Rückschau führt keine Gesundheitsbeurteilung aus und meldet die Pflanzengesundheit als nicht geliefert; für den gegenwärtigen Zustand einer Pflanze läuft plant-health-assessment eigens. Die Schädlingsgeschichte stammt nur aus den erfassten Inspektionen; die Rückschau führt keine Beurteilung des gegenwärtigen Zustands einer Pflanze aus.
 
 ## Bevor du beginnst
 

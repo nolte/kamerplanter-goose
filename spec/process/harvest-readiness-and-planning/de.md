@@ -26,7 +26,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ## Nicht-Ziele
 
 - Eine Ernte, einen Ertrag oder eine Behandlung erfassen: kein `-apply`-Rezept. Upstream führt die Ernte-Schreib-Tools als spezifiziert, aber nicht umgesetzt, und keines ist im gemessenen Katalog
-- Eine Behandlung empfehlen oder Schädlings- oder Krankheitsdruck beurteilen; das ist die [Beurteilung des Schädlingsdrucks](../pest-pressure-assessment/de.md), und Pflanzengesundheit ist nolte/kamerplanter-goose#48
+- Eine Behandlung empfehlen oder Schädlings- oder Krankheitsdruck beurteilen; das ist die [Beurteilung des Schädlingsdrucks](../pest-pressure-assessment/de.md), und Pflanzengesundheit ist die [Spezifikation zu Pflanzengesundheit und IPM-Planung](../plant-health-and-ipm-planning/de.md)
 - Das Wachstumsstadium oder das Wetter beurteilen; das ist die [Spezifikation zu Wachstumsstadium und Wetterwirkung](../growth-stage-and-weather-impact/de.md)
 - Die Erntereife in die tägliche Gartenprüfung einbinden
 - Eine Tabelle von Reifemerkmalen je Art, ein Lagermodell oder ein Ertragsmodell: Keines hat eine Quelle
