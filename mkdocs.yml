@@ -82,6 +82,8 @@ plugins:
             Garden plan: Gartenplan
             Season plan: Saisonplan
             Crop rotation plan: Fruchtfolgeplan
+            Succession plan: Folgesaatplan
+            Bed layout plan: Beetplan
             Plant master data check: Pflanzenstammdaten-Prüfung
             Nutrient imbalance check: Nährstoffbilanz-Prüfung
             Pest pressure check: Schädlingsdruck-Prüfung
@@ -165,6 +167,8 @@ nav:
       - Garden plan: en/guides/garden-plan.md
       - Season plan: en/guides/season-plan.md
       - Crop rotation plan: en/guides/crop-rotation-plan.md
+      - Succession plan: en/guides/succession-plan.md
+      - Bed layout plan: en/guides/bed-layout-plan.md
       - Plant master data check: en/guides/plant-master-data-check.md
       - Nutrient imbalance check: en/guides/nutrient-imbalance-check.md
       - Pest pressure check: en/guides/pest-pressure-check.md

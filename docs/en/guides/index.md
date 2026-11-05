@@ -22,6 +22,8 @@ Task-oriented how-tos: one page per shipped recipe, naming the command it takes,
 - [Garden plan](garden-plan.md) — planting-run proposals for chosen crops, for review before anything is applied
 - [Season plan](season-plan.md) — the plan laid on twelve months, with the successions it names
 - [Crop rotation plan](crop-rotation-plan.md) — one plant family per bed and season across several seasons, with every conflict named, for review before anything is recorded
+- [Succession plan](succession-plan.md) — which planting runs can follow each other in one bed in a season, and which can be sown in staggered sets, for review
+- [Bed layout plan](bed-layout-plan.md) — which run stands in which bed or container, the area it needs and whether it fits month by month, for review before anything is recorded
 - [Plant master data check](plant-master-data-check.md) — which plants lack the master data a later analysis would need, and what each gap prevents
 - [Nutrient imbalance check](nutrient-imbalance-check.md) — under- or oversupplied, or unable to take up what is there, for one plant
 - [Pest pressure check](pest-pressure-check.md) — whether a pest or disease suspicion survives the record

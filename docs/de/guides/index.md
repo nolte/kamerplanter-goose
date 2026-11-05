@@ -22,6 +22,8 @@ Aufgabenorientierte Anleitungen: eine Seite je mitgeliefertem Rezept, mit dem Be
 - [Gartenplan](garden-plan.md) — Vorschläge für Pflanzdurchläufe zu gewählten Kulturen, zur Prüfung, bevor etwas angewendet wird
 - [Saisonplan](season-plan.md) — der Plan auf zwölf Monate gelegt, mit den Folgesaaten, die er nennt
 - [Fruchtfolgeplan](crop-rotation-plan.md) — eine Pflanzenfamilie je Beet und Saison über mehrere Saisons, mit jedem Konflikt benannt, zur Prüfung, bevor etwas festgehalten wird
+- [Folgesaatplan](succession-plan.md) — welche Pflanzdurchläufe in einer Saison in einem Beet aufeinander folgen können und welche gestaffelt gesät werden können, zur Prüfung
+- [Beetplan](bed-layout-plan.md) — welcher Durchlauf in welchem Beet oder Gefäß steht, welche Fläche er braucht und ob er Monat für Monat hineinpasst, zur Prüfung, bevor etwas festgehalten wird
 - [Pflanzenstammdaten-Prüfung](plant-master-data-check.md) — welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht, und was jede Lücke verhindert
 - [Nährstoffbilanz-Prüfung](nutrient-imbalance-check.md) — unter- oder überversorgt, oder unfähig aufzunehmen, was da ist, für eine Pflanze
 - [Schädlingsdruck-Prüfung](pest-pressure-check.md) — ob ein Schädlings- oder Krankheitsverdacht dem Datenbestand standhält
