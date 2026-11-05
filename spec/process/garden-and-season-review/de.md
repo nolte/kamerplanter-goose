@@ -82,7 +82,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 ### H. Trennung und verbotene Tools
 
 - **MUSS [MUST]** den Skill werkzeugfrei halten, sodass er nur mit den Blöcken arbeitet, die ihm übergeben werden
-- **MUSS [MUST]** den Skill und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** alle zwölf, die die Kamerplanter-Server-Spezifikation aufführt, einzeln im Prompt jedes Rezepts als verboten nennen
+- **MUSS [MUST]** den Skill und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** jedes, das die Kamerplanter-Server-Spezifikation aufführt, einzeln im Prompt jedes Rezepts als verboten nennen
 - **DARF NICHT [MUST NOT]** ein Home-Assistant-Tool aufrufen und **DARF NICHT [MUST NOT]** ein `-apply`-Geschwister eines der beiden Rezepte ausliefern
 
 ## Akzeptanzkriterien
@@ -100,7 +100,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Der Block für den nächsten Zyklus trägt `crops`, `goals`, `constraints` und `harvest_window` in den Formaten der Planungsrezepte, `reconsider` hat Vorrang vor `keep`, `keep` braucht einen vom Aufrufer gemeldeten Erfolg, `constraints` trägt keine Lehre, und Zeilen zur Standortgeschichte sind mit „location, not bed“ gekennzeichnet
 - [ ] Nichts wird geschrieben: keine Datei, kein Tagebucheintrag
 - [ ] Zwei Läufe über dieselbe Eingabe liefern an einer festen Vorlage dieselben Fakten, und das Ergebnis sagt, was nicht zugesichert wird
-- [ ] Der Skill ruft kein Tool auf, keines der Rezepte ruft ein zustandsänderndes oder ein Home-Assistant-Tool auf, der Prompt jedes Rezepts verbietet alle zwölf namentlich, und kein `-apply`-Geschwister wird ausgeliefert
+- [ ] Der Skill ruft kein Tool auf, keines der Rezepte ruft ein zustandsänderndes oder ein Home-Assistant-Tool auf, der Prompt jedes Rezepts verbietet jedes zustandsändernde Tool namentlich, und kein `-apply`-Geschwister wird ausgeliefert
 - [ ] Jede Aussage zur Tool-Oberfläche zitiert eine Spezifikation in diesem Repository, und eine nicht neu gemessene Aussage sagt das
 - [ ] Die deutsche und die englische Datei haben dieselben Überschriften in derselben Reihenfolge, dieselbe Anzahl an Anforderungspunkten und dieselbe Anzahl an Akzeptanz-Checkboxen
 
@@ -111,7 +111,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [Spezifikation zu Wachstumsstadium und Wetterwirkung](../growth-stage-and-weather-impact/de.md) — die Übergabe des Wachstumsstadiums und die Wetterexpositionen
 - [Spezifikation zu Pflegeplanung und täglicher Prüfung](../care-planning-and-daily-check/de.md) — der Umgang mit noch nicht gebauten Domänen als nicht verfügbar und die Obergrenze von fünf Pflanzen
 - [Spezifikation zu Pflanzplanung und Pflanzkalender](../plant-planning-and-planting-calendar/de.md) und [Spezifikation zu Standortanalyse und Kulturwahl](../site-analysis-and-crop-selection/de.md) — die Planungsparameter, auf die der Block für den nächsten Zyklus zugeschnitten ist
-- [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md) — der Tool-Katalog und die zwölf zustandsändernden Tools, gemessen 2026-08-16
+- [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md) — der Tool-Katalog und die zustandsändernden Tools
 - [Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md) — wie hier ein Rezept gebaut wird, einschließlich der namentlichen Verbote
 - Issue nolte/kamerplanter-goose#50 — Umfang und Akzeptanzkriterien stammen aus seinem Text; #47 und #48 — die Domänen, von denen diese Rückschau nicht abhängt
 

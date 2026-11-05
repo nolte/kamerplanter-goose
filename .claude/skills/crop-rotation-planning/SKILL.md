@@ -131,7 +131,7 @@ NOT PLACED
   <species_key/cultivar_key>: <bed>/<season> <reason>, ...
 APPLY CONTRACT
   per placement: <what a later apply step would record: the bed, the season, the family group and its crops>
-  The measured catalog has no tool that records a bed assignment, a rotation, a planting run or a plan. The write and setup tools it records are the twelve listed under Gotchas; none does, and the one that moves a plant moves a plant that exists, while a rotation plans crops that are not plants yet.
+  The measured catalog has no tool that records a bed assignment, a rotation, a planting run or a plan. The write and setup tools it records are the sixteen listed under Gotchas; none does, and the one that moves a plant moves a plant that exists, while a rotation plans crops that are not plants yet.
   The apply recipe is tracked in nolte/kamerplanter-goose#68.
 ```
 
@@ -152,7 +152,7 @@ Return no field that was not read; list an unread field as absent with its reaso
 
 ## Gotchas
 
-- The apply contract names no tool, because the measured catalog has none that records a rotation. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). `set_plant_location` moves a plant that exists. Reproduce this list in the report as the twelve tools the catalog records; it is explanation, never a call.
+- The apply contract names no tool, because the measured catalog has none that records a rotation. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event`, `create_inspection`, `clone_nutrient_plan`, `set_nutrient_plan_phase_targets`, `create_substrate_mix` and `set_plant_substrate`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). `set_plant_location` moves a plant that exists. Reproduce this list in the report as the sixteen tools the catalog records; it is explanation, never a call.
 - A history block full of absent families gives a plan full of `unknown`. That is the honest result while the catalog's family coverage is unmeasured, not a failure.
 - Without an interval, a family never returns to a bed within the plan, because a repeat does not qualify; a long plan over few families then ends in `open` slots. Supply `rotation_years` to let a family return.
 - A bed with no history at all stays `unknown` wherever its window reaches before the plan. One `bed:season:none` entry establishes that season onward, never the seasons before it.

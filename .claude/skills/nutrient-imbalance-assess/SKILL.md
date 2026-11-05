@@ -47,7 +47,7 @@ An empty result after a real read is ordinary. It puts the assessment at tier 3 
 
 ### 3. Read the substrate
 
-Call `mcp__kamerplanter__list_substrates` and match the plant's medium. `ph_base`, `ec_base_ms`, `buffer_capacity`, and `cec_meq_per_100g` decide how far a reading may drift before it means anything, and how fast a correction will act.
+Call `mcp__kamerplanter__list_substrates` with `tenant` and match the plant's medium; without `tenant` a mix the garden created itself is missing from the list. `ph_base`, `ec_base_ms`, `buffer_capacity`, and `cec_meq_per_100g` decide how far a reading may drift before it means anything, and how fast a correction will act.
 
 The same weekly dose is unremarkable in a high-CEC, well-buffered medium and an oversupply in an inert one. A plan's `recommended_substrate_type` states which it assumed; a mismatch with the actual medium undermines every target comparison and is a finding in its own right.
 
@@ -72,7 +72,7 @@ State the direction, the tier that established it, and — when a correction is 
 - Never derive direction from symptoms alone, however characteristic they look.
 - Never treat a confirmed feeding in the care log as a dose. It records that feeding happened, never how much of what. Where dose matters and is unrecorded, report the gap.
 - Never actuate irrigation, dosing, or any Home Assistant device. A correction is a proposal for a human.
-- Call no state-changing tool. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. `mcp__kamerplanter__calculate_mixing_protocol` is safe — it carries no `dry_run` and no `idempotency_key` because it only calculates.
+- Call no state-changing tool. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`, `mcp__kamerplanter__clone_nutrient_plan`, `mcp__kamerplanter__set_nutrient_plan_phase_targets`, `mcp__kamerplanter__create_substrate_mix`, `mcp__kamerplanter__set_plant_substrate`. `mcp__kamerplanter__calculate_mixing_protocol` is safe — it carries no `dry_run` and no `idempotency_key` because it only calculates.
 
 ## Gotchas
 
@@ -84,4 +84,4 @@ State the direction, the tier that established it, and — when a correction is 
 
 ## Source
 
-Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-08-16; `spec/process/` predates `record_feeding_event`; it now names it only as an unmeasured fourth source of dose amounts (see its Open Questions).
+Derived from `spec/process/nutrient-imbalance-detection/` §"The evidence ladder" and §"Deciding the direction", measured against the reference instance on 2026-08-05. The tool names and the write/read split come from `spec/mcp/kamerplanter-mcp-server/` instead, whose catalog was last re-measured on 2026-11-05, on a local instance; `spec/process/` predates `record_feeding_event`; it now names it only as an unmeasured fourth source of dose amounts (see its Open Questions).

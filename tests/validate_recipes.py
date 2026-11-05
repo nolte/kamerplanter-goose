@@ -35,22 +35,28 @@ SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
 # outside a policy block has to carry the -apply suffix.
 #
-# Twelve as of 2026-08-16, counted against the server's live tool surface. The
-# last five arrived after the first seven were written, and a tool this set has
-# never heard of passes the guard silently: `task test` reports OK and CI stays
-# green while a write-capable recipe carries no -apply suffix. Re-count this
-# against the server whenever the MCP surface changes.
+# Sixteen as of 2026-11-05 (15 `mcp.write` plus the `mcp.setup` tool
+# `create_site`), counted against the server's live tool surface. Twelve as of
+# 2026-08-16, whose last five arrived after the first seven were written; the
+# four nutrient-plan and substrate writes arrived after that (#80). A tool
+# this set has never heard of passes the guard silently: `task test` reports
+# OK and CI stays green while a write-capable recipe carries no -apply suffix.
+# Re-count this against the server whenever the MCP surface changes.
 STATE_CHANGING_TOOLS = {
     "add_plant_diary_entry",
     "archive_plant",
     "assign_nutrient_plan",
     "assign_species_phase_sequence",
     "claim_diary_analysis",
+    "clone_nutrient_plan",
     "confirm_care_task",
     "create_inspection",
     "create_site",
+    "create_substrate_mix",
     "record_feeding_event",
+    "set_nutrient_plan_phase_targets",
     "set_plant_location",
+    "set_plant_substrate",
     "submit_diary_analysis",
     "transition_plant_phase",
 }
@@ -246,13 +252,13 @@ def calls_state_changing_tools(
     `diary-photo-analysis-apply.yaml` to drop the suffix left a recipe that
     claims and submits diary analyses passing clean.
 
-    `tools` defaults to the twelve; the Home Assistant guard passes
+    `tools` defaults to the sixteen; the Home Assistant guard passes
     `HA_UNCLASSIFIED_INTENTS`. A read-only recipe is read at `is_apply=False`
     (the `Forbidden by name:` marker alone); a skill at the default, both
-    markers. For the twelve, whether a skill's `Permitted by name:` block is
+    markers. For the sixteen, whether a skill's `Permitted by name:` block is
     legitimate is the separate `check_permitting_skill_loads` question. For
     the Home Assistant intents nothing answers it: `permitting_skill_loads`
-    reads a permitted block for the twelve alone, so a skill that permits
+    reads a permitted block for the sixteen alone, so a skill that permits
     `TimeTillErnte` and `time_till` by name passes this read, and a read-only
     recipe loading it gets no finding. A known gap, not closed here.
     """
@@ -272,7 +278,7 @@ def missing_from_policy(
     markers: tuple[str, ...] = POLICY_MARKERS,
     tools: Iterable[str] = STATE_CHANGING_TOOLS,
 ) -> list[str]:
-    """`tools` — the twelve by default — minus what the artefact names INSIDE
+    """`tools` — the sixteen by default — minus what the artefact names INSIDE
     a policy block, sorted.
 
     The guard above answers the opposite question — which names sit OUTSIDE a
@@ -280,10 +286,10 @@ def missing_from_policy(
     name is outside nothing. Measured: stripping eight of the twelve out of a
     read-only recipe's `Forbidden by name:` block left the whole gate green.
 
-    Completeness is a property of the union. Both `-apply` recipes split the
-    set as two permitted plus ten forbidden, so demanding twelve in the
-    forbidden half alone would fail exactly the recipes that declare their
-    writes correctly.
+    Completeness is a property of the union. The `-apply` recipes split the
+    set into a permitted and a forbidden half — the diary pair as two plus
+    fourteen — so demanding sixteen in the forbidden half alone would fail
+    exactly the recipes that declare their writes correctly.
 
     A tool name inside a fenced example counts as declared. That is a false
     negative — it can only make a recipe look more complete than it is, never
@@ -294,7 +300,7 @@ def missing_from_policy(
 
 
 # Home Assistant's catalog is assembled per instance, so its actuating side
-# cannot be forbidden by name the way the twelve are. A read-only recipe
+# cannot be forbidden by name the way the sixteen are. A read-only recipe
 # forbids it by category behind a literal marker instead, and the marker's
 # sentence has to name every category — the words prove the categories are
 # named, the marker carries the meaning (#75).
@@ -421,7 +427,7 @@ SKILL_SERVER_REFERENCE = "mcp__kamerplanter__"
 
 
 def skill_missing_tools(text: str) -> list[str]:
-    """The twelve minus what a skill names ANYWHERE, for a skill that reaches
+    """The sixteen minus what a skill names ANYWHERE, for a skill that reaches
     the Kamerplanter server at all.
 
     The selector is the reference to `mcp__kamerplanter__`, not "every skill":
@@ -468,11 +474,13 @@ SKILL_LINE_ALLOWANCES = {
         "add_plant_diary_entry, confirm_care_task, archive_plant, "
         "set_plant_location, claim_diary_analysis, submit_diary_analysis, "
         "transition_plant_phase, assign_species_phase_sequence, "
-        "assign_nutrient_plan, record_feeding_event and create_inspection, and "
-        "the setup tool create_site; none does.",
+        "assign_nutrient_plan, record_feeding_event, create_inspection, "
+        "clone_nutrient_plan, set_nutrient_plan_phase_targets, "
+        "create_substrate_mix and set_plant_substrate, and the setup tool "
+        "create_site; none does.",
     ): (
         "spec/process/plant-planning-and-planting-calendar/en.md §F requires "
-        "every plan's APPLY CONTRACT to enumerate the twelve write tools"
+        "every plan's APPLY CONTRACT to enumerate the sixteen write tools"
     ),
 }
 
@@ -815,7 +823,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
         # Keying the suppression on `missing` alone had also removed a check
         # `develop` has. Measured: a recipe with no `prompt` that calls
         # `archive_plant` from `instructions` reported twice on `develop` and
-        # once here, because `missing` is all twelve for an empty prompt while
+        # once here, because `missing` is the whole set for an empty prompt while
         # completeness stays silent for the same reason.
         block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
             missing
@@ -839,11 +847,12 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 f"suffix. {advice}",
             )
     # The prohibition has to name each tool individually, and the catalog has
-    # grown twice — four names, then seven, then twelve. A list written against
-    # an earlier count is a subset today, and the guard above cannot see that:
-    # it reads names OUTSIDE a policy block, and an absent name is outside
-    # nothing. Measured on 2026-09-14: every recipe here names all twelve, so
-    # this check starts green and stays a floor.
+    # grown three times — four names, then seven, then twelve, then sixteen. A
+    # list written against an earlier count is a subset today, and the guard
+    # above cannot see that: it reads names OUTSIDE a policy block, and an
+    # absent name is outside nothing. Measured on 2026-09-14: every recipe
+    # here named all twelve then, so this check started green and stays a
+    # floor.
     #
     # Scoped to `prompt`, never to `body`. The MUST is about the prompt
     # precisely because `instructions` is not enforced on a headless run, so
@@ -863,7 +872,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # markers either way.
     #
     # What this therefore does NOT bound is what an `-apply` recipe may
-    # declare permitted: one that puts all twelve under `Permitted by name:`
+    # declare permitted: one that puts the whole set under `Permitted by name:`
     # passes completeness, measured. Bounding that needs a per-recipe
     # allowance register, which this branch removed deliberately after it
     # produced findings in every round it existed. Tracked in #34.
@@ -877,7 +886,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # with all twelve missing.
     #
     # The cost is the other direction: a future recipe that loads only Home
-    # Assistant would have to name twelve kamerplanter tools it never calls.
+    # Assistant would have to name sixteen kamerplanter tools it never calls.
     # No such recipe exists — all ten reach this server — and when one arrives,
     # the filter belongs on the declared extensions, not on tool names.
     if prompt_text.strip() and missing:
@@ -903,7 +912,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # `extensions.yaml` loads the server into every run, so every read-only
     # recipe is selected, not only those that mention it. The category marker
     # and the intent block are read in `prompt` alone, for the reason the
-    # twelve are; a promptless recipe already has its finding. A call is a
+    # sixteen are; a promptless recipe already has its finding. A call is a
     # call wherever it sits, so the outside-policy read covers the whole body,
     # as the write-guard's does.
     if not is_apply:
@@ -1441,17 +1450,17 @@ WRITE_GUARD_CASES = [
 
 # The completeness guard has its own shapes, because it answers a different
 # question than the write-guard above and shares none of its marker logic.
-ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+ALL_SIXTEEN = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
 
 COMPLETENESS_CASES = [
     (
         "a complete list inside the block is complete",
-        f"  - Call NO tool that changes state. Forbidden by name: {ALL_TWELVE}.",
+        f"  - Call NO tool that changes state. Forbidden by name: {ALL_SIXTEEN}.",
         [],
     ),
     (
-        "prose naming all twelve declares nothing — no block, no policy",
-        f"Never call {ALL_TWELVE}. This recipe reads and judges.",
+        "prose naming all sixteen declares nothing — no block, no policy",
+        f"Never call {ALL_SIXTEEN}. This recipe reads and judges.",
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
@@ -1478,8 +1487,12 @@ COMPLETENESS_CASES = [
         [
             "assign_nutrient_plan",
             "assign_species_phase_sequence",
+            "clone_nutrient_plan",
             "create_inspection",
+            "create_substrate_mix",
             "record_feeding_event",
+            "set_nutrient_plan_phase_targets",
+            "set_plant_substrate",
             "transition_plant_phase",
         ],
     ),
@@ -1507,7 +1520,7 @@ COMPLETENESS_CASES = [
         "a fenced example counts as declared — the one way to silence this",
         "This recipe declares no policy of its own. It prints the template:\n"
         "```\n"
-        f"Forbidden by name: {ALL_TWELVE}.\n"
+        f"Forbidden by name: {ALL_SIXTEEN}.\n"
         "```\n",
         [],
     ),
@@ -1556,7 +1569,7 @@ REAL_CALL = "\n  Step 5 - then call `mcp__kamerplanter__archive_plant` for real.
 
 COMPLETE_BLOCK = (
     "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
-    + ALL_TWELVE
+    + ALL_SIXTEEN
     + "."
 )
 
@@ -1569,7 +1582,7 @@ COLLAPSED_BLOCK = (
     for tool in sorted(STATE_CHANGING_TOOLS)
 )
 
-ELEVEN_OF_TWELVE = (
+FIFTEEN_OF_SIXTEEN = (
     "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
     + ", ".join(
         f"`mcp__kamerplanter__{tool}`"
@@ -1585,9 +1598,9 @@ ELEVEN_OF_TWELVE = (
 # or the count can be wrong.
 SKILL_COMPLETENESS_CASES = [
     (
-        "a skill naming all twelve is complete",
+        "a skill naming all sixteen is complete",
         "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
-        f"Never call {ALL_TWELVE}.",
+        f"Never call {ALL_SIXTEEN}.",
         [],
     ),
     (
@@ -1625,7 +1638,7 @@ SKILL_COMPLETENESS_CASES = [
     (
         "a name that is called still counts as named",
         "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
-        f"Never call {ALL_TWELVE}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
+        f"Never call {ALL_SIXTEEN}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
         [],
     ),
 ]
@@ -1635,7 +1648,7 @@ ALLOWED_PLANT_PLANNING_LINE = next(
     line for skill, line in SKILL_LINE_ALLOWANCES if skill == "plant-planning"
 )
 
-SKILL_FORBID_ALL = "- Call no tool that changes state. Forbidden by name: " + ALL_TWELVE + "."
+SKILL_FORBID_ALL = "- Call no tool that changes state. Forbidden by name: " + ALL_SIXTEEN + "."
 
 # One shape per way the skill obedience guard can misread a section. Each case
 # is (name, skill directory name, SKILL.md text, expected calls, expected stale
@@ -2311,18 +2324,18 @@ RECIPE_CASES = [
         [
             "calls state-changing tools",
             "parses as empty",
-            "declares 0 of the 12",
+            "declares 0 of the 16",
         ],
         [],
     ),
     (
-        "eleven of twelve plus a real call advises the rename, not the list",
-        ELEVEN_OF_TWELVE + REAL_CALL,
+        "fifteen of sixteen plus a real call advises the rename, not the list",
+        FIFTEEN_OF_SIXTEEN + REAL_CALL,
         PLAIN_INSTRUCTIONS,
         [
             "calls state-changing tools",
             "rename the file",
-            "declares 11 of the 12",
+            "declares 15 of the 16",
         ],
         ["parses as empty"],
     ),
@@ -2330,7 +2343,7 @@ RECIPE_CASES = [
         "a complete block in `instructions` declares nothing",
         PLAIN_PROMPT,
         COMPLETE_BLOCK,
-        ["declares 0 of the 12"],
+        ["declares 0 of the 16"],
         ["calls state-changing tools"],
     ),
     (
@@ -2354,14 +2367,14 @@ RECIPE_CASES = [
         "no marker at all is not a collapsed block",
         "  Read-only run. Then call `mcp__kamerplanter__archive_plant`.",
         PLAIN_INSTRUCTIONS,
-        ["rename the file", "declares 0 of the 12"],
+        ["rename the file", "declares 0 of the 16"],
         ["parses as empty"],
     ),
     (
         "a block in `instructions` does not collapse the prompt's advice",
         "  Then call `mcp__kamerplanter__archive_plant`.",
         COMPLETE_BLOCK,
-        ["calls state-changing tools", "rename the file", "declares 0 of the 12"],
+        ["calls state-changing tools", "rename the file", "declares 0 of the 16"],
         ["parses as empty"],
     ),
     # The Home Assistant guard (#75). Each Home Assistant finding names "Home
@@ -2391,7 +2404,7 @@ RECIPE_CASES = [
         ["sentence omits scene"],
         ["no `Forbidden on Home Assistant:` marker"],
     ),
-    # Only `prompt` counts, for the reason the twelve's completeness check is
+    # Only `prompt` counts, for the reason the sixteen's completeness check is
     # scoped to it: `instructions` is not enforced on a headless run.
     (
         "the category marker in `instructions` does not count",
