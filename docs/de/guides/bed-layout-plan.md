@@ -50,14 +50,16 @@ Die Schlüssel oben sind Beispiele; verwenden Sie die Artschlüssel, die der Kat
 | `constraints` | nein | keine Festlegung, kein Ausschluss und kein gemiedenes Paar |
 | `bed_history`, `rotation_years`, `demand_sequence` | nein | wie im [Fruchtfolgeplan](crop-rotation-plan.md) |
 | `stagger_weeks` | nein | wie im [Folgesaatplan](succession-plan.md) |
-| `tenant`, `planting_method` und die Standortparameter | nein | wie im [Gartenplan](garden-plan.md) |
+| `tenant`, `planting_method`, `goals`, `harvest_window`, `light`, `area_or_volume`, `water`, `hardiness_zone` | nein | wie im [Gartenplan](garden-plan.md) |
+| `site_constraints` | nein | keine Umweltbedingung des Standorts; das ist, was der Gartenplan als seinen Parameter `constraints` nimmt |
 
 ## Beete, Abstände, Mengen und Bedingungen liefern
 
-- **Beete** werden durch Kommas getrennt: `bed-1:2m2` ist ein Beet von 2 m², `tub-1:20l` ein Gefäß von 20 Litern und ein bloßes `bed-3` ein Beet unbekannter Größe. Jeder andere Text nach dem Doppelpunkt wird wie geschrieben gemeldet, mit unbekannter Kapazität.
+- **Beete** werden durch Kommas getrennt: `bed-1:2m2` ist ein Beet von 2 m², `tub-1:20l` ein Gefäß von 20 Litern und ein bloßes `bed-3` ein Beet unbekannter Größe. Jeder andere Text nach dem Doppelpunkt wird wie geschrieben gemeldet, mit unbekannter Kapazität. Ein Beet, das die Fruchtfolge plant und das Sie nicht in `beds` aufgeführt haben, eines, das nur in `bed_history` oder einer Festlegung vorkommt, wird ebenfalls aufgeteilt, mit unbekannter Kapazität und der Quelle `rotation plan`.
 - **Abstände** sind Pflanzen je Quadratmeter für ein Beet, `lactuca-sativa=10/m2`, oder Liter je Pflanze für ein Gefäß, `pisum-sativum=2l`. Ein Sorteneintrag, `species:cultivar=…`, geht dem Arteintrag vor. Ein Beet braucht einen Abstand in `/m2` und ein Gefäß einen in `l`; passen sie nicht, bleibt die Kapazität ungeprüft.
 - **Mengen** sind Pflanzen je Pflanzdurchlauf, `lactuca-sativa=12`. Eine Kultur mit zwei Wachstumsperioden hat zwei Durchläufe, und jeder braucht die Menge.
 - **`avoid`** in `constraints` hält zwei Kulturen in überlappenden Monaten aus einem Beet heraus: `avoid=phaseolus-vulgaris+pisum-sativum`. Paare werden durch Semikolons getrennt. Ein Paar, das Sie nicht nennen, wird nie als unverträglich behandelt.
+- **`constraints` ist hier nicht der Parameter des Gartenplans.** Er trägt `pin=`, `exclude=` und `avoid=`. Die Umweltbedingungen des Standorts, die der Gartenplan als `constraints` nimmt, gehören in `site_constraints`.
 - **`exclude=bed:crop`** hält eine Kultur aus einem Beet heraus. Verwenden Sie es, wenn Licht, Zugang oder Bewässerung eines Beets eine Kultur ausschließen; die Merkmale selbst entscheiden nichts.
 - **`bed_attributes`** werden durch Semikolons getrennt, `bed-1:light=full sun;tub-1:irrigation=drip`. Sie erscheinen je Beet und in der Begründung jeder Platzierung, als Kontext.
 
@@ -67,7 +69,7 @@ Die Kapazität eines Beets wird Monat für Monat geprüft: Alles, was in diesem 
 
 ## Nachbarn sind eine Eingabe, keine Garantie
 
-Der Katalog führt für manche Arten verträgliche Nachbarn auf, jeden mit einem Wert. Die Beetaufteilung nutzt sie nur, um zwischen Beeten zu wählen, die sonst gleich sind: Sie addiert die numerischen Werte mit den Kulturen, die in denselben Monaten schon in jedem Beet stehen, und bevorzugt die höhere Summe. Ein Wert, der keine Zahl ist, zählt 0 und wird als `score not comparable` gekennzeichnet; ein Paar, das der Katalog nicht aufführt, ist `unknown`. Was ein Wert bedeutet, ist nicht festgehalten, daher sagt jede Platzierung, dass eine Nachbarschaft eine Planungseingabe aus dem Katalog ist und keine Garantie für irgendein Ergebnis.
+Der Katalog führt für manche Arten verträgliche Nachbarn auf, jeden mit einem Wert. Die Beetaufteilung nutzt sie nur, um zwischen Beeten zu wählen, die sonst gleich sind: Sie addiert die numerischen Werte mit den Kulturen, die in denselben Monaten schon in jedem Beet stehen, und bevorzugt die höhere Summe. Ein Wert, der keine Zahl ist, zählt 0 und wird als `score not comparable` gekennzeichnet; ein Paar, das der Katalog nicht aufführt, ist `unknown`. Was ein Wert bedeutet, ist nicht festgehalten, daher sagt jede Platzierung, dass eine Nachbarschaft eine Planungseingabe aus dem Katalog ist und keine Garantie für irgendein Ergebnis, und dass ein höherer Wert als günstiger angenommen wird, weil der Datensatz seine Richtung nicht angibt.
 
 ## Was der Plan nicht tut
 
@@ -86,11 +88,11 @@ Der Bericht zeigt, welche Skills geladen wurden, dann eine Tabelle der Beete und
 | `LAYOUT: <p> placements, <o> over capacity, <n> not validated — <slug>` | wie viele Durchläufe platziert wurden und wie viele Einträge je Beet und Monat über der Kapazität liegen oder ungeprüft sind |
 | `APPLY: no write tool measured (the blocked follow-up split out of nolte/kamerplanter-goose#46)` | die Beetaufteilung lässt sich von hier aus nicht festhalten |
 
-Eine Festlegung steht immer dort, wo Sie sie festgelegt haben. Wenn sie ihr Beet überfüllt oder ein `avoid` oder `exclude` bricht, steht das unter den Konflikten und wird nie verborgen.
+Eine Festlegung steht immer dort, wo Sie sie festgelegt haben, auch in einem Beet, das die Fruchtfolge als `occupied` meldet. Wenn sie ihr Beet überfüllt oder ein `avoid` oder `exclude` bricht, steht das unter den Konflikten und wird nie verborgen. Eine Ausnahme: Eine festgelegte Kultur, die unter beiden Methoden angeboten wird, ohne dass `planting_method` gesetzt ist, wird gar nicht platziert, und die Konflikte führen sie als `pinned crop: method not chosen — set planting_method`, bis Sie wählen.
 
 ## Wie weit „deterministisch“ reicht
 
-Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Platzierungen, die Bedarfe, die Kapazität je Beet und Monat, die Konflikte, die Gründe für *nicht platziert* und die Belegstufen. Zwei Läufe über dieselben Eingaben sollten dieselben Plan-Fakten ergeben; der Text drumherum kann abweichen. Geprüft wurde das dreimal an einem erfundenen, als Text ausgeschriebenen Beispiel — ein Beet in m² mit Abständen und Mengen, ein Beet ohne Größe, ein leeres offenes Beet, ein Gefäß in Litern, eine festgelegte Kultur über der Kapazität, ein gemiedenes Paar, eine Kultur unter zwei Methoden, eine Kultur mit zwei Wachstumsperioden, eine Winterkultur und ein Nachbarwert, der keine Zahl ist —, nicht an einem laufenden Garten. Alle drei Läufe ergaben dieselben Platzierungen, Bedarfe, Kapazitäten, Konflikte und Gründe, und sie stimmten mit den von Hand ermittelten Fakten überein. Das Beispiel liegt nicht in diesem Repository.
+Die Plan-Fakten sind eine Funktion dessen, was Sie liefern: die Platzierungen, die Bedarfe, die Kapazität je Beet und Monat, die Konflikte, die Gründe für *nicht platziert* und die Belegstufen. Zwei Läufe über dieselben Eingaben sollten dieselben Plan-Fakten ergeben; der Text drumherum kann abweichen. Geprüft wurde das dreimal an einem erfundenen, als Text ausgeschriebenen Beispiel — ein Beet in m² mit Abständen und Mengen, ein Beet ohne Größe, ein leeres offenes Beet, ein Gefäß in Litern, eine festgelegte Kultur über der Kapazität, ein gemiedenes Paar, eine Kultur unter zwei Methoden, eine Kultur mit zwei Wachstumsperioden, eine Winterkultur und ein Nachbarwert, der keine Zahl ist —, nicht an einem laufenden Garten. Alle drei Läufe ergaben dieselben Platzierungen, Bedarfe, Kapazitäten, Konflikte und Gründe, und sie stimmten mit den von Hand ermittelten Fakten überein. Nachdem die Regeln zu Belegung, Beetmenge und Festlegungen geschärft waren, stimmte eine zweite Reihe aus drei Läufen am selben Beispiel, erweitert um ein Beet, das nur die Fruchtfolge plant, und eine Kultur, die nach ihrer Ernte gesät wird, wieder bei jeder Platzierung, Kapazität, jedem Konflikt und Grund überein und entsprach den von Hand ermittelten Fakten; zwei Läufe schrieben eine Überschreitung als `1 m2`, wo der dritte `1.00 m2` schrieb, worauf das Zahlenformat festgelegt wurde. Diese letzte Änderung wurde nicht erneut gemessen. Das Beispiel liegt nicht in diesem Repository.
 
 ## Quellen
 

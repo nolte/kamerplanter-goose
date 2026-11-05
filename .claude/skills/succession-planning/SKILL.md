@@ -26,17 +26,16 @@ Without the plant-planning block or the rotation block, stop and name the skill 
 - **Method not chosen**: when two runs share species, cultivar and period and differ only in method, both are `method not chosen — set planting_method`. They take part in nothing below.
 - A run's **occupancy** is a range of months within the season. Its **start** is the lowest month of the sowing window for `direct_sow`, and the month of the transplant start for `indoor_then_transplant`. Its **end** is the highest month of the harvest window. Use the months exactly as the block gives them; never recompute a window.
   - A start or end that the block reports unknown makes the occupancy `unknown`, missing that window.
-  - A harvest month lower than the start month means the run reaches into the next year: occupancy `unknown — spans the season boundary`.
+  - A harvest month lower than the start month, or a sowing or transplant month higher than the end month, means the run reaches across the season boundary: occupancy `unknown — spans the season boundary`. Examples: direct sowing in 4, 5 and 8 with harvest in 6 and 7; sowing in 11, 12, 1 and 2 with harvest in 5 and 6.
 
 ### 2. Admissibility
 
-Read only the slots of the season. A crop is **admissible** in slot B/S when:
+Read only the slots of the season. A crop is **admissible** in slot B/S by the first of these clauses, read in this order:
 
-- the slot is pinned and a `pin=` constraint names B, S and that crop; or
-- the slot is not pinned, `selected` is a family key, and the crop is listed in the slot's `crops` with that `family_key` among its verdict's elements; or
-- `selected` is `unknown/<crop key>` and the crop is that crop.
+1. **Pin first**: a `pin=` constraint names B, S and that crop. It admits the crop whatever the slot's state, `occupied` included.
+2. **Otherwise the selection**, only for a slot that is not pinned: `selected` is a family key and the crop is listed in the slot's `crops` with that `family_key` among its verdict's elements; or `selected` is `unknown/<crop key>` and the crop is that crop.
 
-A slot that is `open` or `occupied` admits nothing. Record, per admissible crop, its rotation verdict with rule and level as the slot gives it. A run whose crop no slot admits is `outside rotation plan`.
+Apart from clause 1, a slot that is `open` or `occupied` admits nothing. Record, per admissible crop, its rotation verdict with rule and level as the slot gives it. A run whose crop no slot admits is `outside rotation plan`.
 
 ### 3. Sequential successions
 
@@ -48,7 +47,7 @@ Never propose a succession from general knowledge, from a window the block repor
 
 ### 4. Staggered successions
 
-For every run with method `direct_sow`, a known sowing window, and a crop admissible in at least one slot:
+For every run with method `direct_sow`, a known sowing window, a known occupancy, and a crop admissible in at least one slot. Sowing dates lie only inside the run's occupancy months, never outside; a run whose occupancy is unknown, or spans the season boundary, gets no staggered entry and is reported only under `NOT SUCCEEDED` if it is in no sequential succession.
 
 - With `stagger_weeks` n: split the window's months into contiguous blocks. For each block, the sowing dates are the first day of the block's first month in the season and every n weeks after it, while the date stays within the block's last month. List the dates as ISO dates, each with the window's rule, fields, source and level, and n with source `caller`. A block with one date only is listed with `one sowing — interval longer than the window`.
 - Without `stagger_weeks`: one entry, `staggering possible within <months> — interval not supplied`.

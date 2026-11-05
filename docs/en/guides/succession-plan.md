@@ -49,13 +49,15 @@ The keys above are examples; use the species keys your garden's catalog carries.
 | `constraints` | no | no pin and no exclusion |
 | `stagger_weeks` | no | staggering is reported as possible, with the interval not supplied |
 | `planting_method` | no | a crop offered under both methods for one growing period is not succeeded until you choose |
-| `goals`, `harvest_window`, `light`, `area_or_volume`, `water`, `site_constraints`, `hardiness_zone` | no | as in the [garden plan](garden-plan.md) |
+| `goals`, `harvest_window`, `light`, `area_or_volume`, `water`, `hardiness_zone` | no | as in the [garden plan](garden-plan.md) |
+| `site_constraints` | no | no environmental constraint of the site; this is what the garden plan takes as its `constraints` parameter |
 
 ## Supply the inputs
 
-- **The season** is one year. Windows are months in it. A crop whose harvest reaches into the next year, a winter crop for example, has no known occupancy in this season and is not succeeded.
+- **The season** is one year. Windows are months in it. A crop whose harvest reaches into the next year, a winter crop for example, or whose window lists a sowing month after its last harvest month, has no known occupancy in this season and is not succeeded.
 - **Beds, bed history, `rotation_years` and `constraints`** go to the rotation step exactly as in the [crop rotation plan](crop-rotation-plan.md). A succession is proposed only between crops the rotation plan admits to the same bed and season; a bed that the rotation leaves `open` takes no succession.
-- **`stagger_weeks`** is the number of weeks between staggered sowings, for example `2`. The run lists the sowing dates from the first day of the sowing window, every two weeks, as long as the date stays inside the window. No interval is built in.
+- **`stagger_weeks`** is the number of weeks between staggered sowings, for example `2`. The run splits the sowing window into blocks of consecutive months and lists, for each block, the sowing dates from the first day of the block's first month, every two weeks, as long as the date stays inside that block. A run that spans the season boundary gets no staggered dates. No interval is built in.
+- **`constraints` here is not the garden plan's.** It carries `pin=` and `exclude=` for the rotation step (and `avoid=` for the bed layout plan). The environmental constraints of the site, which the garden plan takes as `constraints`, go into `site_constraints`.
 - **Spacing, quantities and incompatible pairs** are not used here; the [bed layout plan](bed-layout-plan.md) takes them.
 
 ## What the results mean

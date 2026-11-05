@@ -49,13 +49,15 @@ Die Schlüssel oben sind Beispiele; verwenden Sie die Artschlüssel, die der Kat
 | `constraints` | nein | keine Festlegung und kein Ausschluss |
 | `stagger_weeks` | nein | eine Staffelung wird als möglich gemeldet, ohne gelieferten Abstand |
 | `planting_method` | nein | eine Kultur, die für eine Wachstumsperiode unter beiden Methoden angeboten wird, erhält keine Folgesaat, bis Sie wählen |
-| `goals`, `harvest_window`, `light`, `area_or_volume`, `water`, `site_constraints`, `hardiness_zone` | nein | wie im [Gartenplan](garden-plan.md) |
+| `goals`, `harvest_window`, `light`, `area_or_volume`, `water`, `hardiness_zone` | nein | wie im [Gartenplan](garden-plan.md) |
+| `site_constraints` | nein | keine Umweltbedingung des Standorts; das ist, was der Gartenplan als seinen Parameter `constraints` nimmt |
 
 ## Die Eingaben liefern
 
-- **Die Saison** ist ein Jahr. Die Fenster sind Monate darin. Eine Kultur, deren Ernte ins nächste Jahr reicht, zum Beispiel eine Winterkultur, hat in dieser Saison keine bekannte Belegung und erhält keine Folgesaat.
+- **Die Saison** ist ein Jahr. Die Fenster sind Monate darin. Eine Kultur, deren Ernte ins nächste Jahr reicht, zum Beispiel eine Winterkultur, oder deren Fenster einen Saatmonat nach ihrem letzten Erntemonat nennt, hat in dieser Saison keine bekannte Belegung und erhält keine Folgesaat.
 - **Beete, Beetvorgeschichte, `rotation_years` und `constraints`** gehen genau wie im [Fruchtfolgeplan](crop-rotation-plan.md) an den Fruchtfolgeschritt. Eine Folgesaat wird nur zwischen Kulturen vorgeschlagen, die der Fruchtfolgeplan im selben Beet und in derselben Saison zulässt; ein Beet, das die Fruchtfolge `open` lässt, nimmt keine Folgesaat auf.
-- **`stagger_weeks`** ist die Zahl der Wochen zwischen gestaffelten Aussaaten, zum Beispiel `2`. Der Lauf führt die Saattermine ab dem ersten Tag des Saatfensters alle zwei Wochen auf, solange der Termin im Fenster liegt. Kein Abstand ist eingebaut.
+- **`stagger_weeks`** ist die Zahl der Wochen zwischen gestaffelten Aussaaten, zum Beispiel `2`. Der Lauf teilt das Saatfenster in Blöcke aufeinanderfolgender Monate und führt je Block die Saattermine ab dem ersten Tag des ersten Blockmonats alle zwei Wochen auf, solange der Termin in diesem Block liegt. Ein Durchlauf, der über die Saisongrenze reicht, erhält keine gestaffelten Termine. Kein Abstand ist eingebaut.
+- **`constraints` ist hier nicht der Parameter des Gartenplans.** Er trägt `pin=` und `exclude=` für den Fruchtfolgeschritt (und `avoid=` für den Beetplan). Die Umweltbedingungen des Standorts, die der Gartenplan als `constraints` nimmt, gehören in `site_constraints`.
 - **Abstände, Mengen und unverträgliche Paare** werden hier nicht verwendet; der [Beetplan](bed-layout-plan.md) nimmt sie entgegen.
 
 ## Was die Ergebnisse bedeuten

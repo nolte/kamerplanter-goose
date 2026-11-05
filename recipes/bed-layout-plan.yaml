@@ -36,7 +36,8 @@ parameters:
       Beds and containers, comma-separated, each name, name:<n>m2 or name:<n>l
       (for example bed-1:2m2,tub-1:10l). No source in the catalog. The area or
       volume is the capacity the layout validates against; a bare name is a bed
-      of unknown capacity.
+      of unknown capacity. A bed the rotation plans that is not listed here is
+      laid out too, with unknown capacity and the source rotation plan.
 
   - key: bed_history
     input_type: string
@@ -313,15 +314,17 @@ prompt: |
 
   | Bed | Capacity | Run | Occupancy | Need | Rotation | Successor of | Companions | Pinned | Level |
   |-----|----------|-----|-----------|------|----------|--------------|------------|--------|-------|
-  | the bed | n m2, n l, or unknown | the run identifier | the months, or unknown and why | n m2, n l, or unknown and the missing input | the verdict with rule and level | a run identifier or none | the sum and each pair's score, or unknown | yes / no | caller or a number |
+  | the bed | n m2, n l, or unknown, with its source (caller or rotation plan) | the run identifier | the months, or unknown and why | n m2, n l, or unknown and the missing input | the verdict with rule and level | every predecessor run identifier, latest harvest end first, or none | the sum and each pair's score, or unknown | yes / no | caller or a number |
 
   Then the capacity per bed and month exactly as the skill returned it. Then
   the conflicts, one row each, the rotation plan's included; write "none"
-  when there are none. Then the runs and crops that were not placed, one row
+  when there are none; a pinned crop whose method is not chosen appears there
+  as "pinned crop: method not chosen — set planting_method". Then the runs and crops that were not placed, one row
   each with the reason. Then the layout header and, per placement, the
   rationale exactly as the skill returned them, including the sentence that a
   companion pairing is a planning input from the catalog and not a guarantee,
-  the bed attributes as context, and the not-evaluated entries. Then the
+  the sentence that a higher companion score is assumed more favourable
+  because the record does not state its direction, the bed attributes as context, and the not-evaluated entries. Then the
   apply contract exactly as the skill returned it, including that the
   measured catalog has no tool that records a layout, and any tool error
   reported verbatim.

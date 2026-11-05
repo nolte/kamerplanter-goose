@@ -29,14 +29,14 @@ Without the plant-planning, rotation or succession block, stop and name the skil
 
 - A run's **crop key** is the first two parts of its identifier, `species_key/cultivar_key`.
 - A **crop entry** `species_key[:cultivar_key]` in spacing, quantities, `exclude` or `avoid` matches a crop when the species is equal and, if the entry names a cultivar, the cultivar is equal too. For spacing and quantities, a matching cultivar entry is used before a matching species entry; record which.
-- A bed's **capacity** is `<n> m2` or `<n> l` from its entry. Any other text after the colon is kept verbatim with capacity `unknown`; a bare name is a bed of capacity `unknown`. The layout's beds are the `beds` entries plus every other bed the rotation plan has a slot for in the season, the latter with capacity `unknown`; they are processed by name as text.
-- Bed attributes are kept per bed as written. An attribute key other than `light`, `access` or `irrigation`, or an attribute for a bed that is not in `beds`, goes to `not evaluated`.
+- A bed's **capacity** is `<n> m2` or `<n> l` from its entry. Any other text after the colon is kept verbatim with capacity `unknown`; a bare name is a bed of capacity `unknown`. The layout's beds are the `beds` entries (source `caller`) plus every other bed the rotation plan has a slot for in the season, the latter with capacity `unknown` and source `rotation plan`; they are processed by name as text.
+- Bed attributes are kept per bed as written. An attribute key other than `light`, `access` or `irrigation`, or an attribute for a bed that is not among the layout's beds, goes to `not evaluated`.
 - Every entry that does not parse, and every free-text constraint, goes verbatim to `not evaluated` in the header.
-- **Method not chosen**: when two runs share species, cultivar and period and differ only in method, neither is placed; both get `method not chosen — set planting_method`. Runs of different periods are separate plantings.
+- **Method not chosen**: when two runs share species, cultivar and period and differ only in method, neither is placed; both get `method not chosen — set planting_method`. Runs of different periods are separate plantings. This rule takes precedence over a pin: a pinned crop whose method is not chosen is not placed (step 6).
 
 ### 2. Occupancy and need
 
-A run's **occupancy** is a range of months within the season: from the lowest month of its sowing window (`direct_sow`) or the month of its transplant start (`indoor_then_transplant`) to the highest month of its harvest window, the months exactly as the block gives them. An unknown bound makes it `unknown`, missing that window; a harvest month lower than the start month makes it `unknown — spans the season boundary`. Two occupancies **overlap** when they share a month; an unknown occupancy overlaps every month.
+A run's **occupancy** is a range of months within the season: from the lowest month of its sowing window (`direct_sow`) or the month of its transplant start (`indoor_then_transplant`) to the highest month of its harvest window, the months exactly as the block gives them. An unknown bound makes it `unknown`, missing that window; a harvest month lower than the start month, or a sowing or transplant month higher than the highest harvest month, makes it `unknown — spans the season boundary` (direct sowing in 4, 5 and 8 with harvest in 6 and 7; sowing in 11, 12, 1 and 2 with harvest in 5 and 6). Two occupancies **overlap** when they share a month; an unknown occupancy overlaps every month.
 
 A run's **need** in a bed:
 
@@ -44,11 +44,11 @@ A run's **need** in a bed:
 - container in `l` and spacing `<v>l` and quantity q: q × v l;
 - otherwise `unknown`, missing the spacing, the quantity, or `spacing unit does not match bed`.
 
-Report a need to two decimals and compare it unrounded. The catalog's seed density is never a spacing; show it beside the need as context only.
+Report every need, sum, capacity comparison and excess to two decimals with its unit (`1.00 m2`, `8.00 l`), and compare unrounded. The catalog's seed density is never a spacing; show it beside the need as context only.
 
 ### 3. Admissibility
 
-Read only the slots of the season. A crop is **admitted** in bed B when the slot B/S is pinned and a `pin=` names B, S and the crop; or the slot is not pinned, `selected` is a family key and the crop is listed in its `crops` with that `family_key` among its verdict's elements; or `selected` is `unknown/<crop key>` and the crop is that crop. An `open` or `occupied` slot admits nothing. Copy the crop's rotation verdict in that slot with its rule and level.
+Read only the slots of the season. A crop is **admitted** in bed B by the first of two clauses, read in this order. First, the pin: a `pin=` names B, S and the crop; this admits it whatever the slot's state, `occupied` included, and the rotation plan's conflict for that pin stays in `CONFLICTS`. Otherwise, the selection, only for a slot that is not pinned: `selected` is a family key and the crop is listed in its `crops` with that `family_key` among its verdict's elements, or `selected` is `unknown/<crop key>` and the crop is that crop. Apart from the pin clause, an `open` or `occupied` slot admits nothing. Copy the crop's rotation verdict in that slot with its rule and level.
 
 A run is **admissible** in B, given the runs already placed there, when its crop is admitted in B, no `exclude` names B and its crop, no `avoid` pair joins its crop to the crop of a run in B whose occupancy overlaps its own, and its method is chosen.
 
@@ -62,13 +62,13 @@ For a run R and a bed B, look at every month of R's occupancy (every month of th
 
 ### 5. Companion sum
 
-For R in B, look at each run O already in B whose occupancy is known and overlaps R's known occupancy. The pair's score is the entry in R's companion list that names O's species, else the entry in O's list that names R's species; record which. A numeric score is added. A non-numeric one adds 0 and is listed as `score not comparable`. A pair neither list names is `unknown` and adds 0; it is never incompatible. A run whose occupancy, or whose candidate neighbour's occupancy, is unknown is listed as `overlap unknown` and not counted. The ranking reads a higher sum as better; the direction of `score` is not recorded, so the rationale says so.
+For R in B, look at each run O already in B whose occupancy is known and overlaps R's known occupancy. The pair's score is the entry in R's companion list that names O's species, else the entry in O's list that names R's species; record which. A numeric score is added. A non-numeric one adds 0 and is listed as `score not comparable`. A pair neither list names is `unknown` and adds 0; it is never incompatible. A run whose occupancy, or whose candidate neighbour's occupancy, is unknown is listed as `overlap unknown` and not counted. The ranking reads a higher sum as better; the direction of `score` is not recorded, so the rationale carries the score-direction sentence of step 10.
 
 ### 6. Place
 
-1. **Pinned runs first.** Every run whose crop a `pin=` names for this season goes to the pinned bed (the first by name when the crop is pinned in several beds), in the order of step 7, whatever its capacity check, its `avoid` or its `exclude`. A pin is never moved. List under `CONFLICTS` every month it makes a validated bed exceed its capacity, every `avoid` it breaks and every `exclude` it contradicts.
+1. **Pinned runs first.** A run of a pinned crop that is `method not chosen` is not placed: list it under `CONFLICTS` as `pinned crop: method not chosen — set planting_method` and under `NOT PLACED` with the same reason; the pin is unresolved, not moved. Every other run whose crop a `pin=` names for this season goes to the pinned bed (the first by name when the crop is pinned in several beds), in the order of step 7, whatever its capacity check, its `avoid` or its `exclude`. A pin is never moved. List under `CONFLICTS` every month it makes a validated bed exceed its capacity, every `avoid` it breaks and every `exclude` it contradicts.
 2. **Then every other run** that is not `method not chosen` and whose crop is admitted somewhere, in the order of step 7. Its **candidate beds** are the beds where it is admissible and whose capacity check is `fits` or `not validated`. Rank them by these keys, strictly in order, each later key breaking only a tie on every earlier one:
-   1. the bed holds a run that the succession block lists as this run's sequential predecessor in that bed's slot (yes before no);
+   1. the bed holds a run that the succession block lists as a sequential predecessor of this run in that bed's slot (yes before no);
    2. capacity check `fits` before `not validated`;
    3. the higher companion sum;
    4. the bed name as text.
@@ -85,7 +85,7 @@ Within each of the two passes, take the runs by occupancy start month, unknown l
 Every run that is not placed is listed under `NOT PLACED` with one reason:
 
 - `method not chosen — set planting_method`;
-- `outside rotation plan` when no slot of the season admits its crop;
+- `not placed — outside rotation plan` when no slot of the season admits its crop;
 - `not placed — capacity` when every bed admitting its crop was stopped by the capacity check alone, naming per bed the excess and its month;
 - `not placed — no admissible bed` otherwise, naming per bed the check that stopped it (`excluded`, `avoid with <run id>`, `over by <x> in <month>`).
 
@@ -99,7 +99,7 @@ For each bed, list every month of the season in which a placed run occupies it, 
 
 The elements of a placement are the run's windows (their levels), the rotation verdict (its level), the season, the bed's capacity, the spacing and the quantity when used (`caller`), and the companion scores used (level 4). The level is `caller` when any element is `caller`, otherwise the weakest level, the highest number. Apply `decision-policy` to each placement.
 
-Every placement's rationale states: the ranking values in the chosen bed; every other bed that admits its crop, with its ranking values or the check that stopped it; the beds the rotation did not admit it to, as one list; the rotation verdict copied with its rule and level; the bed's attributes as context (`no rule formed: no species field records the need`); and the sentence **A companion pairing is a planning input from the catalog, not a guarantee of any outcome.**
+Every placement's rationale states: the ranking values in the chosen bed; every other bed that admits its crop, with its ranking values or the check that stopped it; the beds the rotation did not admit it to, as one list; the rotation verdict copied with its rule and level; the bed's attributes as context (`no rule formed: no species field records the need`); the sentence **A companion pairing is a planning input from the catalog, not a guarantee of any outcome.**; and the sentence **companion score assumed higher = more favourable; the record does not state its direction**.
 
 ### 11. Report
 
@@ -110,7 +110,7 @@ LAYOUT HEADER
   garden:          <tenant> (given | discovered)
   made from:       <the blocks received: planting runs, rotation plan, successions, companions | companions not received>
   season:          <year>                                        (source caller)
-  beds:            <name: <n> m2 | <n> l | unknown (<text verbatim>)>, ...   (source caller)
+  beds:            <name: <n> m2 | <n> l | unknown (<text verbatim>)> (source caller), ...; <name: unknown> (source rotation plan), ...
   spacing:         <entries | not supplied>                      (source caller)
   quantities:      <entries | not supplied>                      (source caller)
   constraints:     <avoid and exclude entries | none>            (source caller)
@@ -124,9 +124,9 @@ BED LAYOUT
       occupancy:  <months | unknown — reason>
       need:       <x> m2 | <x> l | unknown — <missing>   (spacing <entry>, quantity <entry>, cultivar | species; seed density <value> context only)
       rotation:   <verdict> rule <n> level <l>
-      successor of: <run id | none>
+      successor of: <every predecessor run id placed in this bed, by latest harvest end month first, then run id | none>
       companions: <neighbour run: score <s> (numeric | not comparable | unknown), ...>; sum <n>
-      rationale:  <ranking values; other beds and why; beds not admitted; attributes; the companion sentence>
+      rationale:  <ranking values; other beds and why; beds not admitted; attributes; the companion sentence; the score-direction sentence>
       level:      <caller | n>
       confidence / uncertainty / missing_data
 CAPACITY
@@ -135,12 +135,13 @@ CAPACITY
 CONFLICTS
   <bed> <month> <run id>: over by <x> — pinned
   <bed> <run id>: avoid with <run id> | excluded — pinned
+  <bed> <run id>: pinned crop: method not chosen — set planting_method
   rotation: <the rotation plan's conflicts for the season, verbatim | none>
 NOT PLACED
   <run id>: <reason>
   <crop key>: no planting run — <reason>
 APPLY CONTRACT
-  per placement: <what a later apply step would record: the bed and its capacity, the run, its need, the season, its successor>
+  per placement: <what a later apply step would record: the bed and its capacity, the run, its need, the season, its predecessors in this bed in the order of successor of>
   The measured catalog has no tool that creates a bed, records a bed assignment or a layout, or creates a planting run. The write and setup tools it records are the twelve listed under Gotchas; none does. The one that moves a plant moves a plant that exists, while a layout places crops that are not plants yet, and the setup tool creates a site root, not a bed with an area.
   The apply recipe, bed-layout-plan-apply, is tracked in the blocked follow-up split out of nolte/kamerplanter-goose#46.
 ```
