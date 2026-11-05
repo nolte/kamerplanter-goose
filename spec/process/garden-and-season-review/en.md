@@ -82,7 +82,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 ### H. Separation and forbidden tools
 
 - **MUST** keep the skill tool-free, working only on the blocks it is handed
-- **MUST** keep the skill and both recipes free of every state-changing tool, and **MUST** name all twelve that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
+- **MUST** keep the skill and both recipes free of every state-changing tool, and **MUST** name every one that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
 - **MUST NOT** call a Home Assistant tool, and **MUST NOT** ship an `-apply` sibling of either recipe
 
 ## Acceptance Criteria
@@ -100,7 +100,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - [ ] The next-cycle block carries `crops`, `goals`, `constraints` and `harvest_window` in the planning recipes' formats, `reconsider` takes precedence over `keep`, `keep` needs a caller-reported success, `constraints` carries no lesson, and location history lines are labelled "location, not bed"
 - [ ] Nothing is written: no file, no diary entry
 - [ ] Two runs over the same input give the same facts on a fixed fixture, and the result says what is not claimed
-- [ ] The skill calls no tool, neither recipe calls a state-changing or Home Assistant tool, each recipe's prompt forbids all twelve by name, and no `-apply` sibling ships
+- [ ] The skill calls no tool, neither recipe calls a state-changing or Home Assistant tool, each recipe's prompt forbids every state-changing tool by name, and no `-apply` sibling ships
 - [ ] Every claim about the tool surface cites a spec in this repository, and a claim not re-measured says so
 - [ ] The German and the English file have the same headings in the same order, the same number of requirement bullets and the same number of acceptance checkboxes
 
@@ -111,7 +111,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - [The growth stage and weather impact spec](../growth-stage-and-weather-impact/en.md) — the growth-stage hand-off and the weather exposures
 - [The care planning and daily check spec](../care-planning-and-daily-check/en.md) — the not-available handling of unbuilt domains and the cap of five plants
 - [The plant planning and planting calendar spec](../plant-planning-and-planting-calendar/en.md) and [the site analysis and crop selection spec](../site-analysis-and-crop-selection/en.md) — the planning parameters the next-cycle block is shaped for
-- [The Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) — the tool catalog and the twelve state-changing tools, measured 2026-08-16
+- [The Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) — the tool catalog and the state-changing tools
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md) — how a recipe is built here, including forbidden-by-name
 - Issue nolte/kamerplanter-goose#50 — the scope and acceptance criteria are taken from its body; #47 and #48 — the domains this review does not depend on
 

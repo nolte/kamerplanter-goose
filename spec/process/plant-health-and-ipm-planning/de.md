@@ -106,7 +106,7 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 
 ### I. Trennung und verbotene Tools
 
-- **MUSS [MUST]** beide Skills und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** alle zwölf, die die Kamerplanter-Server-Spezifikation führt, einzeln im Prompt jedes Rezepts als verboten nennen
+- **MUSS [MUST]** beide Skills und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** jedes, das die Kamerplanter-Server-Spezifikation führt, einzeln im Prompt jedes Rezepts als verboten nennen
 - **DARF NICHT [MUST NOT]** aus einem der beiden Skills oder Rezepte ein Home-Assistant-Tool aufrufen und **MUSS [MUST]** im Prompt jedes Rezepts das Ansteuern nach Kategorien verbieten (ein Gerät ein- oder ausschalten, einen Wert setzen, ein Skript, eine Szene oder eine Automatisierung ausführen) sowie `TimeTillErnte` und `time_till`, deren Wirkung nicht eingeordnet ist
 - **MUSS [MUST]** die Unter-Skills im Rezept zusammensetzen, nach Namen, und **DARF NICHT [MUST NOT]** sich auf `sub_recipes:` oder `--sub-recipe` verlassen, die unter dem Provider `claude-code` nicht funktionieren
 - **DARF NICHT [MUST NOT]** ein `-apply`-Gegenstück zu einem der beiden Rezepte ausliefern
@@ -126,7 +126,7 @@ Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in diesem Reposito
 - [ ] Keine zwei Maßnahmen mit demselben Wirkstoff werden als Alternativen angeboten, und ein nicht zuordenbares `treatment_type` wird als solches gemeldet
 - [ ] Beide Skills liefern Befunde in der Einklinkform der Pflegeplanung, und ein Überwachungsschritt nennt `create_inspection` als Mutation, die nichts aufruft
 - [ ] Zwei Läufe über dieselbe Eingabe ergeben an einer festen Vorlage dieselben Fakten, und das Ergebnis sagt, was nicht beansprucht wird
-- [ ] Weder Skill noch Rezept ruft ein zustandsänderndes Tool oder ein Home-Assistant-Tool auf, und der Prompt jedes Rezepts verbietet alle zwölf zustandsändernden Tools namentlich, das Ansteuern nach Kategorien sowie `TimeTillErnte` und `time_till`
+- [ ] Weder Skill noch Rezept ruft ein zustandsänderndes Tool oder ein Home-Assistant-Tool auf, und der Prompt jedes Rezepts verbietet jedes zustandsändernde Tool namentlich, das Ansteuern nach Kategorien sowie `TimeTillErnte` und `time_till`
 - [ ] Jede Aussage zur Tool-Oberfläche zitiert eine Spezifikation in diesem Repository, und eine nicht neu gemessene Aussage sagt das
 - [ ] Die deutsche und die englische Datei haben dieselben Überschriften in derselben Reihenfolge, dieselbe Anzahl Anforderungspunkte und dieselbe Anzahl Akzeptanz-Checkboxen
 

@@ -69,7 +69,7 @@ NOT PLANNED
   <species_key / cultivar_key>: <rejected | undetermined | window unknown> — <failed constraint or missing input>
 APPLY CONTRACT
   per run: <what a later apply step would create: a planting run with species, cultivar, method, windows, location>
-  The measured catalog has no tool that creates a planting run, a sowing or planting task, or a plan. The write tools it records are add_plant_diary_entry, confirm_care_task, archive_plant, set_plant_location, claim_diary_analysis, submit_diary_analysis, transition_plant_phase, assign_species_phase_sequence, assign_nutrient_plan, record_feeding_event and create_inspection, and the setup tool create_site; none does.
+  The measured catalog has no tool that creates a planting run, a sowing or planting task, or a plan. The write tools it records are add_plant_diary_entry, confirm_care_task, archive_plant, set_plant_location, claim_diary_analysis, submit_diary_analysis, transition_plant_phase, assign_species_phase_sequence, assign_nutrient_plan, record_feeding_event, create_inspection, clone_nutrient_plan, set_nutrient_plan_phase_targets, create_substrate_mix and set_plant_substrate, and the setup tool create_site; none does.
   The apply recipes are tracked in nolte/kamerplanter-goose#59.
 ```
 

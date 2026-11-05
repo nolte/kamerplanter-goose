@@ -73,6 +73,10 @@ prompt: |
     `mcp__kamerplanter__transition_plant_phase`,
     `mcp__kamerplanter__record_feeding_event`,
     `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__clone_nutrient_plan`,
+    `mcp__kamerplanter__set_nutrient_plan_phase_targets`,
+    `mcp__kamerplanter__create_substrate_mix`,
+    `mcp__kamerplanter__set_plant_substrate`,
     `mcp__kamerplanter__assign_nutrient_plan`,
     `mcp__kamerplanter__assign_species_phase_sequence`.
   - `mcp__kamerplanter__calculate_mixing_protocol` is permitted: it only

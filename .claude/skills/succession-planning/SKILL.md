@@ -99,7 +99,7 @@ NOT SUCCEEDED
   not planned (carried over): <entries verbatim | none>
 APPLY CONTRACT
   per succession: <what a later apply step would record: the slot, the runs in order, the sowing dates>
-  The measured catalog has no tool that records a succession, a bed assignment, a layout or a planting run. The write and setup tools it records are the twelve listed under Gotchas; none does.
+  The measured catalog has no tool that records a succession, a bed assignment, a layout or a planting run. The write and setup tools it records are the sixteen listed under Gotchas; none does.
   The apply recipe is tracked in nolte/kamerplanter-goose#74.
 ```
 
@@ -116,7 +116,7 @@ Return no field that was not read; list an unread field as absent with its reaso
 
 ## Gotchas
 
-- The apply contract names no tool, because the measured catalog has none that records a succession. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). Reproduce this list in the report as the twelve tools the catalog records; it is explanation, never a call.
+- The apply contract names no tool, because the measured catalog has none that records a succession. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event`, `create_inspection`, `clone_nutrient_plan`, `set_nutrient_plan_phase_targets`, `create_substrate_mix` and `set_plant_substrate`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). Reproduce this list in the report as the sixteen tools the catalog records; it is explanation, never a call.
 - Every succession is level `caller`, because the season is the caller's. That is honest, not a defect.
 - A rotation plan with `open` slots admits nothing there, so a plan with few families selected has few successions. Supplying `rotation_years` to the rotation step is what opens slots.
 - Two runs of one crop in one slot are the common case of a succession; plant-planning already names them, and this skill only adds the slot.

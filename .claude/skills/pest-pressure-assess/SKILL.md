@@ -88,7 +88,7 @@ A catalogue defect found along the way is reported as a finding against the cata
 
 ## Hard rules
 
-- **Never** call a tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`.
+- **Never** call a tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`, `mcp__kamerplanter__clone_nutrient_plan`, `mcp__kamerplanter__set_nutrient_plan_phase_targets`, `mcp__kamerplanter__create_substrate_mix`, `mcp__kamerplanter__set_plant_substrate`.
 - **Never** state a pest's humidity preference, host range, or monitoring method as recorded. Those fields do not exist on `get_pest`.
 - **Never** report an empty inspection history as absence of pressure.
 - **Never** write *identified* where the evidence supports *not contradicted*.

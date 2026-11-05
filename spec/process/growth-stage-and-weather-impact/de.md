@@ -92,7 +92,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 ### H. Trennung und verbotene Tools
 
-- **MUSS [MUST]** beide Skills und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** alle zwölf, die die Kamerplanter-Server-Spezifikation führt, einzeln im Prompt jedes Rezepts als verboten nennen
+- **MUSS [MUST]** beide Skills und beide Rezepte frei von jedem zustandsändernden Tool halten und **MUSS [MUST]** jedes, das die Kamerplanter-Server-Spezifikation führt, einzeln im Prompt jedes Rezepts als verboten nennen
 - **MUSS [MUST]** im Prompt des Wetterrezepts das Ansteuern in Home Assistant nach Kategorien verbieten (ein Gerät ein- oder ausschalten, einen Wert setzen, ein Skript, eine Szene oder eine Automatisierung ausführen) und **DARF NICHT [MUST NOT]** `TimeTillErnte` oder `time_till` aufrufen, deren Wirkung nicht eingeordnet ist
 - **DARF NICHT [MUST NOT]** ein Home-Assistant-Tool aus dem Skill oder Rezept zum Wachstumsstadium oder aus der täglichen Prüfung aufrufen
 - **DARF NICHT [MUST NOT]** ein `-apply`-Gegenstück zu einem der beiden Rezepte ausliefern
@@ -111,7 +111,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [ ] Jedes Ergebnis liefert Befunde in der Einklinkform der Pflegeplanung, dazu die benannten Übergabeblöcke für Pflanzengesundheit und Ernteplanung
 - [ ] Ein fragliches Stadium nennt `transition_plant_phase` als Mutation, und nichts ruft es auf
 - [ ] Zwei Läufe über dieselbe Eingabe ergeben an einer festen Vorlage dieselben Fakten, und das Ergebnis sagt, was nicht beansprucht wird
-- [ ] Weder Skill noch Rezept ruft ein zustandsänderndes Tool auf, der Prompt jedes Rezepts verbietet alle zwölf namentlich, das Wetterrezept verbietet das Ansteuern nach Kategorien sowie `TimeTillErnte` und `time_till`, und das Rezept zum Wachstumsstadium ruft kein Home-Assistant-Tool auf
+- [ ] Weder Skill noch Rezept ruft ein zustandsänderndes Tool auf, der Prompt jedes Rezepts verbietet jedes zustandsändernde Tool namentlich, das Wetterrezept verbietet das Ansteuern nach Kategorien sowie `TimeTillErnte` und `time_till`, und das Rezept zum Wachstumsstadium ruft kein Home-Assistant-Tool auf
 - [ ] Jede Aussage zur Tool-Oberfläche zitiert eine Spezifikation in diesem Repository, und eine nicht neu gemessene Aussage sagt das
 - [ ] Die deutsche und die englische Datei haben dieselben Überschriften in derselben Reihenfolge, dieselbe Anzahl Anforderungspunkte und dieselbe Anzahl Akzeptanz-Checkboxen
 
