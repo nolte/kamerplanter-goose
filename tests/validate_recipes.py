@@ -249,8 +249,12 @@ def calls_state_changing_tools(
     `tools` defaults to the twelve; the Home Assistant guard passes
     `HA_UNCLASSIFIED_INTENTS`. A read-only recipe is read at `is_apply=False`
     (the `Forbidden by name:` marker alone); a skill at the default, both
-    markers, because whether its `Permitted by name:` block is legitimate is
-    the separate `check_permitting_skill_loads` question.
+    markers. For the twelve, whether a skill's `Permitted by name:` block is
+    legitimate is the separate `check_permitting_skill_loads` question. For
+    the Home Assistant intents nothing answers it: `permitting_skill_loads`
+    reads a permitted block for the twelve alone, so a skill that permits
+    `TimeTillErnte` and `time_till` by name passes this read, and a read-only
+    recipe loading it gets no finding. A known gap, not closed here.
     """
     markers = POLICY_MARKERS if is_apply else READ_ONLY_MARKERS
     remainder = outside_policy(body, markers)
@@ -292,7 +296,7 @@ def missing_from_policy(
 # Home Assistant's catalog is assembled per instance, so its actuating side
 # cannot be forbidden by name the way the twelve are. A read-only recipe
 # forbids it by category behind a literal marker instead, and the marker's
-# paragraph has to name every category — the words prove the categories are
+# sentence has to name every category — the words prove the categories are
 # named, the marker carries the meaning (#75).
 HA_CATEGORY_MARKER = "Forbidden on Home Assistant:"
 HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
@@ -302,62 +306,83 @@ HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
 # them, a read-only recipe forbids both by name and calls neither.
 HA_UNCLASSIFIED_INTENTS = ("TimeTillErnte", "time_till")
 
+# A list item's prefix — bullet or number — with every space after it, for
+# the Home Assistant scope alone: its end is the column the item's text
+# starts at. `policy_spans` keeps the narrower `BULLET_PREFIX_PATTERN`.
+LIST_ITEM_PATTERN = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+# A sentence terminator: `.`, `!` or `?`, any closing brackets or quotes,
+# then whitespace or the end of the text.
+SENTENCE_END_PATTERN = re.compile(r"[.!?][)\]\"']*(?=\s|$)")
 
-def ha_category_paragraphs(prompt: str) -> list[str]:
-    """The paragraph each `Forbidden on Home Assistant:` marker opens.
 
-    A paragraph runs from the marker to the end of its line, then across the
-    following lines until the first line that is one of:
+def ha_category_scopes(prompt: str) -> list[str]:
+    """The scope each `Forbidden on Home Assistant:` marker opens.
+
+    A scope runs from the marker to the end of the sentence the marker sits
+    in: the first `.`, `!` or `?` — with any closing `)`, `]`, `"` or `'`
+    after it — that is followed by whitespace or the end of the text. It is
+    cut earlier at the first following line that is one of:
 
     - blank (whitespace-only);
-    - a bullet indented at most as deep as the line carrying the marker;
-    - a non-bullet line indented less than the marker line's text column.
+    - a list item (`-`, `*`, `+`, `1.`, `1)`) indented at most as deep as the
+      line carrying the marker;
+    - a line that is not a list item, indented less than the marker line's
+      text column.
 
-    The text column is where the marker line's prose starts: past the bullet
-    prefix (`  - ` is column 4) when the marker line is a bullet, the line's
-    own indent when it is not. So a bullet's wrapped text continues at the
-    column it was wrapped to, a plain prose line continues at its own indent,
-    and a prose line back at the bullet's indent — the next step, say — is the
-    next element and ends it (#77). A deeper bullet continues it, and so does
-    that bullet's own wrapped text, so the categories may be listed as nested
-    bullets. Text before the marker on its own line is not part of it.
+    The sentence bound is what ends a scope in the common case, whatever the
+    surrounding format: a plain line, a bullet, and a numbered item each end
+    where their sentence does, so a next step that follows at the marker's
+    own indent is not read as its continuation (pre-merge review R1, R2). The
+    line cuts bound a scope that carries no terminator — categories listed as
+    nested bullets without punctuation, say. The text column is where the
+    marker line's prose starts: past the list prefix (`  - ` and `1. ` are
+    columns 4 and 3) when the marker line is a list item, the line's own
+    indent when it is not. A deeper list item continues the scope, and so
+    does its own wrapped text. Text before the marker on its own line is not
+    part of it.
+
+    A period that ends no sentence still ends the scope when whitespace
+    follows it: `e.g. a light` cuts at `e.g.`. That can only fail a recipe
+    that names its categories after such a period, never pass one that
+    omits them; a decimal (`0.5`) or a dotted name (`light.turn_on`) has no
+    whitespace after its period and does not cut.
 
     A marker inside a backtick span on its own line — an odd number of
     backticks before it — is a mention of the rule, not the rule, and opens
     nothing (#77). A span that wraps across a line is not seen; that can only
-    open a paragraph that should not exist, the benign direction for a
-    keyword check that the marker's words still have to satisfy.
+    open a scope that should not exist, the benign direction for a keyword
+    check that the marker's words still have to satisfy.
 
     Deliberately simpler than `policy_spans`: that one bounds a run of names,
     this one bounds prose, so a prose line continues it where it would end a
     name block.
     """
-    paragraphs = []
+    scopes = []
     for match in re.finditer(re.escape(HA_CATEGORY_MARKER), prompt):
         line_start = prompt.rfind("\n", 0, match.start()) + 1
         if prompt[line_start:match.start()].count("`") % 2:
             continue
         marker_line = prompt[line_start:]
         marker_indent = len(marker_line) - len(marker_line.lstrip())
-        bullet = BULLET_TEXT_PATTERN.match(marker_line)
-        text_column = bullet.end() if bullet else marker_indent
-        newline = prompt.find("\n", match.end())
-        if newline == -1:
-            paragraphs.append(prompt[match.end():])
-            continue
-        lines = [prompt[match.end():newline]]
-        for line in prompt[newline + 1:].split("\n"):
+        item = LIST_ITEM_PATTERN.match(marker_line)
+        text_column = item.end() if item else marker_indent
+        lines = prompt[match.end():].split("\n")
+        kept = [lines[0]]
+        for line in lines[1:]:
             if not line.strip():
                 break
             indent = len(line) - len(line.lstrip())
-            if BULLET_PREFIX_PATTERN.match(line):
+            if LIST_ITEM_PATTERN.match(line):
                 if indent <= marker_indent:
                     break
             elif indent < text_column:
                 break
-            lines.append(line)
-        paragraphs.append("\n".join(lines))
-    return paragraphs
+            kept.append(line)
+        scope = "\n".join(kept)
+        if sentence_end := SENTENCE_END_PATTERN.search(scope):
+            scope = scope[:sentence_end.end()]
+        scopes.append(scope)
+    return scopes
 
 
 def ha_category_term_pattern(term: str) -> re.Pattern:
@@ -370,21 +395,21 @@ def ha_category_term_pattern(term: str) -> re.Pattern:
 
 
 def ha_category_missing(prompt: str) -> list[str]:
-    """`HA_CATEGORY_TERMS` absent from every marker paragraph, sorted.
+    """`HA_CATEGORY_TERMS` absent from every marker scope, sorted.
 
-    Case-insensitive whole-word match over the union of all marker paragraphs,
+    Case-insensitive whole-word match over the union of all marker scopes,
     with every whitespace run collapsed to one space first, so a category may
     wrap across a line and the categories may be split across two markers. A
     plural `s` counts (`values`, `scripts`); a longer word does not
     (`scenery`, `transcript`, `devalued`, `button or offset`). No marker means
     all five are missing.
 
-    Known limit, accepted: the terms are keywords, not structure — a paragraph
+    Known limit, accepted: the terms are keywords, not structure — a scope
     can name all five and forbid nothing, and the marker is what carries the
     prohibition. That can only pass a recipe that names the categories badly,
     never fail one that names them well.
     """
-    text = " ".join(" ".join(ha_category_paragraphs(prompt)).split()).lower()
+    text = " ".join(" ".join(ha_category_scopes(prompt)).split()).lower()
     return sorted(
         term
         for term in HA_CATEGORY_TERMS
@@ -876,34 +901,37 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # not selected, and what it may do on Home Assistant — CLAUDE.md lets it
     # actuate, and its `description` has to say so — is not checked here.
     # `extensions.yaml` loads the server into every run, so every read-only
-    # recipe is selected, not only those that mention it. The category marker and the intent block are read
-    # in `prompt` alone, for the reason the twelve are; a promptless recipe
-    # already has its finding. A call is a call wherever it sits, so the
-    # outside-policy read covers the whole body, as the write-guard's does.
+    # recipe is selected, not only those that mention it. The category marker
+    # and the intent block are read in `prompt` alone, for the reason the
+    # twelve are; a promptless recipe already has its finding. A call is a
+    # call wherever it sits, so the outside-policy read covers the whole body,
+    # as the write-guard's does.
     if not is_apply:
         if prompt_text.strip():
-            if not ha_category_paragraphs(prompt_text):
+            if not ha_category_scopes(prompt_text):
                 findings.error(
                     where,
                     f"has no `{HA_CATEGORY_MARKER}` marker in its `prompt`. "
                     "The Home Assistant catalog is assembled per instance, so "
                     "a read-only recipe cannot forbid its actuating tools by "
                     "name and has to forbid them by category "
-                    "(spec/mcp/home-assistant-mcp-server/en.md). Open one "
-                    f"paragraph with the marker and name in it: "
+                    "(spec/mcp/home-assistant-mcp-server/en.md). Write the "
+                    "marker and name, in the same sentence: "
                     f"{', '.join(HA_CATEGORY_TERMS)}.",
                 )
             elif omitted := ha_category_missing(prompt_text):
                 findings.error(
                     where,
-                    f"its `{HA_CATEGORY_MARKER}` paragraph omits "
+                    f"its `{HA_CATEGORY_MARKER}` sentence omits "
                     f"{', '.join(omitted)}. A Home Assistant category left "
                     "unnamed is one the per-instance catalog may still offer "
-                    "(spec/mcp/home-assistant-mcp-server/en.md). The "
-                    "paragraph ends at a blank line, at a bullet no deeper "
-                    "than the marker's line, or at a prose line indented less "
-                    "than the marker line's text; a backticked marker opens "
-                    "none, and each category must appear as a whole word.",
+                    "(spec/mcp/home-assistant-mcp-server/en.md). The scope "
+                    "ends at the marker's sentence end (`.`, `!` or `?` "
+                    "before whitespace — `e.g.` counts), and earlier at a "
+                    "blank line, at a list item no deeper than the marker's "
+                    "line, or at a prose line indented less than the marker "
+                    "line's text; a backticked marker opens none, and each "
+                    "category must appear as a whole word.",
                 )
             if absent := missing_from_policy(
                 prompt_text, READ_ONLY_MARKERS, tools=HA_UNCLASSIFIED_INTENTS
@@ -1891,13 +1919,13 @@ PERMITTED_SPLIT = (
     + "."
 )
 
-# One shape per way the Home Assistant category paragraph can be bounded wrong:
-# (name, prompt, expected paragraph count, expected missing terms). The count
+# One shape per way the Home Assistant category scope can be bounded wrong:
+# (name, prompt, expected scope count, expected missing terms). The count
 # pins "no marker" apart from "marker with nothing after it", which
 # `ha_category_missing` alone cannot tell apart.
 HA_CATEGORY_CASES = [
     (
-        "no marker is no paragraph, and every category is missing",
+        "no marker is no scope, and every category is missing",
         "  - Call NO Home Assistant tool. Do not turn anything on or off, set a\n"
         "    value, or run a script, scene, or automation.",
         0,
@@ -1910,7 +1938,7 @@ HA_CATEGORY_CASES = [
         [],
     ),
     (
-        "continuation lines belong to the paragraph",
+        "continuation lines belong to the sentence",
         "  - Forbidden on Home Assistant: any tool that turns something on or off,\n"
         "    sets a value, or runs a script, scene, or automation.",
         1,
@@ -1923,23 +1951,25 @@ HA_CATEGORY_CASES = [
         1,
         [],
     ),
+    # At column 0, so the blank line is the only cut: under an indented marker
+    # an empty line is also a dedent and the row would not isolate this rule.
     (
-        "a blank line ends the paragraph",
-        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "a blank line ends an unterminated scope",
+        "Forbidden on Home Assistant: turning on or off, setting a value\n"
         "\n"
-        "    Nor run a script, scene, or automation.",
+        "nor run a script, scene, or automation.",
         1,
         ["automation", "scene", "script"],
     ),
     (
-        "a sibling bullet ends the paragraph",
-        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "a sibling bullet ends an unterminated scope",
+        "  - Forbidden on Home Assistant: turning on or off, setting a value\n"
         "  - Do not run a script, scene, or automation.",
         1,
         ["automation", "scene", "script"],
     ),
     (
-        "a deeper bullet continues the paragraph",
+        "a deeper bullet continues the scope",
         "  - Forbidden on Home Assistant:\n"
         "    - turning something on or off\n"
         "    - setting a value\n"
@@ -1950,10 +1980,10 @@ HA_CATEGORY_CASES = [
     # connectivity-check's shape: the marker opens a continuation line of a
     # bullet, so the next bullet sits shallower than the marker's line.
     (
-        "a shallower bullet after a continuation-line marker ends the paragraph",
+        "a shallower bullet after a continuation-line marker ends the scope",
         "  - Call NO tool that changes state.\n"
         "    Forbidden on Home Assistant: any tool that turns something on or off,\n"
-        "    sets a value, or runs a script or scene.\n"
+        "    sets a value, or runs a script or scene\n"
         "  - Never trigger an automation.",
         1,
         ["automation"],
@@ -1982,17 +2012,18 @@ HA_CATEGORY_CASES = [
         [],
     ),
     (
-        "a marker with nothing after it is a paragraph missing every category",
+        "a marker with nothing after it is a scope missing every category",
         "  - Forbidden on Home Assistant:\n"
         "  - Call no Kamerplanter write.",
         1,
         sorted(HA_CATEGORY_TERMS),
     ),
     # #77: a prose line back at the bullet's own indent is the next element,
-    # not a continuation. Before the dedent rule this read as complete.
+    # not a continuation. Before the dedent rule this read as complete. No
+    # period, so the dedent cut is the one tested, not the sentence end.
     (
-        "a prose line dedented below the bullet's text ends the paragraph",
-        "  - Forbidden on Home Assistant: turning anything on or off.\n"
+        "a prose line dedented below the bullet's text ends the scope",
+        "  - Forbidden on Home Assistant: turning anything on or off\n"
         "  Step 1 — Read the value of each script, scene and automation.\n",
         1,
         ["automation", "scene", "script", "value"],
@@ -2007,14 +2038,14 @@ HA_CATEGORY_CASES = [
         [],
     ),
     (
-        "a prose line dedented below a plain marker line ends the paragraph",
-        "    Forbidden on Home Assistant: turning anything on or off, setting a value.\n"
+        "a prose line dedented below a plain marker line ends the scope",
+        "    Forbidden on Home Assistant: turning anything on or off, setting a value\n"
         "  Run a script, scene, or automation.",
         1,
         ["automation", "scene", "script"],
     ),
     (
-        "a prose line dedented below nested bullets ends the paragraph",
+        "a prose line dedented below nested bullets ends the scope",
         "  - Forbidden on Home Assistant:\n"
         "    - turning something on or off\n"
         "    - setting a value\n"
@@ -2023,7 +2054,7 @@ HA_CATEGORY_CASES = [
         ["automation", "scene", "script"],
     ),
     (
-        "a nested bullet's own continuation line continues the paragraph",
+        "a nested bullet's own continuation line continues the scope",
         "  - Forbidden on Home Assistant:\n"
         "    - turning something on or off, or setting a\n"
         "      value\n"
@@ -2033,7 +2064,7 @@ HA_CATEGORY_CASES = [
     ),
     # #77: a marker quoted as code is a mention of the rule, not the rule.
     (
-        "a backticked marker opens no paragraph",
+        "a backticked marker opens no scope",
         "  - Report whether the `Forbidden on Home Assistant:` rule covers on or off,\n"
         "    value, script, scene and automation.",
         0,
@@ -2067,6 +2098,94 @@ HA_CATEGORY_CASES = [
         "    script, scene, or automation.",
         1,
         ["value"],
+    ),
+    # Pre-merge review R1: a numbered list is a list. The next item is the
+    # next step, not the marker's continuation.
+    (
+        "a numbered next item ends the scope",
+        "1. Forbidden on Home Assistant: turning anything on or off.\n"
+        "2. Read the value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # Pre-merge review R2: a plain marker line followed by plain prose at the
+    # same indent. No structural boundary separates them; the sentence does.
+    (
+        "a sentence end ends a plain marker line's scope",
+        "Forbidden on Home Assistant: turning on or off.\n"
+        "Step 2: read value, script, scene, automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # The text column of a numbered marker line is past `1. `, so prose back
+    # at the number's indent is the next element. (A following `2. ` item
+    # needs no list rule: its period before a space is already a sentence end.)
+    (
+        "a prose line dedented below a numbered marker's text ends the scope",
+        "1. Forbidden on Home Assistant: turning anything on or off\n"
+        "Read the value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    (
+        "a parenthesised number and a plus bullet are list items too",
+        "  1) Forbidden on Home Assistant: turning anything on or off\n"
+        "  2) Read the value of each script\n"
+        "  + Forbidden on Home Assistant: setting a value\n"
+        "  + Read each scene and automation.",
+        2,
+        ["automation", "scene", "script"],
+    ),
+    # A numbered marker line wraps at its text column, past `1. `.
+    (
+        "a numbered marker line's wrapped text continues the sentence",
+        "1. Forbidden on Home Assistant: turning anything on or off, setting a\n"
+        "   value, and running a script, scene, or automation.\n"
+        "2. Read the plant.",
+        1,
+        [],
+    ),
+    (
+        "an exclamation or question mark ends the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off! Setting a\n"
+        "    value? Running a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    (
+        "a closing bracket after the period still ends the sentence",
+        "  - (Forbidden on Home Assistant: turning anything on or off.) Read the\n"
+        "    value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # A period with no whitespace after it ends nothing: decimals and dotted
+    # entity or tool names sit inside the sentence.
+    (
+        "a decimal or a dotted name does not end the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off, setting a\n"
+        "    value such as 0.5, calling `light.turn_on`, or running a script,\n"
+        "    scene, or automation.",
+        1,
+        [],
+    ),
+    # Known limit, fail-closed: an abbreviation's period followed by a space is
+    # a sentence end to this rule. It can fail a recipe, never pass one.
+    (
+        "an abbreviation's period ends the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off, e.g. a\n"
+        "    light, setting a value, or running a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # The real recipes' shape: the sentence after the marker's is the next
+    # rule, and its words do not count.
+    (
+        "the sentence after the marker's does not count",
+        "  Forbidden on Home Assistant: any tool that turns something on or off,\n"
+        "  sets a value, or runs a script or scene. Never trigger an automation.",
+        1,
+        ["automation"],
     ),
 ]
 
@@ -2124,7 +2243,7 @@ HA_INTENT_CASES = [
         ["TimeTillErnte", "time_till"],
     ),
     (
-        "an intent named in the category paragraph is outside policy",
+        "an intent named in the category sentence is outside policy",
         "  - Forbidden on Home Assistant: on or off, value, script, scene,\n"
         "    automation, and by name `TimeTillErnte` and `time_till`.",
         ["TimeTillErnte", "time_till"],
@@ -2260,7 +2379,7 @@ RECIPE_CASES = [
         COMPLETE_BLOCK + "\n" + HA_INTENT_BLOCK,
         PLAIN_INSTRUCTIONS,
         ["no `Forbidden on Home Assistant:` marker"],
-        ["paragraph omits"],
+        ["sentence omits"],
     ),
     (
         "a marker missing a category names the category",
@@ -2269,7 +2388,7 @@ RECIPE_CASES = [
         "    sets a value, or runs a script or automation.\n"
         + HA_INTENT_BLOCK,
         PLAIN_INSTRUCTIONS,
-        ["paragraph omits scene"],
+        ["sentence omits scene"],
         ["no `Forbidden on Home Assistant:` marker"],
     ),
     # Only `prompt` counts, for the reason the twelve's completeness check is
@@ -2428,13 +2547,13 @@ def run_self_test() -> int:
     print(f"OK — {len(PERMITTING_LOAD_CASES)} permitting-load cases hold.")
 
     for name, prompt, count, expected in HA_CATEGORY_CASES:
-        paragraphs = len(ha_category_paragraphs(prompt))
+        scopes = len(ha_category_scopes(prompt))
         actual = ha_category_missing(prompt)
-        if paragraphs != count or actual != sorted(expected):
+        if scopes != count or actual != sorted(expected):
             failures += 1
             print(
-                f"  FAIL {name}\n       expected {count} paragraph(s) / missing "
-                f"{sorted(expected)}, got {paragraphs} / missing {actual}"
+                f"  FAIL {name}\n       expected {count} scope(s) / missing "
+                f"{sorted(expected)}, got {scopes} / missing {actual}"
             )
     if failures:
         print(f"\n{failures} of {len(HA_CATEGORY_CASES)} Home Assistant category case(s) failed.")
