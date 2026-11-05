@@ -75,7 +75,7 @@ Readers: authors of garden skills and recipes in this repository, the people who
 - **MUST** have `fertilization-decision-apply` call only `record_feeding_event`, with the `plant_key`, `volume_applied_liters` and only the other values the person supplied, and **MUST** read the names of the optional inputs from the tool's own schema at run time and invent none
 - **MUST** call the tool with `dry_run` true first and report the planned effect, and then call it with an `idempotency_key`
 - **MUST** name exactly its one tool as permitted by name and every other state-changing tool as forbidden by name, and **MUST NOT** call a Home Assistant tool
-- **MUST NOT** claim that a plant was watered or fed, **MUST** state that the effect is a record, and the fertilisation recipe **MUST** state that whether any read tool returns recorded feeding events is not measured (nolte/kamerplanter-goose#54)
+- **MUST NOT** claim that a plant was watered or fed, **MUST** state that the effect is a record, and the fertilisation recipe **MUST** state that the record is read back by `get_plant_diagnostics` only within its `window_days`, and reaches tier 2 of the nutrient ladder only where a nutrient plan gives a target to compare it with
 
 ### F. The plug-in shape
 
@@ -129,7 +129,6 @@ Readers: authors of garden skills and recipes in this repository, the people who
 
 - **The value set of `reminder_type` and which value is watering.** No file here records it, so the caller supplies it. A read-only call to the care log of a reachable instance would show the values in use.
 - **The input names of the optional fields of `record_feeding_event`.** The server spec records them only as amount, EC and pH before and after, and runoff. The recipe reads them from the tool's own schema at run time.
-- **Whether feeding events are read back (nolte/kamerplanter-goose#54).** It decides whether a record written by `fertilization-decision-apply` ever reaches tier 2 of the nutrient ladder.
 - **The source of weather and forecast.** There is none in the measured catalog; until there is, only the caller can supply them.
 - **Which `measurements` key carries soil moisture.** The field has no fixed key set, and the nutrient spec's normalisation applies; no key is established here.
 - **What `watering_interval_days` counts and whether the species carries a water demand.** The phase definition carries the field; this spec does not establish what it counts, and no species water-demand field is recorded. It is read as a level 4 prior and decides nothing alone.

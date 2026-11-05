@@ -78,7 +78,7 @@ goose run --recipe fertilization-decision-apply \
 
 - **Es verweigert ohne genehmigte `feed`-Entscheidung, ohne Menge oder mit einer Menge, die keine schlichte Zahl ist**, und sagt, was davon zutrifft. Ein Wert mit Einheit wie ml wird verweigert und nie umgerechnet. Die Menge ist die Düngung, die du ausgeführt hast: Sie wird so festgehalten, wie du sie angibst, und der Lauf kann sie nicht prüfen. Es schreibt keinen Eintrag, der der Entscheidung widerspricht.
 - **Es ruft zuerst einen Probelauf auf**, meldet, was geschrieben würde, und schreibt erst dann, mit einem Idempotenzschlüssel aus der Pflanze und der `run_id`. Ein erfolgreicher Probelauf beweist nicht, dass das Schreiben gelingt; das Ergebnis des echten Aufrufs wird so gemeldet, wie es zurückkam.
-- **Geschrieben wird ein Eintrag.** Der Lauf hat nichts gedüngt und behauptet das auch nicht. **Es ist nicht gemessen, ob irgendein Lese-Tool erfasste Düngeereignisse zurückgibt** ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)), sodass eine festgehaltene Düngung die Nährstoffprüfung womöglich gar nicht erreicht.
+- **Geschrieben wird ein Eintrag.** Der Lauf hat nichts gedüngt und behauptet das auch nicht. **Die Nährstoffprüfung liest ihn zurück**, über `get_plant_diagnostics`, aber nur innerhalb des Fensters dieses Tools (standardmäßig 14 Tage), und er zählt nur dort als Stufe 2, wo die Pflanze einen Nährstoffplan zum Vergleich hat ([#54](https://github.com/nolte/kamerplanter-goose/issues/54)).
 - Das einzige zustandsändernde Tool, das es aufruft, ist das, das eine Düngung festhält. Vorher liest es die Gartenliste, und es ruft kein Home-Assistant-Tool auf.
 
 ## Das Ergebnis lesen

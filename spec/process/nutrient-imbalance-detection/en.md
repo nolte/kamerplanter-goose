@@ -45,11 +45,12 @@ Readers: authors of the nutrient recipe in this repository, and anyone reviewing
 
 ### The actual side, and its limits
 
-Three measured sources describe what the plant actually received, and none of them is a dosage record. Feeding events written by `record_feeding_event` are a fourth candidate; whether any tool reads them back is open (see Open Questions). Until it is measured, tier 2 is reachable only where a diary entry or a care-log note carries an amount:
+Four measured sources describe what the plant actually received. Three of them are not a dosage record; the fourth is: the feeding events written by `record_feeding_event`, which `get_plant_diagnostics` returns (measured 2026-11-05, #54). Tier 2 is reachable where such an event, a diary entry or a care-log note carries an amount:
 
 | Source | What it gives | What it does not give |
 |--------|---------------|------------------------|
-| `get_plant_care_log` | Confirmed reminders with `reminder_type`, `action` (`confirmed` / `snoozed`), `confirmed_at`, `interval_at_time_days`, `notes` | Which product, what concentration, what volume — a confirmed feeding is a boolean, not a dose |
+| `get_plant_care_log` | Confirmed reminders with `reminder_type`, `action` (`confirmed` / `snoozed`), `confirmed_at`, `interval_at_time_days`, `notes` | Which product, what concentration, what volume — a confirmed feeding is a boolean, not a dose. Recorded feeding events do not appear here (measured: zero entries for a plant with two) |
+| `get_plant_diagnostics` → `feeding_events` | Per fertigation: `timestamp`, `volume_applied_liters`, `fertilizers_used`, `application_method`, `measured_ec_before` / `_after`, `measured_ph_before` / `_after`, `runoff_ec`, `runoff_ph`, `runoff_volume_liters`, `notes` | Anything older than `window_days` (default 14, at most 365): an event outside the window is absent from the response, not zero. Product concentration, unless `fertilizers_used` names the products |
 | Diary `measurements` | Free-form measured values | Any schema at all: the field is an open object, documented only by the example `{'height_cm': 42, 'ph': 6.3}` |
 | Diary entries typed `measurement` or `problem` | Observer text and tags around a reading | Units, method, or instrument calibration |
 
@@ -156,17 +157,18 @@ A proposed correction states the target it aims at, the tier of evidence behind 
 ## Open Questions
 
 - Which `measurements` keys are actually in use across the instance's diary entries. The schema declares none, so the normalisation table this spec requires still rests on convention — but now that every run reads the entries, the runs themselves are the sampling mechanism that will answer it.
-- Whether runoff EC and tank EC are distinguishable in the record. The distinction decides whether a reading describes what the plant receives or what remains in the medium, and nothing in the open schema separates them.
+- Whether runoff EC and tank EC are distinguishable in a diary record. The distinction decides whether a reading describes what the plant receives or what remains in the medium, and nothing in the open `measurements` schema separates them. A feeding event does separate them (`measured_ec_before`, `measured_ec_after`, `runoff_ec`).
 - Whether Home Assistant carries soil moisture or conductivity sensors that could supply tier-1 evidence per plant, and how a sensor would be bound to a plant instance. `GetLiveContext` exposes entity state, but no plant-to-entity mapping was found.
 - Whether the antagonism cases worth naming (which ion suppresses which) belong in this spec, in the backend's glossary reachable via `search_glossary`, or in the knowledge base. Encoding them here risks the same drift this repository avoids for species data.
 - How to weigh a plan whose `is_global_template` is true and whose `tags` name a different crop than the plant's species — measured, the reference instance's plans are largely cannabis-specific templates, while its plants are not.
-- Whether any read tool returns the feeding events written by `record_feeding_event` (tracked in #54). Until that is measured, confirmed feeding frequency without recorded dose amounts is tier 3, not tier 2, and "supply above target" is not reconstructed from frequency alone.
+- Whether the EC and pH readings a feeding event carries count as tier 1. They are measured values with a unit (`mS/cm`, as `get_plant_diagnostics` labels its `ec_ph_trend`), but the ladder names diary entries as the tier-1 source, and a feeding event records the solution and the runoff at feeding time rather than the medium now. Until this is decided they enter tier 2 as part of the supply record, and a run says so.
 
 ## Source
 
 - Measured against the reference Kamerplanter instance on 2026-08-05 through `POST /api/v1/mcp`, read-only: `get_plant_nutrient_plan` (returned `plan: null`), `list_nutrient_plans` (38 plans), `get_nutrient_plan` for a global template's phase structure, `get_plant_care_log`, `list_substrates`, and `get_species_info`. No write tool was called.
 - Input schemas for `calculate_mixing_protocol` and `add_plant_diary_entry` read live, including the open `measurements` object and the `DiaryEntryType` enum (`observation`, `problem`, `milestone`, `measurement`, `photo`, `note`)
 - `list_diary_entries` was **not** among the tools measured that day. Its filter, limit, ordering and paging parameters are therefore unverified, which is why no requirement above names one.
+- Measured on a local instance built from `nolte/kamerplanter` @ `5fc20429a` on 2026-11-05 (#54): two feeding events recorded with `record_feeding_event` on one plant, none on a control plant. `get_plant_diagnostics` returned both under `feeding_events` with every field above, and its `ec_ph_trend` counted two input samples; `get_plant_care_log`, `get_plant` and `get_plant_nutrient_plan` returned none of it. The control plant's `feeding_events` was `[]`.
 - Companion process: [plant health image analysis](../plant-health-image-analysis/en.md)
 - Recipe mechanics: [the Goose recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Server contract: [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md)

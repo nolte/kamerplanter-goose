@@ -113,6 +113,7 @@ Signaturen, die eigens zu nennen sind, weil ein Rezept sie sonst falsch bedient:
 | `get_disease` | `disease_key` | nein | Trägt `environmental_triggers[]` und `incubation_period_days` |
 | `get_treatment` | `treatment_key` | nein | Trägt `safety_interval_days` — die Karenz vor der Ernte |
 | `get_plant_inspections` | `plant_key` | ja | IPM-Historie; gemessen leer bei einer nie inspizierten Pflanze |
+| `get_plant_diagnostics` | `plant_key` | ja | `window_days` (Standard 14, 1–365) begrenzt jede Historie, die es liefert. Liefert `plant`, `window`, `ec_ph_trend` (EC und pH, je aufgeteilt in `input`, `after`, `runoff`, `sensor`), `feeding_events[]`, `sensors`, `inspections`, `karenz`, `care_events`. **Das einzige Lesetool, das gemessen zurückgibt, was `record_feeding_event` geschrieben hat** — jedes Feld des Schreibaufrufs außer `dry_run` und `idempotency_key`, dazu `feeding_event_key` und `timestamp`; `get_plant_care_log` liefert nichts davon (2026-11-05, #54) |
 | `get_sowing_calendar` | — | ja | **Verweigert einen unspezifizierten Aufruf**: Ohne `query` antwortet er `validation.error` mit der Artenzahl und der `limit`-Obergrenze 25 |
 | `list_phase_definitions` | — | nein | 29 Definitionen gemessen; das Vokabular der Lebenszyklus-Engine |
 | `search_glossary` | — | nein | Die projekteigenen Definitionen von EC, VPD, Karenz |

@@ -75,7 +75,7 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - **MUSS [MUST]** `fertilization-decision-apply` nur `record_feeding_event` aufrufen lassen, mit dem `plant_key`, `volume_applied_liters` und nur den weiteren Werten, die die Person geliefert hat, und **MUSS [MUST]** die Namen der optionalen Eingaben zur Laufzeit aus dem Schema des Tools lesen und keine erfinden
 - **MUSS [MUST]** das Tool zuerst mit `dry_run` true aufrufen und die geplante Wirkung melden und es danach mit einem `idempotency_key` aufrufen
 - **MUSS [MUST]** genau sein eines Tool namentlich als erlaubt und jedes andere zustandsändernde Tool namentlich als verboten benennen und **DARF NICHT [MUST NOT]** ein Home-Assistant-Tool aufrufen
-- **DARF NICHT [MUST NOT]** behaupten, eine Pflanze sei gegossen oder gedüngt worden, **MUSS [MUST]** sagen, dass die Wirkung ein Eintrag ist, und das Düngerezept **MUSS [MUST]** sagen, dass nicht gemessen ist, ob ein Lese-Tool erfasste Düngeereignisse zurückgibt (nolte/kamerplanter-goose#54)
+- **DARF NICHT [MUST NOT]** behaupten, eine Pflanze sei gegossen oder gedüngt worden, **MUSS [MUST]** sagen, dass die Wirkung ein Eintrag ist, und das Düngerezept **MUSS [MUST]** sagen, dass `get_plant_diagnostics` den Eintrag nur innerhalb seines `window_days` zurückliest und dass er Stufe 2 der Nährstoffleiter nur erreicht, wo ein Nährstoffplan ein Ziel zum Vergleich gibt
 
 ### F. Die Einklinkform
 
@@ -129,7 +129,6 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 
 - **Der Wertebereich von `reminder_type` und welcher Wert das Gießen ist.** Keine Datei hier hält ihn fest, also liefert ihn der Aufrufer. Ein lesender Aufruf des Pflegeprotokolls einer erreichbaren Instanz würde die verwendeten Werte zeigen.
 - **Die Eingabenamen der optionalen Felder von `record_feeding_event`.** Die Server-Spezifikation hält sie nur als Menge, EC und pH vor und nach der Gabe und Abfluss fest. Das Rezept liest sie zur Laufzeit aus dem Schema des Tools.
-- **Ob Düngeereignisse zurückgelesen werden (nolte/kamerplanter-goose#54).** Davon hängt ab, ob ein von `fertilization-decision-apply` geschriebener Eintrag je Stufe 2 der Nährstoffleiter erreicht.
 - **Die Quelle für Wetter und Vorhersage.** Der gemessene Katalog hat keine; bis es eine gibt, kann nur der Aufrufer sie liefern.
 - **Welcher `measurements`-Schlüssel die Bodenfeuchte trägt.** Das Feld hat keinen festen Schlüsselsatz, und die Normalisierung der Nährstoff-Spezifikation gilt; hier ist kein Schlüssel festgestellt.
 - **Was `watering_interval_days` zählt und ob die Art einen Wasserbedarf trägt.** Die Phasendefinition trägt das Feld; diese Spezifikation stellt nicht fest, was es zählt, und kein Wasserbedarfsfeld der Art ist festgehalten. Es wird als Vorannahme der Stufe 4 gelesen und entscheidet nichts allein.
