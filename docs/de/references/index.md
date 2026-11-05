@@ -32,6 +32,8 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **ja** | Hält eine Düngung fest, die eine Person ausgeführt hat |
 | [`growth-stage-check`](../guides/growth-stage-check.md) | nein | Erfasstes Stadium passend, fraglich (voraus, hinterher, unklar) oder zu wenig Beleg, für eine Pflanze; ändert keine Phase |
 | [`weather-impact-check`](../guides/weather-impact-check.md) | nein | Je Wetterfaktor eine Exposition, keine oder keine Quelle, für bis zu fünf Pflanzen; steuert nichts an |
+| [`plant-health-assessment`](../guides/plant-health-assessment.md) | nein | Eine Differenzialbetrachtung für eine Pflanze: führende oder konkurrierende Erklärungen, nur Vermutung, nichts Auffälliges oder zu wenig Beleg; nie eine Diagnose |
+| [`pest-ipm-plan`](../guides/pest-ipm-plan.md) | nein | Vier IPM-Stufen für einen Schädlings- oder Krankheitsverdacht, eine Behandlung nur an der Schwelle und mit ihrem Sicherheitsblock; behandelt und hält nichts fest |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
@@ -70,6 +72,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `fertilization-decision` | Düngen, nicht düngen oder unzureichender Beleg, aus der Nährstoffprüfung; ruft kein Werkzeug auf |
 | `growth-stage-assessment` | Erfasstes Stadium passend, fraglich oder unzureichender Beleg, aus Beobachtungen gegen zeitliche Erwartungen; liest Phasenstatus und Phasenverlauf |
 | `weather-impact-analysis` | Wetterexpositionen je Faktor, getrennt von Symptomen; liest eine Home-Assistant-Wetter-Entität nur, wo erlaubt |
+| `plant-health-assessment` | Kandidaten-Erklärungen je Klasse, jede gestützt, Vermutung, widerlegt oder nicht beurteilbar, und ein Gesamtergebnis; ruft kein Werkzeug auf |
+| `pest-ipm-planning` | Bestätigung, Umweltkorrektur, kulturelle Maßnahmen und gezielte Behandlung in Reihenfolge, mit Voraussetzungen und Sicherheitsauflagen je Behandlung; liest die Katalogdatensätze des Kandidaten |
 
 **Prüfperspektiven** — lesen dieses Checkout, nie einen Garten. Eine je Lauf; sie sollen sich uneinig sein:
 

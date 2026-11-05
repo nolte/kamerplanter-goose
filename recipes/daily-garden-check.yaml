@@ -1,7 +1,7 @@
 version: "1.0.0"
 title: "Daily Garden Check"
 description: >-
-  Read-only: the daily look at one Kamerplanter garden. It reads the garden's context, runs the nutrient, pest, watering, fertilisation, growth-stage and weather checks for the plants you name (at most five), and puts the results into one list ordered by urgency, each item an observation or a recommendation with its evidence, confidence, uncertainty and missing data, plus what has no action because the evidence is missing. It applies nothing and the check has no apply recipe. Weather comes only from the weather you supply, never from Home Assistant; without it the weather factors are reported as no source. The plant health domain is not built yet and is reported as not available. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+  Read-only: the daily look at one Kamerplanter garden. It reads the garden's context, runs the nutrient, pest, watering, fertilisation, growth-stage, weather, plant health and pest management checks for the plants you name (at most five), and puts the results into one list ordered by urgency, each item an observation or a recommendation with its evidence, confidence, uncertainty and missing data, plus what has no action because the evidence is missing. It applies nothing and the check has no apply recipe. Weather comes only from the weather you supply, never from Home Assistant; without it the weather factors are reported as no source. The plant health check combines the other checks' results into a differential and is never a diagnosis; the pest management plan reaches a treatment only at the pest check's own threshold, with its safety constraints, and treats or records nothing. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
 
 parameters:
   - key: tenant
@@ -18,7 +18,8 @@ parameters:
     default: ""
     description: >-
       Plant instance keys, comma-separated, to run the nutrient, pest,
-      watering, fertilisation, growth-stage and weather checks for. Empty runs
+      watering, fertilisation, growth-stage, weather, plant health and pest
+      management checks for. Empty runs
       the garden level only (due tasks and planting runs). At most five are
       checked, in the order given; the rest are reported as not checked.
 
@@ -50,8 +51,8 @@ prompt: |
   skills (`garden-context`, `plant-context-collect`, `diary-measurements-read`,
   `nutrient-imbalance-assess`, `pest-pressure-assess`, `watering-decision`,
   `fertilization-decision`, `growth-stage-assessment`,
-  `weather-impact-analysis`, `decision-policy`, `care-planning`) and the files
-  they instruct you to read.
+  `weather-impact-analysis`, `plant-health-assessment`, `pest-ipm-planning`,
+  `decision-policy`, `care-planning`) and the files they instruct you to read.
 
   What the caller supplied (empty means not given):
   - plant keys to check: "{{ plants }}"
@@ -91,8 +92,9 @@ prompt: |
   Split "{{ plants }}" at the commas, trim each key, drop empty entries and
   duplicates, and keep the order given. The first five are checked; every
   further key is `not checked (limit of five)`. If the list is empty, no plant
-  is checked and the nutrient, pest, watering, fertilisation, growth stage and
-  weather domains are `not checked (no plants given)`. Never call a per-plant tool for a plant that is not on the list.
+  is checked and the nutrient, pest, watering, fertilisation, growth stage,
+  weather, plant health and pest management domains are
+  `not checked (no plants given)`. Never call a per-plant tool for a plant that is not on the list.
 
   Step 3 — Per plant.
   For each plant to check, in order:
@@ -103,7 +105,9 @@ prompt: |
   3. Load the skill `nutrient-imbalance-assess` and follow it against that
      context and those measurements. Keep its report as it returned it.
   4. Load the skill `pest-pressure-assess` and follow it against that context.
-     Keep its report as it returned it.
+     Keep its report as it returned it. Its candidate, tier and tests reach
+     the care plan as an observation only; every measure for this plant comes
+     from item 10, never from this report.
   5. Load the skill `watering-decision` and follow it with that context and
      those measurements. Keep its decision and its finding as it returned them.
      It makes no tool call.
@@ -119,16 +123,27 @@ prompt: |
      Assistant read permitted and no placement, so every exposure stays
      conditional and is an observation, never a recommendation. Keep its
      factors, its hand-off block and its findings as it returned them.
+  9. Load the skill `plant-health-assessment` and follow it with the blocks of
+     items 1 to 8 already collected for this plant, and no caller facts. It
+     makes no tool call; make no new call for it. Keep its differential, its
+     hand-off block for IPM planning and its finding, an observation, as it
+     returned them.
+  10. Load the skill `pest-ipm-planning` and follow it with the pest report of
+     item 4, the context of item 1, the hand-off blocks of items 7 and 9, and
+     no planned harvest date and no setting. Its own reads are the catalogue
+     records of the candidate the pest report names, nothing else. Keep its
+     plan and its findings as it returned them; they are the only source of a
+     pest or disease measure (monitoring or treatment) for this plant. If this
+     item did not run or failed, say so, and the pest report of item 4 is
+     mapped by the care plan as before.
   A plant that does not exist or cannot be read is reported with the tool error
   verbatim and skipped; the other plants are still checked.
 
   Step 4 — Domains.
   Prepare one status per domain, to hand to the care plan:
-  - nutrient, pest, watering, fertilisation, growth stage and weather:
-    `checked` for the plants that were run, `not checked (<why>)` for the
-    others;
-  - plant health and pest management: `not available (plant-health-assessment
-    and pest-ipm-planning, nolte/kamerplanter-goose#48)`.
+  - nutrient, pest, watering, fertilisation, growth stage, weather, plant
+    health and pest management: `checked` for the plants that were run,
+    `not checked (<why>)` for the others.
   Never use the result of one domain in place of another that is not available.
 
   Step 5 — Policy.
@@ -150,8 +165,8 @@ prompt: |
   the header, the items (urgency, kind, statement, evidence, confidence,
   uncertainty, missing data), the named mutations (named, never called),
   `NO ACTION, EVIDENCE INSUFFICIENT` and `DOMAINS` (one status per domain:
-  nutrient, pest, watering, fertilisation, growth stage, weather, plant health
-  and pest management). Then, per plant checked, its read report line from
+  nutrient, pest, watering, fertilisation, growth stage, weather, plant health,
+  pest management). Then, per plant checked, its read report line from
   `diary-measurements-read`, and any tool error reported verbatim.
 
   Close with the line `APPLY: none — this check reports and applies nothing`.

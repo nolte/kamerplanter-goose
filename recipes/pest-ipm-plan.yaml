@@ -1,0 +1,157 @@
+version: "1.0.0"
+title: "Pest IPM Plan"
+description: >-
+  Read-only: turns a pest or disease suspicion on one plant into an integrated pest management plan in four ordered stages — confirmation and monitoring, environmental correction, cultural and mechanical controls, targeted treatment — after the pest check has judged the candidate. A treatment is reached only when the pest check's own threshold is met, and every treatment carries its prerequisites and its safety constraints quoted from the record: the safety interval against the time to harvest, protective equipment, dosage, application method and active ingredient. A treatment whose interval exceeds the time to harvest is excluded, and one whose interval is not recorded or cannot be checked against the time to harvest, or whose environmental side was not assessed, is not recommendable. Nothing is applied or recorded: a monitoring step names the inspection a later apply step would record, and nothing calls it. No Home Assistant tool is called, and it has no apply recipe. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to plan for."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: suspicion
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The observed symptom or a suspected organism. Leave empty to work from
+      the plant's recorded inspection history alone.
+
+  - key: placement
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Enclosed (greenhouse, tent, indoors) or open (outdoors), in your words.
+      Introducing beneficials and conserving them are different advice; without
+      it, the setting is stated as inferred.
+
+  - key: harvest_date
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The planned harvest date (YYYY-MM-DD), for checking a treatment's safety
+      interval. Needs as_of. Without it, the time to harvest comes from the
+      cultivar's days to maturity, or is not established.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to judge against (YYYY-MM-DD). Without it, no time to harvest
+      can be computed, and a treatment on a harvestable plant is not
+      recommendable.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You order what could be done about a pest or disease suspicion on one plant
+  and report. You never treat, release, spray, record an inspection, or
+  actuate anything.
+
+  Skills carry the procedure; load each when its step calls for it. The pest
+  check owns the identification and the treatment threshold; the IPM skill
+  orders the interventions without re-judging the candidate. Do not repeat
+  their logic here.
+
+  "Treatment not justified" is a legitimate and common outcome: most
+  suspicions end at monitoring. Do not manufacture a treatment to look
+  useful.
+
+prompt: |
+  Plan integrated pest management for plant "{{ plant_key }}" in garden
+  "{{ tenant }}". Read-only run. Use MCP tools only: do not shell out, do not
+  fetch URLs, and read or write no local file other than loading the named
+  skills (`plant-context-collect`, `pest-pressure-assess`,
+  `growth-stage-assessment`, `decision-policy`, `pest-ipm-planning`) and the
+  files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - suspicion: "{{ suspicion }}"
+  - setting: "{{ placement }}"
+  - planned harvest date: "{{ harvest_date }}"
+  - assessment date: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run plans; it records nothing, not
+    even an inspection.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation, and do
+    not call `TimeTillErnte` or `time_till`.
+  - Never print an API key or token, not even partially.
+  - Never propose a treatment below the pest check's threshold, never scale,
+    convert or invent a dosage, a safety interval or protective equipment,
+    and never state a monitoring method or a pest's humidity preference as
+    recorded.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Candidate.
+  Load the skill `pest-pressure-assess` and follow it against that context,
+  testing the suspicion above if it is not empty. Keep its report as it
+  returned it: the candidate and its key, the status, the tier, the tests
+  run and not run, the beneficial check and the treatments it named.
+
+  Step 3 — Harvest timing.
+  Only for the time to harvest: if "{{ harvest_date }}" is empty, load the
+  skill `growth-stage-assessment` and follow it with the context of step 1
+  and the assessment date above if it is not empty, and keep only its
+  hand-off block for harvest planning. If "{{ harvest_date }}" is not empty,
+  report this step as SKIP.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 5 — Plan.
+  Load the skill `pest-ipm-planning` and follow it with the pest report of
+  step 2, the context of step 1, the harvest hand-off of step 3 if there was
+  one, and the setting, planned harvest date and assessment date above,
+  passing only the ones that are not empty. Its own reads are the catalogue
+  records of the candidate the pest report names.
+
+  Step 6 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Pest IPM Plan — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the plan exactly as the skill returned it: the candidate,
+  the threshold, the setting, the time to harvest, the four stages in order,
+  and for every treatment its prerequisites, its safety constraints quoted
+  from the record and its status, then the beneficial check, what is not
+  recorded, and the findings with their named mutations, which nothing
+  calls. Then any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `IPM: <n> steps, treatment <justified | not justified | not applicable> — {{ plant_key }}`
+  where `<n>` is the number of steps across the four stages. If a step failed
+  and no plan could be reached, close instead with
+  `IPM: not planned — {{ plant_key }}`.

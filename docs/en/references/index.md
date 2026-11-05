@@ -32,6 +32,8 @@ Each recipe has a guide of its own, linked from its name.
 | [`fertilization-decision-apply`](../guides/fertilization-decision.md) | **yes** | Records one feeding a person carried out |
 | [`growth-stage-check`](../guides/growth-stage-check.md) | no | Recorded stage consistent, questionable (ahead, behind, unclear), or not enough evidence, for one plant; changes no phase |
 | [`weather-impact-check`](../guides/weather-impact-check.md) | no | Per weather factor an exposure, none, or no source, for up to five plants; actuates nothing |
+| [`plant-health-assessment`](../guides/plant-health-assessment.md) | no | A differential for one plant: leading or competing explanations, suspicion only, nothing abnormal, or not enough evidence; never a diagnosis |
+| [`pest-ipm-plan`](../guides/pest-ipm-plan.md) | no | Four IPM stages for a pest or disease suspicion, a treatment only at the threshold and with its safety block; treats and records nothing |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
@@ -70,6 +72,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `fertilization-decision` | Feed, do not feed, or insufficient evidence, from the nutrient assessment; calls no tool |
 | `growth-stage-assessment` | Recorded stage consistent, questionable or insufficient evidence, from observations against timing expectations; reads the phase status and history |
 | `weather-impact-analysis` | Weather exposures per factor, kept apart from symptoms; reads one Home Assistant weather entity only where permitted |
+| `plant-health-assessment` | Candidate explanations per class, each supported, suspicion, contradicted or not assessable, and one overall result; calls no tool |
+| `pest-ipm-planning` | Confirmation, environmental correction, cultural controls and targeted treatment in order, with prerequisites and safety constraints per treatment; reads the candidate's catalogue records |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 
