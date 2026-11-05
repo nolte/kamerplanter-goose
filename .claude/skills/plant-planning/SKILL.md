@@ -40,7 +40,7 @@ Each run carries, copied from the calendar block and not recomputed: the method,
 
 - **location**: `unassigned`. Assigning plants to beds is bed layout's work; the beds the caller supplied are listed in the plan header and not used here.
 - **succession note**: a succession is named only where the calendar's own dates make two windows of one candidate follow each other: the last harvest month of one period before the first sowing month of another period. Name it on **both** runs of the pair: the earlier run says `precedes <run id>`, the later run says `follows <run id>`. A run in no such pair says `none`. Months that cannot be compared are no succession. Never name one that the dates do not show.
-- **rotation note**: `unknown`. `compatible_companions` is not a rotation constraint, and rotation is not built yet.
+- **rotation note**: `unknown`. `compatible_companions` is not a rotation constraint, and rotation is judged per bed by `crop-rotation-planning`, while a run here is assigned no bed.
 - **rationale, confidence, uncertainty, missing data**: apply `decision-policy` to each date. The confidence comes from the highest evidence level that supports it, and a date resting on a caller-supplied fact says so.
 
 ### 3. Order

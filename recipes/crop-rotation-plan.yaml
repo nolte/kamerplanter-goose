@@ -1,0 +1,184 @@
+version: "1.0.0"
+title: "Crop Rotation Plan"
+description: >-
+  Read-only: a multi-season crop rotation plan for one Kamerplanter garden — one plant family per bed and season, a verdict for every crop considered (clear, conflict, repeat — interval unknown, caution, unknown) with the rule and evidence behind it, every conflict named, and every crop left out with its reason. Families come from the catalog's family_key only; the rotation interval, the bed history, the demand order and the constraints count only when you supply them. The plan is a document for review; it records nothing, and the measured catalog has no tool that could. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: crops
+    input_type: string
+    requirement: required
+    description: >-
+      Candidate crops, comma-separated: each a species key, or a species key and a
+      cultivar key joined by a colon (species_key:cultivar_key), the same shape as
+      garden-plan. Required: a rotation places chosen crops.
+
+  - key: seasons
+    input_type: string
+    requirement: required
+    description: >-
+      The seasons to plan, as consecutive years, comma-separated (for example
+      2027,2028,2029). A gap stops the run rather than being filled.
+
+  - key: beds
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Beds, comma-separated, each a name or name:area_or_volume (for example
+      bed-1:2m2,bed-2). No source in the catalog. A catalog location counts as a
+      bed's history only when its location_key equals the bed name exactly.
+
+  - key: bed_history
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What stood in each bed before, comma-separated, each
+      bed:season:species_key or bed:season:species_key:cultivar_key, or
+      bed:season:none for a season with no crop. The primary source of history;
+      a bed you give history for is taken as complete for the seasons you did not
+      name.
+
+  - key: rotation_years
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A whole number: the smallest distance in seasons at which one family may
+      stand in a bed again (4 means a family planted in 2026 conflicts in 2027 to
+      2029). No number is built in; without it a same-family repeat is reported
+      as "repeat — interval unknown", never as a conflict and never as clear.
+
+  - key: demand_sequence
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      An order of nutrient demand classes, comma-separated, compared as text with
+      the catalog's nutrient_demand_level (for example
+      heavy_feeder,medium_feeder,light_feeder,green_manure). A preference: it
+      ranks and never makes a conflict. Empty means not evaluated.
+
+  - key: constraints
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Semicolon-separated: pin=bed:season:species_key[:cultivar_key] places a
+      crop and is never moved, exclude=bed:species_key[:cultivar_key] keeps a
+      crop out of a bed. Any other text is listed as not evaluated.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You turn a garden's bed history and a list of candidate crops into a
+  reviewable crop rotation plan and report it. You never record the plan,
+  advise beyond it, or write. A family comes from the catalog's family_key or
+  is unknown; an interval, a bed history and a demand order come from the
+  caller or are not supplied. Every conflict is listed, including one caused by
+  the caller's own pin.
+
+  Four skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour — which fields have no source, what an
+  absent species field means, and why companions are not a rotation rule.
+
+prompt: |
+  Make a crop rotation plan for garden "{{ tenant }}".
+  Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
+  local file other than loading the named skills (`garden-context`, `rotation-history-collect`, `crop-rotation-planning`, `decision-policy`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - candidate crops: "{{ crops }}"
+  - seasons: "{{ seasons }}"
+  - beds: "{{ beds }}"
+  - bed history: "{{ bed_history }}"
+  - rotation interval in seasons: "{{ rotation_years }}"
+  - demand order: "{{ demand_sequence }}"
+  - constraints: "{{ constraints }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. This run plans; it records nothing.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, and do not run a script, scene, or automation.
+  - Never print an API key or token, not even partially.
+  - Never supply a plant family, a rotation interval, a demand order or a soil
+    effect from general knowledge, and never research one. An absent
+    family_key is family unknown; an interval you were not given is not
+    supplied.
+  - Never read compatible_companions as a rotation rule.
+  - Never treat a failed or partial read of the garden's plants as "no
+    history".
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
+  the block it returns. If the skill cannot be loaded, report that as the step
+  result naming the skill and stop.
+
+  Step 2 — History.
+  Load the skill `rotation-history-collect` and follow it with the tenant from
+  that block, the candidate crops plus every crop named in a pin, the crops
+  named in the bed history, and the bed names: the beds above, the beds in the
+  bed history and the beds in a pin. Keep the block it returns.
+
+  Step 3 — Policy.
+  Load the skill `decision-policy` and keep it for the next step: apply it to
+  every verdict.
+
+  Step 4 — Plan.
+  Load the skill `crop-rotation-planning` and follow it with the rotation
+  history block, the garden context block, and the caller inputs above,
+  passing only the ones that are not empty.
+
+  Step 5 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Crop Rotation Plan — <the slug the skills resolved, given or discovered>
+
+  Skill loads, one row each:
+
+  | Skill | Loaded |
+  |-------|--------|
+  | garden-context / rotation-history-collect / decision-policy / crop-rotation-planning | yes, or no: the error |
+
+  The plan, one row per bed and season, in the order the skill returned them:
+
+  | Bed | Season | Selected | Crops and verdicts | Demand | Pinned | Confidence |
+  |-----|--------|----------|--------------------|--------|--------|------------|
+  | the bed | the year | a family key, unknown/<crop key>, open, or occupied | each crop key with its verdict (clear, conflict, repeat — interval unknown, caution, unknown), rule number and level | met / unmet / unknown / not evaluated | yes / no | the verdict level (a number or caller) and what it rests on |
+
+  Then the conflicts, one row each with the bed, season, crop, rule, the
+  evidence on both sides and whether it was pinned; write "none" when there
+  are none. Then the crops that were not placed, with the reason per bed and
+  season. Then the rotation header and the bed history exactly as the skill
+  returned them, including the not-evaluated entries, the unmapped location
+  history and the assumption that an established history is complete. Then
+  the apply contract exactly as the skill returned it, including that the
+  measured catalog has no tool that records a rotation, and any tool error
+  reported verbatim.
+
+  Close with one line,
+  `ROTATION: <p> placements, <c> conflicts, <u> unknown — <slug>`, where
+  <p> counts the (bed, season) slots that hold a selected or pinned group,
+  <c> counts the entries under conflicts, and <u> counts the crop verdicts
+  that are unknown, and a second line,
+  `APPLY: no write tool measured (nolte/kamerplanter-goose#68)`.

@@ -3,7 +3,7 @@ title: Gartenplan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-10-14
+last_updated: 2026-11-05
 ---
 
 # Gartenplan
@@ -50,7 +50,7 @@ goose run --recipe garden-plan \
 - **Ein Durchlauf je Wachstumsperiode und Anbauweise.** Eine Art mit Sommer- und Winterperiode ergibt zwei Durchläufe. Ohne Anbauweise-Präferenz erscheint eine Kultur, die für beide Anbauweisen in Frage kommt, zweimal; das sind Alternativen, zwischen denen Sie wählen.
 - **Die Kennung sagt, was der Durchlauf ist**: Art, Sorte oder `none`, Anbauweise und die Monate der Periode. Sie hängt nicht von der Reihenfolge ab, in der Sie die Kulturen aufgelistet haben.
 - **Es wird kein Beet zugeordnet.** Das tut die Beetaufteilung. Die von Ihnen gelieferten Beete stehen im Plankopf.
-- **Die Fruchtfolge ist immer unbekannt**, weil sie noch nicht gebaut ist; Nachbarn werden nicht als Fruchtfolgeregel gelesen.
+- **Die Fruchtfolge ist immer unbekannt**, weil einem Durchlauf kein Beet zugeordnet wird und die Fruchtfolge je Beet beurteilt wird; das tut der [Fruchtfolgeplan](crop-rotation-plan.md), und er schlüsselt seine Kulturen so, wie eine Durchlaufkennung beginnt. Nachbarn werden nicht als Fruchtfolgeregel gelesen.
 - **Eine Folgesaat wird nur genannt, wo die Daten eine zeigen**: der letzte Erntemonat einer Periode vor dem ersten Saatmonat einer anderen. Beide Durchläufe sagen es, `precedes` am früheren und `follows` am späteren.
 
 ## Wie weit „deterministisch“ reicht

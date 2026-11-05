@@ -3,7 +3,7 @@ title: Referenzen
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-08-16
+last_updated: 2026-11-05
 ---
 
 # Referenzen
@@ -44,6 +44,7 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`planting-calendar`](../guides/planting-calendar.md) | nein | Wann jede gewählte Kultur an einem Garten gesät, umgepflanzt und geerntet werden kann |
 | [`garden-plan`](../guides/garden-plan.md) | nein | Vorschläge für Pflanzdurchläufe zu gewählten Kulturen, zur Prüfung; wendet nichts an |
 | [`season-plan`](../guides/season-plan.md) | nein | Der Plan auf zwölf Monate gelegt, mit seinen Folgesaaten |
+| [`crop-rotation-plan`](../guides/crop-rotation-plan.md) | nein | Eine Pflanzenfamilie je Beet und Saison, mit Urteilen und Konflikten; hält nichts fest |
 | [`plant-master-data-check`](../guides/plant-master-data-check.md) | nein | Welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht |
 | [`domain-review`](../guides/domain-review.md) | nur nach `.audits/` | Prüft ein Rezept oder eine Spezifikation aus Sicht einer Anbau-Persona |
 | [`diary-photo-analysis-apply`](../guides/diary-analysis-queue.md) | **ja** | Analysiert einen wartenden Tagebucheintrag und übermittelt das Ergebnis |
@@ -70,6 +71,8 @@ Werden namentlich aus `.claude/skills/` geladen. Die Auffindung ist relativ zum 
 | `crop-selection` | Welche Kandidaten ein Standort trägt, mit Gründen und verfehlten Bedingungen |
 | `planting-calendar` | Die Fenster für Aussaat, Umpflanzen und Ernte je Kultur und Wachstumsperiode, mit der Regel dahinter |
 | `plant-planning` | Vorschläge für Pflanzdurchläufe mit Kennungen, Begründung und Konfidenz; ruft kein Werkzeug auf |
+| `rotation-history-collect` | Familie, Bedarfsklasse und Gründüngungseignung jeder Kultur sowie Pflanzen und Inspektionen je Standort, archivierte eingeschlossen |
+| `crop-rotation-planning` | Eine Familie je Beet und Saison, mit einem Urteil und seiner Regel für jede betrachtete Kultur und jedem Konflikt benannt; ruft kein Werkzeug auf |
 | `diary-measurements-read` | Die erfassten Messwerte aus dem Tagebuch einer Pflanze, mit einem Bericht, wie viel gelesen wurde |
 | `care-planning` | Die Domänenergebnisse in einer nach Dringlichkeit geordneten Liste, mit dem, was keine Handlung ergibt; ruft kein Werkzeug auf |
 | `watering-decision` | Jetzt gießen, warten oder unzureichender Beleg, aus dem gegenwärtigen Zustand der Pflanze; ruft kein Werkzeug auf |

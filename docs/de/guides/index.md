@@ -3,7 +3,7 @@ title: Anleitungen
 audience: [plant-owner, self-hoster, queue-operator, recipe-author]
 content_mode: meta
 track: user-docs
-last_updated: 2026-08-16
+last_updated: 2026-11-05
 ---
 
 # Anleitungen
@@ -21,6 +21,7 @@ Aufgabenorientierte Anleitungen: eine Seite je mitgeliefertem Rezept, mit dem Be
 - [Pflanzkalender](planting-calendar.md) — wann jede gewählte Kultur an diesem Garten gesät, vorgezogen, umgepflanzt und geerntet werden kann, und welche Regel jedes Fenster ergab
 - [Gartenplan](garden-plan.md) — Vorschläge für Pflanzdurchläufe zu gewählten Kulturen, zur Prüfung, bevor etwas angewendet wird
 - [Saisonplan](season-plan.md) — der Plan auf zwölf Monate gelegt, mit den Folgesaaten, die er nennt
+- [Fruchtfolgeplan](crop-rotation-plan.md) — eine Pflanzenfamilie je Beet und Saison über mehrere Saisons, mit jedem Konflikt benannt, zur Prüfung, bevor etwas festgehalten wird
 - [Pflanzenstammdaten-Prüfung](plant-master-data-check.md) — welchen Pflanzen die Stammdaten fehlen, die eine spätere Analyse braucht, und was jede Lücke verhindert
 - [Nährstoffbilanz-Prüfung](nutrient-imbalance-check.md) — unter- oder überversorgt, oder unfähig aufzunehmen, was da ist, für eine Pflanze
 - [Schädlingsdruck-Prüfung](pest-pressure-check.md) — ob ein Schädlings- oder Krankheitsverdacht dem Datenbestand standhält
