@@ -1,0 +1,208 @@
+version: "1.0.0"
+title: "Harvest Readiness Check"
+description: >-
+  Read-only: says whether one plant is ready to harvest (ready, approaching, not ready, not harvestable, or insufficient evidence) from your own observation, the diary's measurements and an optional photo entry, weighed against the harvest months of its growing period, its position against the cultivar's days to maturity and its growth stage, and states the evidence, confidence, uncertainty and missing data. A treatment you say was applied gates the harvest on its pre-harvest safety interval; weather comes only from what you supply and counts as a risk, never as ripeness. No harvest date is computed from days to maturity. It harvests, records and schedules nothing, has no apply recipe, and calls no Home Assistant tool. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: plant_key
+    input_type: string
+    requirement: required
+    description: "Kamerplanter plant instance to judge."
+
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants.
+
+  - key: observations
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you see on the crop now, in your words, for example "pods dry and
+      rattling". Without it, or a photo or a diary measurement, the answer is
+      insufficient evidence.
+
+  - key: entry_key
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A diary entry of this plant whose photos should be read. Empty reads no
+      photo.
+
+  - key: intended_use
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What the harvest is for, in your words, for example fresh eating,
+      storage or seed saving. The record has no field for it.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Weather and forecast, in your words and units. The Kamerplanter server
+      has no source for them, and this check reads none from Home Assistant.
+
+  - key: temperatures
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      A daily temperature series since planting — date, minimum, maximum and
+      the unit — for the growth stage's growing degree days.
+
+  - key: treatments
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Treatments applied to this plant, comma-separated, each
+      treatment_key:YYYY-MM-DD. Each one's pre-harvest safety interval gates
+      the harvest. Empty leaves the gate unknown: the record holds no
+      application dates.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to judge against (YYYY-MM-DD). Empty uses the date the growth
+      stage assessment fixed; with none, no timing and no gate is computed.
+      Give it with observations: an observation carries no date, so with
+      observations and no as_of the harvest-month position and the gate are
+      not computed.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You judge whether one plant is ready to harvest and report. You never
+  harvest, record a harvest or a yield, write a diary entry, or schedule
+  anything.
+
+  Skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour: which fields the record carries for a
+  harvest and which it does not, and why the calendar and the plant's age
+  are expectations rather than a look at the crop. Do not repeat their logic
+  here.
+
+  "Insufficient evidence" is a legitimate outcome and usually the correct one.
+  Do not manufacture a verdict to look useful.
+
+prompt: |
+  Judge the harvest readiness of plant "{{ plant_key }}" in garden
+  "{{ tenant }}". Read-only run. Use MCP tools only: do not shell out, do not
+  fetch URLs, and read or write no local file other than loading the named
+  skills (`plant-context-collect`, `diary-measurements-read`,
+  `plant-photo-read`, `growth-stage-assessment`, `weather-impact-analysis`,
+  `decision-policy`, `harvest-planning`) and the files they instruct you to
+  read.
+
+  What the caller supplied (empty means not given):
+  - own observation of the crop: "{{ observations }}"
+  - diary entry with photos: "{{ entry_key }}"
+  - intended use: "{{ intended_use }}"
+  - weather and forecast: "{{ weather }}"
+  - daily temperature series: "{{ temperatures }}"
+  - applied treatments: "{{ treatments }}"
+  - assessment date: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. Nothing is harvested or recorded.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, do not run a script, scene, or automation, do not read
+    weather from it, and do not call `TimeTillErnte` or `time_till`: they look
+    like a harvest answer and their effect is unclassified.
+  - Never print an API key or token, not even partially.
+  - Never decide readiness from the harvest months, the plant's age, the
+    growth stage or a photo alone, never compute a harvest date from days to
+    maturity, and never invent an observation, a treatment date, a yield or a
+    date.
+  - If an own observation is given and the assessment date is empty, compute
+    neither the harvest-month position nor the safety-interval gate: report
+    both as `not computed (observation undated)`, and never fall back to an
+    older diary date for them.
+  - A treatment whose safety interval cannot be read never counts as passed:
+    the gate is then unknown unless another treatment blocks.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Context.
+  Load the skill `plant-context-collect` and follow it for plant
+  "{{ plant_key }}". Carry its gaps list forward.
+
+  Step 2 — Recorded measurements.
+  Load the skill `diary-measurements-read` and follow it for plant
+  "{{ plant_key }}" in garden "{{ tenant }}", or in the garden step 1 resolved
+  when that parameter is empty. Keep the measurements it returns and its read
+  report line.
+
+  Step 3 — Photos.
+  If "{{ entry_key }}" is not empty, load the skill `plant-photo-read` and
+  follow it for that entry against the context of step 1, and keep its
+  findings. Use them only if step 2 read that entry and it belongs to plant
+  "{{ plant_key }}"; otherwise do not use them and say so. If
+  "{{ entry_key }}" is empty, report this step as SKIP.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next steps.
+
+  Step 5 — Growth stage.
+  Load the skill `growth-stage-assessment` and follow it with the context of
+  step 1, the measurements of step 2, the photo findings of step 3, and the
+  caller's observation, temperature series and assessment date above,
+  passing only the ones that are not empty. It makes its two phase reads
+  itself. Keep its assessment and its hand-off block for harvest planning.
+
+  Step 6 — Weather.
+  If "{{ weather }}" is not empty, load the skill `weather-impact-analysis`
+  and follow it with the context of step 1 and that weather, with no Home
+  Assistant read permitted and no placement. Keep its factors and findings.
+  If "{{ weather }}" is empty, report this step as SKIP: the weather risk is
+  no source.
+
+  Step 7 — Readiness.
+  Load the skill `harvest-planning` and follow it in scope `readiness` with
+  the context of step 1, the measurements of step 2, the photo findings of
+  step 3, the assessment and hand-off block of step 5, the weather findings
+  of step 6, and the caller's observation, intended use, treatments and
+  assessment date above, passing only the ones that are not empty. It makes
+  its own readiness and treatment reads.
+
+  Step 8 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Harvest Readiness Check — {{ plant_key }}
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the readiness block exactly as the skill returned it (the
+  assessment date, harvestability, result, intended use, indicators, priors,
+  the readiness tool's response as returned, weather risk, the safety-interval
+  gate, evidence, confidence, uncertainty, missing data) and its finding,
+  whose mutation is no tool measured. Then the diary read report line, and
+  any tool error reported verbatim.
+
+  Close with one line, on a single line:
+  `HARVEST READINESS: <ready | approaching | not ready | not harvestable | insufficient evidence> (gate: <clear | blocked until <date> | unknown | not computed>) — {{ plant_key }}`
+  If a step failed and no judgement could be reached, close instead with
+  `HARVEST READINESS: not assessed — {{ plant_key }}`.

@@ -91,6 +91,10 @@ plugins:
             Weather impact check: Prüfung der Wetterwirkung
             Plant health assessment: Beurteilung der Pflanzengesundheit
             Pest IPM plan: IPM-Plan
+            Harvest readiness check: Prüfung der Erntereife
+            Harvest plan: Ernteplan
+            Garden review: Gartenrückschau
+            Season review: Saisonrückschau
             Species baseline check: Artdaten-Prüfung
             Diary analysis queue: Tagebuch-Analyse-Queue
             Domain review: Persona-Review
@@ -169,6 +173,10 @@ nav:
       - Weather impact check: en/guides/weather-impact-check.md
       - Plant health assessment: en/guides/plant-health-assessment.md
       - Pest IPM plan: en/guides/pest-ipm-plan.md
+      - Harvest readiness check: en/guides/harvest-readiness-check.md
+      - Harvest plan: en/guides/harvest-plan.md
+      - Garden review: en/guides/garden-review.md
+      - Season review: en/guides/season-review.md
       - Species baseline check: en/guides/species-baseline-check.md
       - Diary analysis queue: en/guides/diary-analysis-queue.md
       - Domain review: en/guides/domain-review.md

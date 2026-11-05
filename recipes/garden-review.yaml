@@ -1,0 +1,177 @@
+version: "1.0.0"
+title: "Garden Review"
+description: >-
+  Read-only: an in-season look back over one Kamerplanter garden up to an assessment date, for the plants you name (at most five): one history record per plant (care confirmations and snoozes, inspections, diary coverage, growth stage, and the yields and notes you supply), cultivar performance side by side with no score or average, lessons that are each an observation or a recommendation with evidence, confidence, uncertainty and missing data, and a next-cycle block of crops, goals, constraints and harvest window in the format garden-plan takes. Care is linked to an outcome only as "consistent with", never as a cause; yield counts only when you supply it; it runs no plant health assessment, so plant health is reported as not supplied. It writes nothing — no file, no diary entry — has no apply recipe, and calls no Home Assistant tool. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+
+parameters:
+  - key: tenant
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Kamerplanter garden slug. Leave empty to let the run discover it from
+      list_tenants; a key that covers several gardens needs it set.
+
+  - key: plants
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Plant instance keys, comma-separated. At most five are reviewed, the
+      first five by plant key as text; the rest are reported as not reviewed.
+      Empty reviews the garden level only.
+
+  - key: yields
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you harvested, comma-separated, each plant_key:amount unit, for
+      example "42:1.2 kg,43:14 fruit". The record has no yield field; this is
+      the only source.
+
+  - key: harvest_results
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      Harvest readiness results you already have, comma-separated, each
+      plant_key:result or plant_key:result:YYYY-MM-DD, for example
+      "42:ready:2026-08-10,43:approaching" — typically copied from the final
+      lines of harvest-readiness-check runs. This review runs no harvest check
+      itself; without it every harvest result is absent.
+
+  - key: notes
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      What you noticed, in your words, per plant (plant_key: words,
+      semicolon-separated) or about the garden as a whole.
+
+  - key: weather
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The season's weather so far, in your words. Context only: the server has
+      no source for it, and this review reads none from Home Assistant.
+
+  - key: as_of
+    input_type: string
+    requirement: optional
+    default: ""
+    description: >-
+      The date to review up to (YYYY-MM-DD). Empty uses the date of the newest
+      diary entry read.
+
+# No `extensions:` block on purpose — see extensions.yaml.
+
+instructions: |
+  You look back over one garden and report what was recorded, what the
+  person said, and what the next plan should keep or reconsider. You never
+  write the review anywhere, add a diary entry, or change anything.
+
+  Skills carry the procedure; load each when its step calls for it. They
+  encode measured server behaviour: what the care log and the inspections
+  hold, how much of a diary is read, and that no yield field exists. Do not
+  repeat their logic here.
+
+  A review that says little because little was recorded is honest. Do not
+  invent a yield, a cause or a lesson to make it look useful.
+
+prompt: |
+  Review garden "{{ tenant }}". Read-only run. Use MCP tools only: do not
+  shell out, do not fetch URLs, and read or write no local file other than
+  loading the named skills (`garden-context`, `plant-context-collect`,
+  `diary-measurements-read`, `growth-stage-assessment`, `decision-policy`,
+  `garden-review`) and the files they instruct you to read.
+
+  What the caller supplied (empty means not given):
+  - plant keys: "{{ plants }}"
+  - yields: "{{ yields }}"
+  - harvest results: "{{ harvest_results }}"
+  - notes: "{{ notes }}"
+  - the season's weather: "{{ weather }}"
+  - review up to: "{{ as_of }}"
+
+  Hard constraints for this entire run:
+  - Call NO tool that changes state. The review is text and is written
+    nowhere.
+    Forbidden by name:
+    `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`,
+    `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`,
+    `mcp__kamerplanter__add_plant_diary_entry`,
+    `mcp__kamerplanter__claim_diary_analysis`,
+    `mcp__kamerplanter__submit_diary_analysis`,
+    `mcp__kamerplanter__transition_plant_phase`,
+    `mcp__kamerplanter__record_feeding_event`,
+    `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__assign_nutrient_plan`,
+    `mcp__kamerplanter__assign_species_phase_sequence`.
+  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
+    do not set a value, do not run a script, scene, or automation, and do not
+    call `TimeTillErnte` or `time_till`.
+  - Never print an API key or token, not even partially.
+  - Never state care or weather as the cause of an outcome, never read a
+    diary measurement as yield, never score or average cultivars, and never
+    invent a yield, a field or a date.
+  - Report a tool error verbatim as a step result and continue with the rest.
+
+  Step 1 — Garden.
+  Load the skill `garden-context` and follow it for garden "{{ tenant }}".
+  Keep the block it returns, including its absent fields and the garden slug
+  it resolved.
+
+  Step 2 — Which plants.
+  Split "{{ plants }}" at the commas, trim each key, drop empty entries and
+  duplicates, and sort the keys as text. The first five in that order are
+  reviewed; every further key is `not reviewed (limit of five)`. If the list
+  is empty, no plant is reviewed and step 3 is SKIP. Never call a per-plant
+  tool for a plant that is not on the list. Split "{{ yields }}" and
+  "{{ harvest_results }}" at the commas and "{{ notes }}" at the semicolons,
+  and give each plant only the entries that name its key; a note naming no
+  key is about the garden.
+
+  Step 3 — Per plant.
+  For each plant to review, in order:
+  1. Load the skill `plant-context-collect` and follow it for the plant, in
+     the garden step 1 resolved. Carry its gaps list, care log and
+     inspections forward.
+  2. Load the skill `diary-measurements-read` and follow it for the plant,
+     and keep its read report line and the dates of the entries it opened.
+  3. Load the skill `growth-stage-assessment` and follow it with that context,
+     those measurements and the date "{{ as_of }}" if it is not empty. It
+     makes its two phase reads itself. Keep its hand-off block.
+  A plant that does not exist or cannot be read is reported with the tool
+  error verbatim and skipped; the other plants are still reviewed.
+
+  Step 4 — Policy.
+  Load the skill `decision-policy` and keep it for the next step.
+
+  Step 5 — Review.
+  Load the skill `garden-review` and follow it in scope `garden` with the
+  garden context of step 1, the per-plant blocks of step 3, the plants not
+  reviewed, and the caller's yields, harvest results, notes, weather and date
+  above, passing only the ones that are not empty. It makes no tool call.
+
+  Step 6 — Report.
+  Build the report only from what the skills returned. Print this and nothing
+  after it:
+
+  ## Garden Review — <the slug the skills resolved, given or discovered>
+
+  | Step | Result | Detail |
+  |------|--------|--------|
+
+  One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
+  one line. Then the review exactly as the skill returned it, in its six
+  blocks in order: the header, the history records, cultivar performance,
+  the lessons, the next-cycle block and the domain status. Then, per plant
+  reviewed, its read report line, and any tool error reported verbatim.
+
+  Close with the line `NEXT: pass the NEXT CYCLE strings to the garden-plan or crop-selection recipe as its crops, goals, constraints and harvest_window parameters`.
+  The very last line of the output is this one, on a single line:
+  `GARDEN REVIEW: <n> reviewed, <m> not reviewed — <slug>`
+  where `<n>` is the number of history records and `<m>` the number of plants
+  named but not reviewed.

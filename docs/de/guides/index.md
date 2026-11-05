@@ -31,6 +31,10 @@ Aufgabenorientierte Anleitungen: eine Seite je mitgeliefertem Rezept, mit dem Be
 - [Prüfung der Wetterwirkung](weather-impact-check.md) — was das Wetter, das du angibst, für genannte Pflanzen bedeutet, getrennt von ihren Symptomen
 - [Beurteilung der Pflanzengesundheit](plant-health-assessment.md) — die Kandidaten-Erklärungen für eine Pflanze nebeneinander, welche überleben und was sie unterscheiden würde; nie eine Diagnose
 - [IPM-Plan](pest-ipm-plan.md) — was gegen einen Schädlings- oder Krankheitsverdacht zu tun ist und in welcher Reihenfolge, mit Wartezeit und Voraussetzungen jeder Behandlung
+- [Prüfung der Erntereife](harvest-readiness-check.md) — ob eine Pflanze erntereif ist, worauf das ruht und ob die Wartezeit einer Behandlung die Ernte sperrt
+- [Ernteplan](harvest-plan.md) — die Ernten von bis zu fünf Pflanzen in einer Reihenfolge, mit Fenstern, Arbeitszählungen und Lagerbedingungen
+- [Gartenrückschau](garden-review.md) — was ein Garten in dieser Saison bisher erfasst hat, Pflanze für Pflanze, und was der nächste Plan beibehalten oder überdenken sollte
+- [Saisonrückschau](season-review.md) — eine abgeschlossene Saison im Rückblick, archivierte Pflanzen eingeschlossen, übergeben an den Plan der nächsten Saison
 - [Artdaten-Prüfung](species-baseline-check.md) — ob der Artdatensatz, auf dem eine Pflanze steht, plausibel ist, und wie sein Lebenszyklus aussieht
 - [Tagebuch-Analyse-Queue](diary-analysis-queue.md) — einen wartenden Tagebucheintrag analysieren, die Warteschlange abarbeiten oder beides nach Zeitplan laufen lassen
 

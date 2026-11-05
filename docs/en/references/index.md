@@ -34,6 +34,10 @@ Each recipe has a guide of its own, linked from its name.
 | [`weather-impact-check`](../guides/weather-impact-check.md) | no | Per weather factor an exposure, none, or no source, for up to five plants; actuates nothing |
 | [`plant-health-assessment`](../guides/plant-health-assessment.md) | no | A differential for one plant: leading or competing explanations, suspicion only, nothing abnormal, or not enough evidence; never a diagnosis |
 | [`pest-ipm-plan`](../guides/pest-ipm-plan.md) | no | Four IPM stages for a pest or disease suspicion, a treatment only at the threshold and with its safety block; treats and records nothing |
+| [`harvest-readiness-check`](../guides/harvest-readiness-check.md) | no | Ready, approaching, not ready, not harvestable or not enough evidence, for one plant, with its safety-interval gate; harvests nothing |
+| [`harvest-plan`](../guides/harvest-plan.md) | no | The harvests of up to five plants in one order, with windows and workload counts; schedules nothing |
+| [`garden-review`](../guides/garden-review.md) | no | A garden's history so far, plant by plant, with lessons and a next-cycle block; writes nothing |
+| [`season-review`](../guides/season-review.md) | no | A season's history, archived plants included, handed to the next plan; writes nothing |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
@@ -74,6 +78,8 @@ Loaded by name from `.claude/skills/`. Discovery is relative to the Goose proces
 | `weather-impact-analysis` | Weather exposures per factor, kept apart from symptoms; reads one Home Assistant weather entity only where permitted |
 | `plant-health-assessment` | Candidate explanations per class, each supported, suspicion, contradicted or not assessable, and one overall result; calls no tool |
 | `pest-ipm-planning` | Confirmation, environmental correction, cultural controls and targeted treatment in order, with prerequisites and safety constraints per treatment; reads the candidate's catalogue records |
+| `harvest-planning` | Ready, approaching, not ready, not harvestable or insufficient evidence from an observed maturity indicator, a safety-interval gate, and a harvest order for up to five plants; reads the harvest readiness and treatment records |
+| `garden-review` | History records, cultivar performance, lessons and a next-cycle block for a garden or a season; calls no tool |
 
 **Review lenses** — read this checkout, never a garden. One per run; they are meant to disagree:
 
