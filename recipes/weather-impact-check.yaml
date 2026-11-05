@@ -78,11 +78,12 @@ prompt: |
     `mcp__kamerplanter__create_inspection`,
     `mcp__kamerplanter__assign_nutrient_plan`,
     `mcp__kamerplanter__assign_species_phase_sequence`.
-  - Home Assistant: do not turn anything on or off, do not set a value, and
-    do not run a script, scene, or automation. Do not call `TimeTillErnte` or
-    `time_till`: their effect is unclassified. The only Home Assistant tool
+  - Forbidden on Home Assistant: turning anything on or off, setting a value,
+    and running a script, scene, or automation. The only Home Assistant tool
     this run may call is `GetLiveContext`, if it is present, once, with
     `domain: weather`, in step 3 — no other domain and no sensor.
+  - Two Home Assistant intents have an unclassified effect, so this run must
+    not call them. Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print an API key or token, not even partially.
   - Never state the weather as a symptom of a plant or as evidence about its
     present state, never average two weather sources, and never invent a

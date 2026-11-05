@@ -145,7 +145,7 @@ Return no field that was not read. The facts two runs over the same input must a
 - Never assume a field of `get_harvest_readiness`, and never give its response a level.
 - Never fill a yield, a storage limit, an effort, a treatment date or an indicator, and never infer that a treatment was applied.
 - Never read the current date into the facts.
-- Call no Home Assistant tool, and never `TimeTillErnte` or `time_till`.
+- Call no Home Assistant tool. Two intents look like a harvest answer and have an unclassified effect. Forbidden by name: `TimeTillErnte`, `time_till`.
 - Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`.
 - Report a tool error verbatim and continue with what remains.
 

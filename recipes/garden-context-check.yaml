@@ -54,8 +54,10 @@ prompt: |
     `mcp__kamerplanter__create_inspection`,
     `mcp__kamerplanter__assign_nutrient_plan`,
     `mcp__kamerplanter__assign_species_phase_sequence`.
-  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
-    do not set a value, and do not run a script, scene, or automation.
+  - Call NO Home Assistant tool. Forbidden on Home Assistant: turning anything
+    on or off, setting a value, and running a script, scene, or automation.
+  - Two Home Assistant intents have no classified effect, so a read-only run
+    must not call them. Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print an API key or token, not even partially.
 
   Step 1 — Collect.

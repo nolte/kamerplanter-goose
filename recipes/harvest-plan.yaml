@@ -130,10 +130,11 @@ prompt: |
     `mcp__kamerplanter__create_inspection`,
     `mcp__kamerplanter__assign_nutrient_plan`,
     `mcp__kamerplanter__assign_species_phase_sequence`.
-  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
-    do not set a value, do not run a script, scene, or automation, do not read
-    weather from it, and do not call `TimeTillErnte` or `time_till`: they look
-    like a harvest answer and their effect is unclassified.
+  - Call NO Home Assistant tool. Forbidden on Home Assistant: turning anything
+    on or off, setting a value, and running a script, scene, or automation.
+    Do not read weather from it either.
+  - Two Home Assistant intents look like a harvest answer, and their effect
+    is unclassified. Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print an API key or token, not even partially.
   - Never decide readiness from the harvest months, the plant's age or the
     growth stage alone, never compute a harvest date from days to maturity,

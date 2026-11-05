@@ -77,8 +77,10 @@ prompt: |
     `mcp__kamerplanter__assign_species_phase_sequence`.
   - `mcp__kamerplanter__calculate_mixing_protocol` is permitted: it only
     calculates and persists nothing.
-  - Call NO Home Assistant tool. Specifically, do not turn anything on or off,
-    do not set a value, and do not run a script, scene, or automation.
+  - Call NO Home Assistant tool. Forbidden on Home Assistant: turning anything
+    on or off, setting a value, and running a script, scene, or automation.
+  - Two Home Assistant intents have no classified effect, so a read-only run
+    must not call them. Forbidden by name: `TimeTillErnte`, `time_till`.
   - Never print an API key or token, not even partially.
   - Never state a concentration, a dose or a mixing order that the mixing
     protocol did not return, and never invent a measurement.

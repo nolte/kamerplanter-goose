@@ -109,7 +109,8 @@ Give one finding per exposure and one for the factors with no source. **An expos
 - Never take a symptom from anything but a photo reading, a diary entry or a recorded inspection, and never link it to weather more strongly than "consistent with".
 - Never average two weather sources; report a disagreement side by side.
 - Never fill an absent factor, a threshold or the placement, and never invent a measurement.
-- Never call a Home Assistant tool without the caller's permission, never call one other than `GetLiveContext`, and never read a domain other than `weather`. Never turn anything on or off, set a value, or run a script, scene or automation, and never call `TimeTillErnte` or `time_till`: their effect is unclassified.
+- Never call a Home Assistant tool without the caller's permission, never call one other than `GetLiveContext`, and never read a domain other than `weather`. Never turn anything on or off, set a value, or run a script, scene or automation.
+- Two Home Assistant intents have an unclassified effect and are never called. Forbidden by name: `TimeTillErnte`, `time_till`.
 - Never read the current date into the facts.
 - Call no tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__claim_diary_analysis`, `mcp__kamerplanter__submit_diary_analysis`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. This skill calls no Kamerplanter tool at all.
 
