@@ -285,16 +285,294 @@ def skill_missing_tools(text: str) -> list[str]:
     forbidden list there would be noise. Measured on develop, the reference
     selects exactly the seven garden skills.
 
-    This is a completeness check and nothing more. A skill is instruction AND
-    documentation, so a name outside a policy block is not a call there, and a
-    name inside a call counts here like any other. The call direction needs a
-    convention separating instruction from explanation first; until then a
-    skill that names all twelve and then calls one still passes.
+    This is a completeness check and nothing more: a name anywhere counts,
+    inside a call or under `## Gotchas` alike. The call direction is the
+    separate obedience guard below, `skill_unpermitted_calls` (#55).
     """
     if SKILL_SERVER_REFERENCE not in text:
         return []
     return sorted(
         tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(text)
+    )
+
+
+# The two level-2 headings whose content is explanation rather than
+# instruction. A closed set and a literal match, so deciding a section is a
+# lookup and never a reading of the sentence (#55).
+EXPLANATION_HEADINGS = {"Gotchas", "Source"}
+
+ATX_HEADING_PATTERN = re.compile(r"^ {0,3}(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$")
+FENCE_PATTERN = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+# A closing fence carries nothing after its run — an info string or prose
+# after the backticks makes it content, not a closer.
+FENCE_CLOSE_PATTERN = re.compile(r"^ {0,3}(`{3,}|~{3,})[ \t]*$")
+# A setext underline. It can only END an explanation section: only the ATX
+# forms `## Gotchas` and `## Source` open one.
+SETEXT_UNDERLINE_PATTERN = re.compile(r"^ {0,3}(=+|-+)[ \t]*$")
+
+# Lines a skill must carry verbatim although they name state-changing tools,
+# keyed by skill directory and the EXACT stripped line. A prefix match was
+# tried and withdrawn: it held any new line that opened with the same words,
+# a call appended to them included. The entry holds only when that line occurs
+# exactly once, and is stale otherwise. Per line, never per skill: the rest of
+# the skill stays guarded.
+SKILL_LINE_ALLOWANCES = {
+    (
+        "plant-planning",
+        "The measured catalog has no tool that creates a planting run, a sowing "
+        "or planting task, or a plan. The write tools it records are "
+        "add_plant_diary_entry, confirm_care_task, archive_plant, "
+        "set_plant_location, claim_diary_analysis, submit_diary_analysis, "
+        "transition_plant_phase, assign_species_phase_sequence, "
+        "assign_nutrient_plan, record_feeding_event and create_inspection, and "
+        "the setup tool create_site; none does.",
+    ): (
+        "spec/process/plant-planning-and-planting-calendar/en.md §F requires "
+        "every plan's APPLY CONTRACT to enumerate the twelve write tools"
+    ),
+}
+
+
+def normalise_newlines(text: str) -> str:
+    return text.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def skill_instruction_text(text: str) -> str:
+    """The SKILL.md with every explanation line blanked, line count preserved.
+
+    Explanation is exactly the content under a level-2 ATX heading reading
+    `Gotchas` or `Source`, up to the next level-1 or level-2 heading — ATX or
+    setext. Everything else is instruction, fail-closed: frontmatter, text
+    before the first heading, any other heading, a `### Gotchas` nested
+    elsewhere. A heading inside a fenced block or an HTML comment is not a
+    heading, and no line of the frontmatter is one either — a YAML comment
+    starts with `#` too. A setext underline ends a section and never opens
+    one, and its title line is returned to instruction. Line endings are
+    normalised to LF first.
+    """
+    lines = normalise_newlines(text).split("\n")
+    frontmatter_end = -1
+    if lines and lines[0].strip() == "---":
+        for index in range(1, len(lines)):
+            if lines[index].strip() == "---":
+                frontmatter_end = index
+                break
+    explanation, fence, comment, paragraph = False, None, False, False
+    kept = []
+    for index, line in enumerate(lines):
+        if index > frontmatter_end:
+            was_paragraph, paragraph = paragraph, False
+            if fence is not None:
+                closer = FENCE_CLOSE_PATTERN.match(line)
+                if closer and closer.group(1)[0] == fence[0] and len(
+                    closer.group(1)
+                ) >= len(fence):
+                    fence = None
+            elif comment:
+                if "-->" in line:
+                    comment = False
+            elif fence_match := FENCE_PATTERN.match(line):
+                fence = fence_match.group(1)
+            elif "<!--" in line and "-->" not in line[line.index("<!--") + 4:]:
+                comment = True
+            elif heading := ATX_HEADING_PATTERN.match(line):
+                level = len(heading.group(1))
+                if level <= 2:
+                    explanation = level == 2 and (heading.group(2) or "") in EXPLANATION_HEADINGS
+            elif was_paragraph and SETEXT_UNDERLINE_PATTERN.match(line):
+                explanation = False
+                kept[-1] = lines[index - 1]
+            else:
+                paragraph = bool(line.strip())
+        kept.append("" if explanation else line)
+    return "\n".join(kept)
+
+
+def blank_spans(text: str, spans: list[tuple[int, int]]) -> str:
+    """`text` with every span overwritten by spaces, newlines kept, so a line
+    number found afterwards is still the line number in the file."""
+    chars = list(text)
+    for start, end in spans:
+        for position in range(start, end):
+            if chars[position] != "\n":
+                chars[position] = " "
+    return "".join(chars)
+
+
+def skill_permitted_tools(text: str) -> set[str]:
+    """State-changing names inside the skill's instruction-side
+    `Permitted by name:` blocks — the only licence a skill has to call."""
+    inside = policy_text(skill_instruction_text(text), ("Permitted by name:",))
+    return {tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(inside)}
+
+
+def skill_unpermitted_calls(
+    text: str,
+    skill: str,
+    allowances: dict[tuple[str, str], str] = SKILL_LINE_ALLOWANCES,
+) -> list[tuple[int, str]]:
+    """(line, tool) for each state-changing tool a skill's instruction calls
+    without listing it in its own `Permitted by name:` block (#55).
+
+    Predicate: in the instruction sections (see `skill_instruction_text`), with
+    every `Forbidden by name:` and `Permitted by name:` block cut out exactly as
+    for a recipe, any remaining state-changing name — bare or
+    `mcp__kamerplanter__`-prefixed — is a call, and passes only when the skill's
+    own `Permitted by name:` block names it. A skill has no `-apply` suffix to
+    license a call, so that block is the whole licence; P3's loader bound in
+    `permitting_skill_loads` keeps the block itself from becoming a bypass.
+
+    Selector: every `.claude/skills/*/SKILL.md`, not only those that reference
+    `mcp__kamerplanter__`. A bare name is a call too, and the prefix selector of
+    `skill_missing_tools` cannot see it.
+
+    Allowance: one line in `plant-planning`, as the exact stripped line, because a
+    process spec mandates that line verbatim (`SKILL_LINE_ALLOWANCES` carries
+    the reason). An allowance whose line is absent or duplicated holds nothing and fails the gate — see
+    `stale_skill_allowances`.
+
+    Limit: a call written under `## Gotchas` or `## Source` is explanation by
+    declaration and invisible here. Telling a call from a mention there would
+    mean reading the sentence, which is what the convention exists to avoid.
+    spec/goose/recipe-project-pattern/en.md makes it a MUST enforced by review.
+    """
+    instruction = skill_instruction_text(text)
+    spans = [
+        span
+        for marker in POLICY_MARKERS
+        for span in policy_spans(instruction, marker)
+    ]
+    remainder = blank_spans(instruction, spans)
+    permitted = skill_permitted_tools(text)
+    originals = normalise_newlines(text).split("\n")
+    stripped = [line.strip() for line in originals]
+    held = {
+        allowed
+        for (name, allowed) in allowances
+        if name == skill and stripped.count(allowed) == 1
+    }
+    calls = []
+    for number, (line, original) in enumerate(
+        zip(remainder.split("\n"), stripped), start=1
+    ):
+        if original in held:
+            continue
+        for tool in sorted(STATE_CHANGING_TOOLS - permitted):
+            if tool_pattern(tool).search(line):
+                calls.append((number, tool))
+    return calls
+
+
+def permitting_skill_loads(
+    recipes: dict[str, tuple[bool, str]], skills: dict[str, str]
+) -> list[tuple[str, str]]:
+    """(recipe, skill) for each read-only recipe that loads a skill whose
+    `Permitted by name:` block carries a state-changing name (#55).
+
+    `recipes` maps a recipe filename to (is_apply, prose body); `skills` maps a
+    skill directory name to its SKILL.md. A skill's permitted block exempts its
+    calls from `skill_unpermitted_calls`, and a skill composes into the
+    caller's context, so without this bound any skill could declare a write
+    permitted and carry it into a recipe that claims to read. It is the
+    skill-side counterpart of the rule in `check_recipe` that a recipe with a
+    `Permitted by name:` block must carry the `-apply` suffix.
+
+    The permitted block is read across the whole file, explanation included:
+    the guard ignores a block under `## Gotchas`, but the model still reads it,
+    so the bound is the stricter reading.
+
+    A recipe loads a skill when the skill's directory name occurs anywhere in
+    its text as a whole token — bounded by anything but a letter, digit, `_` or
+    `-`, so `claimer-legacy` is not `claimer`. Fail-closed and deliberately
+    without grammar: `SKILL_REF_PATTERN` was used first and missed a
+    list ("the skills a and b"), a name after "Follow", "the b skill" without
+    backticks, and a capitalised "Skill". A mere mention therefore counts as a load; that direction can only
+    fail a recipe, never pass one. The same token rule is followed
+    transitively through each loaded skill, so a skill-to-skill load cannot
+    become the bypass — but there only in the skill's instruction text
+    (`skill_instruction_text`). Counting explanation too was tried and
+    withdrawn: plant-photo-read's `## Gotchas` says the claim tools belong to
+    diary-analysis-claim, and that sentence alone made every read-only recipe
+    loading plant-photo-read read as loading the claim skill.
+    """
+    permitting = {
+        name
+        for name, text in skills.items()
+        if any(
+            tool_pattern(tool).search(policy_text(text, ("Permitted by name:",)))
+            for tool in STATE_CHANGING_TOOLS
+        )
+    }
+
+    def referenced(text: str) -> set[str]:
+        return {
+            name
+            for name in skills
+            if re.search(rf"(?<![A-Za-z0-9_-]){re.escape(name)}(?![A-Za-z0-9_-])", text)
+        }
+
+    loads = []
+    for recipe, (is_apply, body) in sorted(recipes.items()):
+        if is_apply:
+            continue
+        seen, pending = set(), referenced(body)
+        while pending:
+            skill = pending.pop()
+            if skill in seen:
+                continue
+            seen.add(skill)
+            pending |= referenced(skill_instruction_text(skills[skill])) - seen
+        loads.extend((recipe, skill) for skill in sorted(seen & permitting))
+    return loads
+
+
+def check_permitting_skill_loads(findings: Findings) -> None:
+    if not (SKILLS_DIR.is_dir() and RECIPES_DIR.is_dir()):
+        return
+    skills = {
+        path.parent.name: path.read_text(encoding="utf-8")
+        for path in SKILLS_DIR.glob("*/SKILL.md")
+    }
+    recipes = {}
+    for path in sorted(RECIPES_DIR.glob("*.yaml")):
+        try:
+            recipe = yaml.safe_load(path.read_text(encoding="utf-8"))
+        except yaml.YAMLError:
+            continue  # check_recipe already reports it
+        if not isinstance(recipe, dict):
+            continue
+        body = "\n".join(
+            value
+            for key in ("description", "instructions", "prompt")
+            if isinstance(value := recipe.get(key), str)
+        )
+        recipes[path.name] = (path.stem.endswith("-apply"), body)
+    for recipe, skill in permitting_skill_loads(recipes, skills):
+        findings.error(
+            f"recipes/{recipe}",
+            f"loads the skill `{skill}`, whose `Permitted by name:` block "
+            "declares a write, without an `-apply` filename suffix. A skill "
+            "composes into the caller's context, so its permission becomes "
+            "this recipe's: rename the recipe and say so in `description`, or "
+            "load a skill that permits nothing.",
+        )
+
+
+def stale_skill_allowances(
+    text: str,
+    skill: str,
+    allowances: dict[tuple[str, str], str] = SKILL_LINE_ALLOWANCES,
+) -> list[str]:
+    """Allowed lines for `skill` that do not occur in its SKILL.md exactly once.
+
+    Absent, the entry would sit ready to hold whatever line takes that text
+    next; duplicated, it would hold a copy nobody reviewed.
+    """
+    stripped = [line.strip() for line in normalise_newlines(text).split("\n")]
+    return sorted(
+        allowed
+        for (name, allowed) in allowances
+        if name == skill and stripped.count(allowed) != 1
     )
 
 
@@ -650,6 +928,40 @@ def check_skills(findings: Findings) -> None:
                 "spec/mcp/kamerplanter-mcp-server/en.md calls the one this rule "
                 "exists to catch, and a skill loaded into a recipe carries its "
                 "prohibitions into that run's context.",
+            )
+        skill = skill_file.parent.name
+        calls = skill_unpermitted_calls(text, skill)
+        if calls:
+            located = ", ".join(f"{tool} (line {number})" for number, tool in calls)
+            findings.error(
+                f".claude/skills/{skill}",
+                f"directs calls to state-changing tools its own `Permitted by "
+                f"name:` block does not list: {located}. Under the skill "
+                "structure convention (spec/goose/recipe-project-pattern/en.md) "
+                "only `## Gotchas` and `## Source` are explanation; everything "
+                "else is instruction, and a name there outside a policy block "
+                "is a call. Move an explanatory sentence verbatim under "
+                "`## Gotchas`, keep a prohibition inside the `Forbidden by "
+                "name:` run, or — if the skill really writes — list the tool "
+                "under `Permitted by name:` and load it only from `-apply` "
+                "recipes.",
+            )
+        for allowed in stale_skill_allowances(text, skill):
+            findings.error(
+                f".claude/skills/{skill}",
+                f"has a line allowance in SKILL_LINE_ALLOWANCES for {allowed!r}, "
+                "but that exact line does not occur exactly once. Remove or "
+                "update the entry: absent, it would hold whatever line takes "
+                "that text next; duplicated, it holds a copy nobody reviewed.",
+            )
+
+    present = {path.parent.name for path in SKILLS_DIR.glob("*/SKILL.md")}
+    for skill, allowed in sorted(SKILL_LINE_ALLOWANCES):
+        if skill not in present:
+            findings.error(
+                f".claude/skills/{skill}",
+                f"is named by a line allowance ({allowed!r}) but has no "
+                "SKILL.md. Remove the stale entry.",
             )
 
 
@@ -1046,8 +1358,10 @@ ELEVEN_OF_TWELVE = (
 )
 
 # The skill check answers the same question as COMPLETENESS_CASES but selects
-# differently and reads the whole file, because a SKILL.md has no policy
-# markers. One shape per way the selector or the count can be wrong.
+# differently and reads the whole file: a name anywhere counts, inside or
+# outside a policy block, in instruction or explanation. Which of those names
+# are calls is SKILL_OBEDIENCE_CASES' question. One shape per way the selector
+# or the count can be wrong.
 SKILL_COMPLETENESS_CASES = [
     (
         "a skill naming all twelve is complete",
@@ -1091,6 +1405,280 @@ SKILL_COMPLETENESS_CASES = [
         "a name that is called still counts as named",
         "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
         f"Never call {ALL_TWELVE}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
+        [],
+    ),
+]
+
+
+ALLOWED_PLANT_PLANNING_LINE = next(
+    line for skill, line in SKILL_LINE_ALLOWANCES if skill == "plant-planning"
+)
+
+SKILL_FORBID_ALL = "- Call no tool that changes state. Forbidden by name: " + ALL_TWELVE + "."
+
+# One shape per way the skill obedience guard can misread a section. Each case
+# is (name, skill directory name, SKILL.md text, expected calls, expected stale
+# allowed lines). The guard reads by heading, so every case is a heading
+# layout; none depends on how a sentence reads.
+SKILL_OBEDIENCE_CASES = [
+    (
+        "a call in a procedure is a call",
+        "selftest-skill",
+        "## Procedure\n\n1. Then call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "the same name under Gotchas is explanation",
+        "selftest-skill",
+        "## Procedure\n\n1. Read.\n\n## Gotchas\n\n"
+        "- `mcp__kamerplanter__archive_plant` is the write a tidy-up reaches for.\n",
+        [],
+        [],
+    ),
+    (
+        "the same name under Source is explanation",
+        "selftest-skill",
+        "## Procedure\n\n1. Read.\n\n## Source\n\n"
+        "Measured while `archive_plant` was being called on another instance.\n",
+        [],
+        [],
+    ),
+    (
+        "a name inside the forbidden block under Hard rules is policy",
+        "selftest-skill",
+        "## Hard rules\n\n" + SKILL_FORBID_ALL + "\n",
+        [],
+        [],
+    ),
+    (
+        "prose after the forbidden run that names a tool is a call",
+        "selftest-skill",
+        "## Hard rules\n\n" + SKILL_FORBID_ALL
+        + " `create_inspection` is the write an IPM path reaches for first.\n",
+        ["create_inspection"],
+        [],
+    ),
+    (
+        "an unknown heading is instruction",
+        "selftest-skill",
+        "## Background\n\nThe server offers `mcp__kamerplanter__create_site`.\n",
+        ["create_site"],
+        [],
+    ),
+    (
+        "a level-3 Gotchas nested in a procedure is instruction",
+        "selftest-skill",
+        "## Procedure\n\n### Gotchas\n\n- Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a procedure after Gotchas is instruction again",
+        "selftest-skill",
+        "## Gotchas\n\n- `archive_plant` is dangerous.\n\n## Procedure\n\n"
+        "1. Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a Gotchas line inside a fence opens no explanation section",
+        "selftest-skill",
+        "## Procedure\n\n```\n## Gotchas\n```\n\n"
+        "1. Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a skill calls what its own permitted block lists, and nothing else",
+        "selftest-skill",
+        "## Procedure\n\n1. Call `mcp__kamerplanter__claim_diary_analysis`.\n"
+        "2. Call `mcp__kamerplanter__archive_plant`.\n\n## Hard rules\n\n"
+        "- Permitted by name: `mcp__kamerplanter__claim_diary_analysis`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a bare name in a skill that never names the server prefix is a call",
+        "selftest-skill",
+        "## Procedure\n\n1. Tidy up with `archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "frontmatter and text before the first heading are instruction",
+        "selftest-skill",
+        "---\nname: selftest-skill\ndescription: Calls create_site.\n---\n\n"
+        "Then call `transition_plant_phase`.\n\n## Gotchas\n\n- Nothing.\n",
+        ["create_site", "transition_plant_phase"],
+        [],
+    ),
+    (
+        "an allowlisted plant-planning line is held, the same names elsewhere are not",
+        "plant-planning",
+        "## Procedure\n\n```\n  " + ALLOWED_PLANT_PLANNING_LINE + "\n```\n\n"
+        "2. Then call create_site.\n",
+        ["create_site"],
+        [],
+    ),
+    (
+        "an allowance whose line is gone is stale",
+        "plant-planning",
+        "## Procedure\n\n1. Read the garden.\n",
+        [],
+        [ALLOWED_PLANT_PLANNING_LINE],
+    ),
+    (
+        "a new line sharing the allowance's opening words is not held",
+        "plant-planning",
+        "## Procedure\n\n```\n  " + ALLOWED_PLANT_PLANNING_LINE + "\n```\n\n"
+        "The measured catalog has no tool that creates a planting run, so first "
+        "call `mcp__kamerplanter__create_site` and `archive_plant`.\n\n## Hard rules\n",
+        ["archive_plant", "create_site"],
+        [],
+    ),
+    (
+        "the allowed line rewritten to carry a call is not held, and the entry is stale",
+        "plant-planning",
+        "## Procedure\n\n```\n  The measured catalog has no tool that creates a "
+        "planting run. Call create_site now.\n```\n",
+        ["create_site"],
+        [ALLOWED_PLANT_PLANNING_LINE],
+    ),
+    (
+        "the allowed line twice is stale and neither copy is held",
+        "plant-planning",
+        "## Procedure\n\n" + ALLOWED_PLANT_PLANNING_LINE + "\n\n"
+        + ALLOWED_PLANT_PLANNING_LINE + "\n",
+        sorted(STATE_CHANGING_TOOLS),
+        [ALLOWED_PLANT_PLANNING_LINE],
+    ),
+    (
+        "a setext heading ends a Gotchas section",
+        "selftest-skill",
+        "## Gotchas\n\nx\n\nProcedure\n=========\n\n"
+        "Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a dash setext heading ends a Gotchas section too",
+        "selftest-skill",
+        "## Gotchas\n\nx\n\nProcedure\n---\n\n"
+        "Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a fence line with trailing text does not close the fence",
+        "selftest-skill",
+        "## Procedure\n\n```\n``` not a closer\n## Gotchas\n```\n\n"
+        "Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a shorter fence line does not close a longer fence",
+        "selftest-skill",
+        "## Procedure\n\n````\n```\n## Gotchas\n````\n\n"
+        "Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "a Gotchas heading inside an HTML comment opens no explanation section",
+        "selftest-skill",
+        "## Procedure\n\n<!--\n## Gotchas\n-->\n\n"
+        "Call `mcp__kamerplanter__archive_plant`.\n",
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "CRLF line endings parse like LF",
+        "selftest-skill",
+        "## Procedure\r\n\r\n1. Read.\r\n\r\n## Gotchas\r\n\r\n"
+        "- `archive_plant` is the write a tidy-up reaches for.\r\n",
+        [],
+        [],
+    ),
+]
+
+
+PERMITTING_SKILL = (
+    "## Hard rules\n\n- Permitted by name: "
+    "`mcp__kamerplanter__claim_diary_analysis`.\n"
+)
+READING_SKILL = "## Hard rules\n\n" + SKILL_FORBID_ALL + "\n"
+
+# One shape per way the `Permitted`-loader bound can be wrong: (name, recipes
+# as {filename: (is_apply, body)}, skills as {name: SKILL.md}, expected loads).
+PERMITTING_LOAD_CASES = [
+    (
+        "a permitting skill loaded by an -apply recipe passes",
+        {"claim-apply.yaml": (True, "Load the skill `claimer`.")},
+        {"claimer": PERMITTING_SKILL},
+        [],
+    ),
+    (
+        "the same skill loaded by a read-only recipe fails",
+        {"claim-check.yaml": (False, "Load the skill `claimer`.")},
+        {"claimer": PERMITTING_SKILL},
+        [("claim-check.yaml", "claimer")],
+    ),
+    (
+        "a skill without a permitted block loaded by a read-only recipe passes",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {"reader": READING_SKILL},
+        [],
+    ),
+    (
+        "a permitting skill reached through another skill fails too",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {
+            "reader": READING_SKILL + "\nThen follow the `claimer` skill.\n",
+            "claimer": PERMITTING_SKILL,
+        },
+        [("read-check.yaml", "claimer")],
+    ),
+    (
+        "a skill mentioning a permitting skill only under Gotchas creates no load",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {
+            "reader": READING_SKILL + "\n## Gotchas\n\n- The claim tools belong to "
+            "`claimer`; this skill hands back to it.\n",
+            "claimer": PERMITTING_SKILL,
+        },
+        [],
+    ),
+    (
+        "a skill naming a permitting skill in its procedure loads it",
+        {"read-check.yaml": (False, "Load the skill `reader`.")},
+        {
+            "reader": "## Procedure\n\n1. Hand the entry to `claimer`.\n\n"
+            + READING_SKILL,
+            "claimer": PERMITTING_SKILL,
+        },
+        [("read-check.yaml", "claimer")],
+    ),
+] + [
+    (
+        f"a read-only recipe naming the skill as {body!r} loads it",
+        {"read-check.yaml": (False, body)},
+        {"reader": READING_SKILL, "claimer": PERMITTING_SKILL},
+        [("read-check.yaml", "claimer")],
+    )
+    for body in (
+        "Load the skills `reader` and `claimer`.",
+        "Load the skills `reader`, `claimer`.",
+        "Follow `claimer`.",
+        "Use the claimer skill.",
+        "Load the Skill `claimer`.",
+    )
+] + [
+    (
+        "a longer name that contains the skill name is not a load",
+        {"read-check.yaml": (False, "Load the skill `claimer-legacy`; see reclaimers.")},
+        {"claimer": PERMITTING_SKILL},
         [],
     ),
 ]
@@ -1238,6 +1826,30 @@ def run_self_test() -> int:
         return 1
     print(f"OK — {len(SKILL_COMPLETENESS_CASES)} skill completeness cases hold.")
 
+    for name, skill, body, expected, expected_stale in SKILL_OBEDIENCE_CASES:
+        actual = sorted({tool for _, tool in skill_unpermitted_calls(body, skill)})
+        stale = stale_skill_allowances(body, skill)
+        if actual != sorted(expected) or stale != sorted(expected_stale):
+            failures += 1
+            print(
+                f"  FAIL {name}\n       expected {sorted(expected)} / stale "
+                f"{sorted(expected_stale)}, got {actual} / stale {stale}"
+            )
+    if failures:
+        print(f"\n{failures} of {len(SKILL_OBEDIENCE_CASES)} skill obedience case(s) failed.")
+        return 1
+    print(f"OK — {len(SKILL_OBEDIENCE_CASES)} skill obedience cases hold.")
+
+    for name, recipes, skills, expected in PERMITTING_LOAD_CASES:
+        actual = permitting_skill_loads(recipes, skills)
+        if actual != sorted(expected):
+            failures += 1
+            print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")
+    if failures:
+        print(f"\n{failures} of {len(PERMITTING_LOAD_CASES)} permitting-load case(s) failed.")
+        return 1
+    print(f"OK — {len(PERMITTING_LOAD_CASES)} permitting-load cases hold.")
+
     for name, prompt_body, instructions_body, required, forbidden in RECIPE_CASES:
         reported = "\n".join(recipe_case_findings(prompt_body, instructions_body))
         for needle in required:
@@ -1274,6 +1886,7 @@ def main() -> int:
         check_recipe(path, findings)
     check_extensions(findings)
     check_skills(findings)
+    check_permitting_skill_loads(findings)
     check_agents(findings)
     run_goose_validate(findings)
 

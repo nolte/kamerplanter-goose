@@ -68,7 +68,6 @@ Every finding names three things: **which photo**, **which visible feature**, an
 - Never leave an axis unmentioned. `not-assessable` is a valid, useful answer; silence is not.
 - Judge timing against the entry's `created_at`. A photo analysed three weeks late is evidence about the plant three weeks ago.
 - Never call a tool that changes state. Forbidden by name: `mcp__kamerplanter__confirm_care_task`, `mcp__kamerplanter__add_plant_diary_entry`, `mcp__kamerplanter__archive_plant`, `mcp__kamerplanter__set_plant_location`, `mcp__kamerplanter__create_site`, `mcp__kamerplanter__transition_plant_phase`, `mcp__kamerplanter__assign_species_phase_sequence`, `mcp__kamerplanter__assign_nutrient_plan`, `mcp__kamerplanter__record_feeding_event`, `mcp__kamerplanter__create_inspection`. This skill reads photos and judges them, and calls none of those.
-- `mcp__kamerplanter__claim_diary_analysis` and `mcp__kamerplanter__submit_diary_analysis` are the two this skill must **not** be read as forbidding. It never calls them itself, but it runs inside a claim cycle that has to reach its submit on every path — a blanket prohibition here composes into the caller's context and fights that obligation, leaving the lease to expire instead of being released. They belong to `diary-analysis-claim`; this skill hands back to it.
 
 ## Gotchas
 
@@ -77,6 +76,7 @@ Every finding names three things: **which photo**, **which visible feature**, an
 - `mcp__kamerplanter__get_diary_entry_photos` delivers WebP renditions, not originals. Fine detail beyond the 1280 edge size is simply unavailable; treat that as a gap rather than straining the interpretation.
 - An empty pest history means no *recorded* pests, not no pests. It lowers the prior for a recurrence; it does not raise it for a clean plant.
 - Photos of the same entry may show different plant parts rather than the same subject twice. Reconcile them before concluding, and cite each id that actually contributed.
+- `mcp__kamerplanter__claim_diary_analysis` and `mcp__kamerplanter__submit_diary_analysis` are the two this skill must **not** be read as forbidding. It never calls them itself, but it runs inside a claim cycle that has to reach its submit on every path — a blanket prohibition here composes into the caller's context and fights that obligation, leaving the lease to expire instead of being released. They belong to `diary-analysis-claim`; this skill hands back to it.
 
 ## Source
 
