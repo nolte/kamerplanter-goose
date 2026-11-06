@@ -162,9 +162,13 @@ def code_spans(text: str) -> list[tuple[int, int]]:
             paragraph_start = None
             run = opener.group(1)
             fence = (run[0], len(run), offset)
-        elif not line.strip():
+        elif not line.strip() or ATX_HEADING_PATTERN.match(line):
+            # A heading ends the paragraph and is a block of its own, as in
+            # CommonMark; a backtick before it must not pair with one after.
             close_paragraph(offset)
             paragraph_start = None
+            if line.strip():
+                spans.extend(inline_code_spans(text, offset, line_end))
         elif paragraph_start is None:
             paragraph_start = offset
         offset = line_end + 1
@@ -231,7 +235,9 @@ def continues_block(text: str) -> bool:
     return is_name_line(text) and bool(BACKTICK_SPAN_PATTERN.search(text))
 
 
-def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
+def policy_spans(
+    prompt: str, marker: str, skip_code: bool = True
+) -> list[tuple[int, int]]:
     """Character spans of every block introduced by `marker`.
 
     Spans, not strings: excision by `str.replace` is position-blind and left an
@@ -240,9 +246,14 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
     A marker inside code (`code_spans`) is a mention of the convention and
     opens nothing (#78): a quoted `Forbidden by name:` followed by a name on
     the next line used to excise that name as policy, hiding a real call.
+
+    `skip_code=False` reads every marker as a block. That is the strict
+    reading for a caller to whom a found block is the failure — a permitted
+    write in `permitting_skill_loads` — where skipping code would be the
+    unsafe direction.
     """
     spans = []
-    code = code_spans(prompt)
+    code = code_spans(prompt) if skip_code else []
     for match in re.finditer(re.escape(marker), prompt):
         if in_code(code, match.start()):
             continue
@@ -359,9 +370,15 @@ def calls_state_changing_tools(
     return sorted(tool for tool in tools if tool_pattern(tool).search(remainder))
 
 
-def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
+def policy_text(
+    body: str, markers: tuple[str, ...] = POLICY_MARKERS, skip_code: bool = True
+) -> str:
     """Everything INSIDE a policy block — the complement of `outside_policy`."""
-    spans = sorted(span for marker in markers for span in policy_spans(body, marker))
+    spans = sorted(
+        span
+        for marker in markers
+        for span in policy_spans(body, marker, skip_code)
+    )
     return "\n".join(body[start:end] for start, end in spans)
 
 
@@ -739,12 +756,18 @@ def permitting_skill_loads(
     withdrawn: plant-photo-read's `## Gotchas` says the claim tools belong to
     diary-analysis-claim, and that sentence alone made every read-only recipe
     loading plant-photo-read read as loading the claim skill.
+
+    For the same reason a permitted block inside code still counts here
+    (`skip_code=False`): a quoted template is a mention to the other guards,
+    but the model reads it, and skipping it would pass the load (#84 review).
     """
     permitting = {
         name
         for name, text in skills.items()
         if any(
-            tool_pattern(tool).search(policy_text(text, ("Permitted by name:",)))
+            tool_pattern(tool).search(
+                policy_text(text, ("Permitted by name:",), skip_code=False)
+            )
             for tool in STATE_CHANGING_TOOLS | set(HA_UNCLASSIFIED_INTENTS)
         )
     }
@@ -2055,6 +2078,26 @@ PERMITTING_LOAD_CASES = [
         {"timer-apply.yaml": (True, "Load the skill `timer`.")},
         {"timer": "## Hard rules\n\n- Permitted by name: `TimeTillErnte`, `time_till`.\n"},
         [],
+    ),
+    # #84 review: here a block found is the failure, so code is no mention.
+    (
+        "a permitted block in a fence under Gotchas still fails a read-only load",
+        {"read-check.yaml": (False, "Load the skill `quoter`.")},
+        {
+            "quoter": "# s\n\n## Steps\n\nRead only.\n\n## Gotchas\n\n```\n"
+            "Permitted by name: `mcp__kamerplanter__archive_plant`.\n```\n"
+        },
+        [("read-check.yaml", "quoter")],
+    ),
+    (
+        "a stray backtick before a heading does not hide the next section's block",
+        {"read-check.yaml": (False, "Load the skill `quoter`.")},
+        {
+            "quoter": "# s\n\n## Gotchas\n\nDon`t trust the cache.\n## Steps\n"
+            "- Permitted by name: `mcp__kamerplanter__archive_plant`.\n"
+            "- Call `mcp__kamerplanter__archive_plant`.\n"
+        },
+        [("read-check.yaml", "quoter")],
     ),
 ]
 
