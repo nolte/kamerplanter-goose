@@ -60,7 +60,8 @@ Der Lauf druckt eine Zeile je Schritt mit einem Result von genau `PASS`, `FAIL` 
 | `404` von Kamerplanter | sein MCP-Server ist nicht aktiviert — `MCP_SERVER_ENABLED=true` |
 | `401` von Kamerplanter | der API-Key ist ungültig oder widerrufen |
 | `401` von Home Assistant | das Long-Lived Access Token stimmt nicht |
-| ein Server fehlt im Lauf vollständig | die Variable unter den `env_keys` dieser Extension ist nicht gesetzt, und Goose entfernt die Extension ohne Warnung |
+| der Lauf stoppt vor dem Start mit `Configuration value not found: <VAR>` | eine Variable unter den `env_keys` irgendeiner Extension ist nicht gesetzt — irgendeiner, nicht nur einer, die dieses Rezept nutzt |
+| ein Server fehlt im Lauf, nach einer Warnung `Failed to start extension` | die Variable unter den `env_keys` dieser Extension ist gesetzt, aber leer, typischerweise eine gescheiterte Abfrage im Passwortmanager |
 | `401`, obwohl die Zugangsdaten stimmen | die Variable steht nicht unter den `env_keys` dieser Extension, also ging das wörtliche `${KAMERPLANTER_API_KEY}` über die Leitung und der Server wies es als falschen Key ab |
 
 Die letzten beiden sind die teuren, weil keiner von beiden nach einem Konfigurationsproblem aussieht. Beide sind Eigenschaften der `extensions.yaml`, nicht deines Servers.
@@ -69,4 +70,4 @@ Die letzten beiden sind die teuren, weil keiner von beiden nach einem Konfigurat
 
 - [`recipes/connectivity-check.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/connectivity-check.yaml) — die vier Schritte, die verbotenen Werkzeuge und das Berichtsformat
 - [`extensions.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/extensions.yaml) — die Endpunkte und `env_keys`, die sich alle Rezepte hier teilen
-- [`spec/goose/recipe-project-pattern/de.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/goose/recipe-project-pattern/de.md) — warum eine nicht gesetzte `env_keys`-Variable eine Extension stillschweigend entfernt
+- [`spec/goose/recipe-project-pattern/de.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/goose/recipe-project-pattern/de.md) — was eine nicht gesetzte oder leere `env_keys`-Variable mit einem Lauf macht

@@ -1096,8 +1096,10 @@ def check_extensions(findings: Findings) -> None:
         for unused in sorted(declared - referenced):
             findings.note(
                 f"{where}: lists {unused} in `env_keys` without referencing "
-                "it — harmless, but the entry is skipped entirely when the "
-                "variable is unset, with no warning."
+                "it — harmless while it is set, but Goose still resolves it: "
+                "an unset variable in `env_keys` aborts every run with "
+                "`Configuration value not found` (measured for referenced "
+                "variables, 2026-11-05)."
             )
 
         # A literal credential must never reach a tracked file.
