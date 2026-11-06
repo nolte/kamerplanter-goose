@@ -3,7 +3,7 @@ title: Referenzen
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Referenzen
@@ -37,13 +37,13 @@ Zu jedem Rezept gibt es eine eigene Anleitung, verlinkt über seinen Namen.
 | [`harvest-readiness-check`](../guides/harvest-readiness-check.md) | nein | Reif, nahe der Reife, nicht reif, nicht erntbar oder zu wenig Beleg, für eine Pflanze, mit ihrer Sperre durch die Wartezeit; erntet nichts |
 | [`harvest-plan`](../guides/harvest-plan.md) | nein | Die Ernten von bis zu fünf Pflanzen in einer Reihenfolge, mit Fenstern und Arbeitszählungen; plant nichts ein |
 | [`garden-review`](../guides/garden-review.md) | nein | Die bisherige Geschichte eines Gartens, Pflanze für Pflanze, mit Lehren und einem Block für den nächsten Zyklus; schreibt nichts |
-| [`season-review`](../guides/season-review.md) | nein | Die Geschichte einer Saison, archivierte Pflanzen eingeschlossen, übergeben an den nächsten Plan; schreibt nichts |
+| [`garden-review` `season=…`](../guides/season-review.md) | nein | Die Geschichte einer Saison, archivierte Pflanzen eingeschlossen, übergeben an den nächsten Plan; schreibt nichts |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | nein | Ob ein Artdatensatz plausibel ist und wie sein Lebenszyklus aussieht |
 | [`garden-context-check`](../guides/garden-context-check.md) | nein | Welche Teile des Kontexts eines Gartens bekannt sind und welche fehlen |
 | [`crop-selection`](../guides/crop-selection.md) | nein | Welche Kandidaten ein Standort trägt und welche Bedingungen er verfehlt |
 | [`planting-calendar`](../guides/planting-calendar.md) | nein | Wann jede gewählte Kultur an einem Garten gesät, umgepflanzt und geerntet werden kann |
 | [`garden-plan`](../guides/garden-plan.md) | nein | Vorschläge für Pflanzdurchläufe zu gewählten Kulturen, zur Prüfung; wendet nichts an |
-| [`season-plan`](../guides/season-plan.md) | nein | Der Plan auf zwölf Monate gelegt, mit seinen Folgesaaten |
+| [`garden-plan` `view=months`](../guides/season-plan.md) | nein | Der Plan auf zwölf Monate gelegt, mit seinen Folgesaaten |
 | [`crop-rotation-plan`](../guides/crop-rotation-plan.md) | nein | Eine Pflanzenfamilie je Beet und Saison, mit Urteilen und Konflikten; hält nichts fest |
 | [`succession-plan`](../guides/succession-plan.md) | nein | Aufeinanderfolgende und gestaffelte Folgesaaten je Beet für eine Saison; hält nichts fest |
 | [`bed-layout-plan`](../guides/bed-layout-plan.md) | nein | Durchläufe je Beet mit Kapazität je Monat, Konflikten und nicht platzierten Durchläufen; hält nichts fest |

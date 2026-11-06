@@ -3,7 +3,7 @@ title: Garden plan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Garden plan
@@ -41,6 +41,7 @@ goose run --recipe garden-plan \
 | `hardiness_zone` | no | the hardiness check is undetermined: no tool says which zone a garden is in |
 | `beds` | no | no beds are listed for bed layout |
 | `planting_method` | no | every method with a known sowing window is offered, each as its own run |
+| `view` | no | `runs`, this page; `months` lays the same plan on twelve months — see the [season plan](season-plan.md) |
 
 `crops` is a comma-separated list; each entry is a species key, or a species key and a cultivar key joined by a colon. `beds` is a comma-separated list of `name:area_or_volume`, for example `bed-1:2m2,tub-1:10l`. `planting_method` is `direct_sow` or `indoor_then_transplant`; any other text is not a preference.
 

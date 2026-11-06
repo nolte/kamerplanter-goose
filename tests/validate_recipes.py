@@ -433,6 +433,32 @@ def missing_from_policy(
 # sentence has to name every category — the words prove the categories are
 # named, the marker carries the meaning (#75).
 HA_CATEGORY_MARKER = "Forbidden on Home Assistant:"
+
+# Goose renders `prompt` as a template before the model sees it, and a
+# conditional block is measured to work (`{% if view == "months" %}`, 2026-11-06,
+# #87). Every check here reads the unrendered text, so a policy block inside a
+# conditional is counted although a rendered run may drop it.
+TEMPLATE_BLOCK_PATTERN = re.compile(r"\{%-?\s*(if|for|endif|endfor)\b")
+
+
+def conditional_policy_markers(prompt: str) -> list[str]:
+    """Policy markers that sit inside a `{% if %}` or `{% for %}` block."""
+    depth_at: list[tuple[int, int]] = []
+    depth = 0
+    for match in TEMPLATE_BLOCK_PATTERN.finditer(prompt):
+        depth += 1 if match.group(1) in ("if", "for") else -1
+        depth_at.append((match.end(), depth))
+    found = []
+    for marker in (*POLICY_MARKERS, HA_CATEGORY_MARKER):
+        for hit in re.finditer(re.escape(marker), prompt):
+            inside = 0
+            for end, level in depth_at:
+                if end > hit.start():
+                    break
+                inside = level
+            if inside > 0 and marker not in found:
+                found.append(marker)
+    return found
 HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
 
 # Two intents on the reference instance whose effect is unclassified
@@ -935,6 +961,14 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # that calls nothing. Both checks still report; only the wording varies.
     prompt_text = prompt if isinstance(prompt, str) else ""
     missing = missing_from_policy(prompt_text)
+    for marker in conditional_policy_markers(prompt_text):
+        findings.error(
+            where,
+            f"has `{marker}` inside a template conditional in its `prompt`. "
+            "Goose renders the prompt first, so a run may never see that block "
+            "while this check counts it; keep every policy block outside "
+            "`{% if %}` / `{% for %}`.",
+        )
 
     if not is_apply:
         # A recipe may name a state-changing tool purely to forbid it, so the
@@ -2585,6 +2619,20 @@ HA_INTENT_BLOCK = "  - Forbidden by name: `TimeTillErnte`, `time_till`."
 HA_CLEAN = HA_CATEGORY_BLOCK + "\n" + HA_INTENT_BLOCK
 
 RECIPE_CASES = [
+    (
+        "a policy block inside a template conditional is reported",
+        '  {% if view == "months" %}\n' + COMPLETE_BLOCK + "\n  {% endif %}\n",
+        PLAIN_INSTRUCTIONS,
+        ["has `Forbidden by name:` inside a template conditional"],
+        [],
+    ),
+    (
+        "a conditional beside a complete block reports nothing",
+        COMPLETE_BLOCK + '\n  {% if view == "months" %}Season.{% else %}Runs.{% endif %}\n',
+        PLAIN_INSTRUCTIONS,
+        [],
+        ["inside a template conditional"],
+    ),
     (
         "a complete block reports nothing",
         COMPLETE_BLOCK,

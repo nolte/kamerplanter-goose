@@ -3,12 +3,12 @@ title: Saisonplan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-10-14
+last_updated: 2026-11-06
 ---
 
 # Saisonplan
 
-Derselbe Plan, auf ein Jahr gelegt. `season-plan` erstellt den Plan von [`garden-plan`](garden-plan.md) für die genannten Kulturen und zeigt seine Durchläufe Monat für Monat, mit den Folgesaaten, die der Plan nennt. Er entsteht nur aus dem Plan: Er fügt kein Datum hinzu.
+Derselbe Plan, auf ein Jahr gelegt. [`garden-plan`](garden-plan.md) mit `view=months` erstellt seinen Plan für die genannten Kulturen und zeigt die Durchläufe Monat für Monat, mit den Folgesaaten, die der Plan nennt. Er entsteht nur aus dem Plan: Er fügt kein Datum hinzu.
 
 Er wendet nichts an, und unter den Kamerplanter-Werkzeugen, die dieses Repository gemessen hat, ist keines, das es könnte ([#59](https://github.com/nolte/kamerplanter-goose/issues/59)).
 
@@ -24,7 +24,8 @@ Dieser Lauf **liest nur**. Er ändert keinen Datensatz.
 ## Ausführen
 
 ```sh
-goose run --recipe season-plan \
+goose run --recipe garden-plan \
+  --params view=months \
   --params tenant=my-garden \
   --params crops="allium-porrum"
 ```
@@ -32,6 +33,7 @@ goose run --recipe season-plan \
 | Parameter | Pflicht | Wirkung, wenn weggelassen |
 |-----------|:-------:|---------------------------|
 | `crops` | ja | — |
+| `view` | ja, `months` | ohne ihn meldet der Lauf den Plan als Tabelle der Durchläufe — der [Gartenplan](garden-plan.md) |
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug aus `list_tenants` |
 | `goals` | nein | kein Ziel wird beurteilt; keines wird als erfüllt gemeldet |
 | `harvest_window` | nein | die Erntepräferenz wird als unbekannt gemeldet; sie scheidet nie eine Kultur aus |
@@ -57,7 +59,7 @@ Die aufgeführten Folgesaaten sind die, die der Plan nennt (`precedes` und `foll
 
 ## Quellen
 
-- [`recipes/season-plan.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/season-plan.yaml) — die Parameter und das Berichtsformat
+- [`recipes/garden-plan.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/garden-plan.yaml) — die Parameter und beide Berichtsformate
 - [`.claude/skills/plant-planning/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/plant-planning/SKILL.md) — die Durchläufe, ihre Kennungen und der Anwendungsvertrag
 - [`.claude/skills/planting-calendar/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/planting-calendar/SKILL.md) — die Fenster hinter jedem Durchlauf
 - [`.claude/skills/crop-selection/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/crop-selection/SKILL.md) — welche Kulturen geplant werden dürfen

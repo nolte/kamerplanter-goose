@@ -3,12 +3,12 @@ title: Garden review
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Garden review
 
-`garden-review` looks back over a garden in the middle of a season, up to a date: **what was recorded for each plant, what you say about it, what the season teaches, and what the next plan should keep or reconsider.** It ends in a next-cycle block you can hand to [`garden-plan`](garden-plan.md) or [`crop-selection`](crop-selection.md). For a whole finished season, archived plants included, use [`season-review`](season-review.md).
+`garden-review` looks back over a garden in the middle of a season, up to a date: **what was recorded for each plant, what you say about it, what the season teaches, and what the next plan should keep or reconsider.** It ends in a next-cycle block you can hand to [`garden-plan`](garden-plan.md) or [`crop-selection`](crop-selection.md). For a whole finished season, archived plants included, set `season` — see the [season review](season-review.md).
 
 The run **only reads**. It writes the review nowhere — no file, no diary entry — has no apply recipe and calls no Home Assistant tool.
 
@@ -46,6 +46,7 @@ goose run --recipe garden-review \
 | `notes` | no | nothing from you about plants or the garden |
 | `weather` | no | the season's weather is absent; it is context only either way |
 | `as_of` | no | the date of the newest diary entry read |
+| `season` | no | the in-season review on this page; a year or a span makes it the [season review](season-review.md) |
 
 At most five plants are reviewed: the first five by plant key, sorted as text. `;` and `:` separate the entries of `yields`, `harvest_results` and `notes`; a free-text part that contains them is shown verbatim and not parsed further. Each plant's diary is read for at most eight entries, and the review says how far back that reached.
 

@@ -3,12 +3,12 @@ title: Gartenrückschau
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Gartenrückschau
 
-`garden-review` blickt mitten in einer Saison auf einen Garten zurück, bis zu einem Datum: **was für jede Pflanze erfasst wurde, was du dazu sagst, was die Saison lehrt und was der nächste Plan beibehalten oder überdenken sollte.** Sie endet in einem Block für den nächsten Zyklus, den du an [`garden-plan`](garden-plan.md) oder [`crop-selection`](crop-selection.md) übergeben kannst. Für eine ganze, abgeschlossene Saison, archivierte Pflanzen eingeschlossen, nutze [`season-review`](season-review.md).
+`garden-review` blickt mitten in einer Saison auf einen Garten zurück, bis zu einem Datum: **was für jede Pflanze erfasst wurde, was du dazu sagst, was die Saison lehrt und was der nächste Plan beibehalten oder überdenken sollte.** Sie endet in einem Block für den nächsten Zyklus, den du an [`garden-plan`](garden-plan.md) oder [`crop-selection`](crop-selection.md) übergeben kannst. Für eine ganze, abgeschlossene Saison, archivierte Pflanzen eingeschlossen, setze `season` — siehe die [Saisonrückschau](season-review.md).
 
 Der Lauf **liest nur**. Er schreibt die Rückschau nirgendwohin — keine Datei, kein Tagebucheintrag —, hat kein Anwendungsrezept und ruft kein Home-Assistant-Tool auf.
 
@@ -46,6 +46,7 @@ goose run --recipe garden-review \
 | `notes` | nein | nichts von dir zu Pflanzen oder zum Garten |
 | `weather` | nein | das Wetter der Saison fehlt; es ist in jedem Fall nur Kontext |
 | `as_of` | nein | das Datum des jüngsten gelesenen Tagebucheintrags |
+| `season` | nein | die Rückschau mitten in der Saison auf dieser Seite; ein Jahr oder eine Spanne macht daraus die [Saisonrückschau](season-review.md) |
 
 Höchstens fünf Pflanzen werden betrachtet: die ersten fünf nach Pflanzenschlüssel, als Text sortiert. `;` und `:` trennen die Einträge von `yields`, `harvest_results` und `notes`; ein Freitextteil, der sie enthält, wird wörtlich gezeigt und nicht weiter geparst. Das Tagebuch jeder Pflanze wird für höchstens acht Einträge gelesen, und die Rückschau sagt, wie weit zurück das reichte.
 
