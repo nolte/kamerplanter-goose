@@ -142,7 +142,7 @@ NOT PLACED
   <crop key>: no planting run — <reason>
 APPLY CONTRACT
   per placement: <what a later apply step would record: the bed and its capacity, the run, its need, the season, its predecessors in this bed in the order of successor of>
-  The measured catalog has no tool that creates a bed, records a bed assignment or a layout, or creates a planting run. The write and setup tools it records are the twelve listed under Gotchas; none does. The one that moves a plant moves a plant that exists, while a layout places crops that are not plants yet, and the setup tool creates a site root, not a bed with an area.
+  The measured catalog has no tool that creates a bed, records a bed assignment or a layout, or creates a planting run. The write and setup tools it records are the sixteen listed under Gotchas; none does. The one that moves a plant moves a plant that exists, while a layout places crops that are not plants yet, and the setup tool creates a site root, not a bed with an area.
   The apply recipe, bed-layout-plan-apply, is tracked in nolte/kamerplanter-goose#74.
 ```
 
@@ -163,7 +163,7 @@ Return no field that was not read; list an unread field as absent with its reaso
 
 ## Gotchas
 
-- The apply contract names no tool, because the measured catalog has none that records a layout. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event` and `create_inspection`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). `set_plant_location` moves a plant that exists; `create_site` creates a site root. Reproduce this list in the report as the twelve tools the catalog records; it is explanation, never a call.
+- The apply contract names no tool, because the measured catalog has none that records a layout. The write tools it records are `add_plant_diary_entry`, `confirm_care_task`, `archive_plant`, `set_plant_location`, `claim_diary_analysis`, `submit_diary_analysis`, `transition_plant_phase`, `assign_species_phase_sequence`, `assign_nutrient_plan`, `record_feeding_event`, `create_inspection`, `clone_nutrient_plan`, `set_nutrient_plan_phase_targets`, `create_substrate_mix` and `set_plant_substrate`, and the setup tool `create_site` (`spec/mcp/kamerplanter-mcp-server/en.md`). `set_plant_location` moves a plant that exists; `create_site` creates a site root. Reproduce this list in the report as the sixteen tools the catalog records; it is explanation, never a call.
 - Without spacing and quantities every capacity is `not validated`. That is the honest result, not a failure; the runs are still placed by rotation, successions and companions.
 - An `over by` can only come from a pin, because an unpinned run never goes to a bed it would overfill.
 - A run that spans the season boundary has unknown occupancy, so its bed's capacity is `not validated` in every month, and it blocks every `avoid` partner from that bed.

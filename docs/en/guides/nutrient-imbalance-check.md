@@ -63,11 +63,10 @@ The report opens with a field table — direction, evidence tier, the assigned p
 
 `undetermined` at tier 3 is the ordinary outcome for a plant whose diary holds no measurement, and it is honest rather than lazy. In a garden where reminders get confirmed but quantities never get logged, tier 2 has nothing to stand on: a confirmed cadence without amounts is tier 3, and the answer is a request to measure.
 
-One thing lifts the same plant out of it, and it happens outside this run:
+Two things lift the same plant out of it, and both happen outside this run:
 
 - **Record one EC or pH reading in a diary entry.** That is a tier 1 value, and it settles the direction on its own.
-
-`record_feeding_event` carries the amount and the EC and pH before and after a feeding, but it is not a remedy yet: this recipe is forbidden from calling it — it writes — and it is not measured whether any read tool returns those events, so recording them may not feed this check by itself.
+- **Record each feeding with its amount**, through `fertilization-decision-apply` or the Kamerplanter UI. This recipe never writes one, but it reads recorded feedings back through `get_plant_diagnostics`, and with a nutrient plan assigned they put tier 2 within reach. Feedings older than the diagnostics window (14 days by default) are not seen.
 
 ## Sources
 

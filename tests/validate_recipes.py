@@ -22,6 +22,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 import yaml
@@ -34,22 +35,28 @@ SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
 # outside a policy block has to carry the -apply suffix.
 #
-# Twelve as of 2026-08-16, counted against the server's live tool surface. The
-# last five arrived after the first seven were written, and a tool this set has
-# never heard of passes the guard silently: `task test` reports OK and CI stays
-# green while a write-capable recipe carries no -apply suffix. Re-count this
-# against the server whenever the MCP surface changes.
+# Sixteen as of 2026-11-05 (15 `mcp.write` plus the `mcp.setup` tool
+# `create_site`), counted against the server's live tool surface. Twelve as of
+# 2026-08-16, whose last five arrived after the first seven were written; the
+# four nutrient-plan and substrate writes arrived after that (#80). A tool
+# this set has never heard of passes the guard silently: `task test` reports
+# OK and CI stays green while a write-capable recipe carries no -apply suffix.
+# Re-count this against the server whenever the MCP surface changes.
 STATE_CHANGING_TOOLS = {
     "add_plant_diary_entry",
     "archive_plant",
     "assign_nutrient_plan",
     "assign_species_phase_sequence",
     "claim_diary_analysis",
+    "clone_nutrient_plan",
     "confirm_care_task",
     "create_inspection",
     "create_site",
+    "create_substrate_mix",
     "record_feeding_event",
+    "set_nutrient_plan_phase_targets",
     "set_plant_location",
+    "set_plant_substrate",
     "submit_diary_analysis",
     "transition_plant_phase",
 }
@@ -95,8 +102,14 @@ class Findings:
 # English, and it misread in both directions throughout. Deciding it by
 # convention is what makes it checkable at all.
 POLICY_MARKERS = ("Forbidden by name:", "Permitted by name:")
+# The markers a read-only recipe's policy is read at: `Permitted by name:` is
+# not policy there, for the reason `calls_state_changing_tools` gives.
+READ_ONLY_MARKERS = ("Forbidden by name:",)
 
 BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
+# The bullet prefix with every space after the marker: its end is the column
+# the bullet's text starts at.
+BULLET_TEXT_PATTERN = re.compile(r"^\s*[-*]\s+")
 BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
 TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
 
@@ -226,20 +239,32 @@ def outside_policy(prompt: str, markers: tuple[str, ...] = POLICY_MARKERS) -> st
     return "\n".join(kept)
 
 
-def calls_state_changing_tools(body: str, is_apply: bool = True) -> list[str]:
-    """State-changing tools named outside every policy block — i.e. called.
+def calls_state_changing_tools(
+    body: str,
+    is_apply: bool = True,
+    tools: Iterable[str] = STATE_CHANGING_TOOLS,
+) -> list[str]:
+    """`tools` named outside every policy block — i.e. called — sorted.
 
     `Permitted by name:` counts as policy only where the filename says the
     recipe writes. Excising it unconditionally let any recipe declare a write
     permitted and drop out of the guard: renaming
     `diary-photo-analysis-apply.yaml` to drop the suffix left a recipe that
     claims and submits diary analyses passing clean.
+
+    `tools` defaults to the sixteen; the Home Assistant guard passes
+    `HA_UNCLASSIFIED_INTENTS`. A read-only recipe is read at `is_apply=False`
+    (the `Forbidden by name:` marker alone); a skill at the default, both
+    markers. For the sixteen, whether a skill's `Permitted by name:` block is
+    legitimate is the separate `check_permitting_skill_loads` question. For
+    the Home Assistant intents nothing answers it: `permitting_skill_loads`
+    reads a permitted block for the sixteen alone, so a skill that permits
+    `TimeTillErnte` and `time_till` by name passes this read, and a read-only
+    recipe loading it gets no finding. A known gap, not closed here.
     """
-    markers = POLICY_MARKERS if is_apply else ("Forbidden by name:",)
+    markers = POLICY_MARKERS if is_apply else READ_ONLY_MARKERS
     remainder = outside_policy(body, markers)
-    return sorted(
-        tool for tool in STATE_CHANGING_TOOLS if tool_pattern(tool).search(remainder)
-    )
+    return sorted(tool for tool in tools if tool_pattern(tool).search(remainder))
 
 
 def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
@@ -249,34 +274,35 @@ def policy_text(body: str, markers: tuple[str, ...] = POLICY_MARKERS) -> str:
 
 
 def missing_from_policy(
-    body: str, markers: tuple[str, ...] = POLICY_MARKERS
+    body: str,
+    markers: tuple[str, ...] = POLICY_MARKERS,
+    tools: Iterable[str] = STATE_CHANGING_TOOLS,
 ) -> list[str]:
-    """The twelve minus what the artefact names INSIDE a policy block.
+    """`tools` — the sixteen by default — minus what the artefact names INSIDE
+    a policy block, sorted.
 
     The guard above answers the opposite question — which names sit OUTSIDE a
     block, i.e. are called — and cannot see a subset at all, because an absent
     name is outside nothing. Measured: stripping eight of the twelve out of a
     read-only recipe's `Forbidden by name:` block left the whole gate green.
 
-    Completeness is a property of the union. Both `-apply` recipes split the
-    set as two permitted plus ten forbidden, so demanding twelve in the
-    forbidden half alone would fail exactly the recipes that declare their
-    writes correctly.
+    Completeness is a property of the union. The `-apply` recipes split the
+    set into a permitted and a forbidden half — the diary pair as two plus
+    fourteen — so demanding sixteen in the forbidden half alone would fail
+    exactly the recipes that declare their writes correctly.
 
     A tool name inside a fenced example counts as declared. That is a false
     negative — it can only make a recipe look more complete than it is, never
     block a correct one — and it is the benign direction to leave open.
     """
     inside = policy_text(body, markers)
-    return sorted(
-        tool for tool in STATE_CHANGING_TOOLS if not tool_pattern(tool).search(inside)
-    )
+    return sorted(tool for tool in tools if not tool_pattern(tool).search(inside))
 
 
 # Home Assistant's catalog is assembled per instance, so its actuating side
-# cannot be forbidden by name the way the twelve are. A read-only recipe
+# cannot be forbidden by name the way the sixteen are. A read-only recipe
 # forbids it by category behind a literal marker instead, and the marker's
-# paragraph has to name every category — the words prove the categories are
+# sentence has to name every category — the words prove the categories are
 # named, the marker carries the meaning (#75).
 HA_CATEGORY_MARKER = "Forbidden on Home Assistant:"
 HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
@@ -286,95 +312,114 @@ HA_CATEGORY_TERMS = ("on or off", "value", "script", "scene", "automation")
 # them, a read-only recipe forbids both by name and calls neither.
 HA_UNCLASSIFIED_INTENTS = ("TimeTillErnte", "time_till")
 
+# A list item's prefix — bullet or number — with every space after it, for
+# the Home Assistant scope alone: its end is the column the item's text
+# starts at. `policy_spans` keeps the narrower `BULLET_PREFIX_PATTERN`.
+LIST_ITEM_PATTERN = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+# A sentence terminator: `.`, `!` or `?`, any closing brackets or quotes,
+# then whitespace or the end of the text.
+SENTENCE_END_PATTERN = re.compile(r"[.!?][)\]\"']*(?=\s|$)")
 
-# The markers a read-only recipe's policy is read at: `Permitted by name:` is
-# not policy there, for the reason `calls_state_changing_tools` gives.
-READ_ONLY_MARKERS = ("Forbidden by name:",)
 
+def ha_category_scopes(prompt: str) -> list[str]:
+    """The scope each `Forbidden on Home Assistant:` marker opens.
 
-def ha_category_paragraphs(prompt: str) -> list[str]:
-    """The paragraph each `Forbidden on Home Assistant:` marker opens.
+    A scope runs from the marker to the end of the sentence the marker sits
+    in: the first `.`, `!` or `?` — with any closing `)`, `]`, `"` or `'`
+    after it — that is followed by whitespace or the end of the text. It is
+    cut earlier at the first following line that is one of:
 
-    A paragraph runs from the marker to the end of its line, then across the
-    following lines until a blank (whitespace-only) line or a bullet indented
-    at most as deep as the line carrying the marker. A deeper bullet continues
-    it, so the categories may be listed as nested bullets. Text before the
-    marker on its own line is not part of it.
+    - blank (whitespace-only);
+    - a list item (`-`, `*`, `+`, `1.`, `1)`) indented at most as deep as the
+      line carrying the marker;
+    - a line that is not a list item, indented less than the marker line's
+      text column.
+
+    The sentence bound is what ends a scope in the common case, whatever the
+    surrounding format: a plain line, a bullet, and a numbered item each end
+    where their sentence does, so a next step that follows at the marker's
+    own indent is not read as its continuation (pre-merge review R1, R2). The
+    line cuts bound a scope that carries no terminator — categories listed as
+    nested bullets without punctuation, say. The text column is where the
+    marker line's prose starts: past the list prefix (`  - ` and `1. ` are
+    columns 4 and 3) when the marker line is a list item, the line's own
+    indent when it is not. A deeper list item continues the scope, and so
+    does its own wrapped text. Text before the marker on its own line is not
+    part of it.
+
+    A period that ends no sentence still ends the scope when whitespace
+    follows it: `e.g. a light` cuts at `e.g.`. That can only fail a recipe
+    that names its categories after such a period, never pass one that
+    omits them; a decimal (`0.5`) or a dotted name (`light.turn_on`) has no
+    whitespace after its period and does not cut.
+
+    A marker inside a backtick span on its own line — an odd number of
+    backticks before it — is a mention of the rule, not the rule, and opens
+    nothing (#77). A span that wraps across a line is not seen; that can only
+    open a scope that should not exist, the benign direction for a keyword
+    check that the marker's words still have to satisfy.
 
     Deliberately simpler than `policy_spans`: that one bounds a run of names,
     this one bounds prose, so a prose line continues it where it would end a
     name block.
     """
-    paragraphs = []
+    scopes = []
     for match in re.finditer(re.escape(HA_CATEGORY_MARKER), prompt):
         line_start = prompt.rfind("\n", 0, match.start()) + 1
+        if prompt[line_start:match.start()].count("`") % 2:
+            continue
         marker_line = prompt[line_start:]
         marker_indent = len(marker_line) - len(marker_line.lstrip())
-        newline = prompt.find("\n", match.end())
-        if newline == -1:
-            paragraphs.append(prompt[match.end():])
-            continue
-        lines = [prompt[match.end():newline]]
-        for line in prompt[newline + 1:].split("\n"):
+        item = LIST_ITEM_PATTERN.match(marker_line)
+        text_column = item.end() if item else marker_indent
+        lines = prompt[match.end():].split("\n")
+        kept = [lines[0]]
+        for line in lines[1:]:
             if not line.strip():
                 break
-            if BULLET_PREFIX_PATTERN.match(line) and (
-                len(line) - len(line.lstrip()) <= marker_indent
-            ):
+            indent = len(line) - len(line.lstrip())
+            if LIST_ITEM_PATTERN.match(line):
+                if indent <= marker_indent:
+                    break
+            elif indent < text_column:
                 break
-            lines.append(line)
-        paragraphs.append("\n".join(lines))
-    return paragraphs
+            kept.append(line)
+        scope = "\n".join(kept)
+        if sentence_end := SENTENCE_END_PATTERN.search(scope):
+            scope = scope[:sentence_end.end()]
+        scopes.append(scope)
+    return scopes
+
+
+def ha_category_term_pattern(term: str) -> re.Pattern:
+    """Match a category as whole words, with an optional plural `s`.
+
+    Read against text whose whitespace runs are already collapsed to one
+    space, so the single space inside `on or off` stands for any wrap.
+    """
+    return re.compile(rf"\b{re.escape(term)}s?\b")
 
 
 def ha_category_missing(prompt: str) -> list[str]:
-    """`HA_CATEGORY_TERMS` absent from every marker paragraph, sorted.
+    """`HA_CATEGORY_TERMS` absent from every marker scope, sorted.
 
-    Case-insensitive substring match over the union of all marker paragraphs,
+    Case-insensitive whole-word match over the union of all marker scopes,
     with every whitespace run collapsed to one space first, so a category may
-    wrap across a line and the categories may be split across two markers. No
-    marker means all five are missing.
+    wrap across a line and the categories may be split across two markers. A
+    plural `s` counts (`values`, `scripts`); a longer word does not
+    (`scenery`, `transcript`, `devalued`, `button or offset`). No marker means
+    all five are missing.
 
-    Known limits, accepted: the terms are keywords, not structure — a paragraph
+    Known limit, accepted: the terms are keywords, not structure — a scope
     can name all five and forbid nothing, and the marker is what carries the
-    prohibition. A substring also matches inside a longer word (`scenery`).
-    Both can only pass a recipe that names the categories badly, never fail one
-    that names them well.
+    prohibition. That can only pass a recipe that names the categories badly,
+    never fail one that names them well.
     """
-    text = " ".join(" ".join(ha_category_paragraphs(prompt)).split()).lower()
-    return sorted(term for term in HA_CATEGORY_TERMS if term not in text)
-
-
-def ha_intents_outside_policy(
-    text: str, markers: tuple[str, ...] = POLICY_MARKERS
-) -> list[str]:
-    """`HA_UNCLASSIFIED_INTENTS` named outside every block of `markers`, sorted.
-
-    Matched as `tool_pattern` matches a tool — bare or `mcp__<server>__`
-    prefixed, never inside a longer name. A read-only recipe passes
-    `READ_ONLY_MARKERS`, as the write-guard does; a skill passes both.
-    """
-    remainder = outside_policy(text, markers)
+    text = " ".join(" ".join(ha_category_scopes(prompt)).split()).lower()
     return sorted(
-        intent
-        for intent in HA_UNCLASSIFIED_INTENTS
-        if tool_pattern(intent).search(remainder)
-    )
-
-
-def ha_intents_missing_from_policy(
-    prompt: str, markers: tuple[str, ...] = POLICY_MARKERS
-) -> list[str]:
-    """`HA_UNCLASSIFIED_INTENTS` not named inside any block of `markers`, sorted.
-
-    The complement question to the one above, for the reason
-    `missing_from_policy` gives: an absent name is outside nothing.
-    """
-    inside = policy_text(prompt, markers)
-    return sorted(
-        intent
-        for intent in HA_UNCLASSIFIED_INTENTS
-        if not tool_pattern(intent).search(inside)
+        term
+        for term in HA_CATEGORY_TERMS
+        if not ha_category_term_pattern(term).search(text)
     )
 
 
@@ -382,7 +427,7 @@ SKILL_SERVER_REFERENCE = "mcp__kamerplanter__"
 
 
 def skill_missing_tools(text: str) -> list[str]:
-    """The twelve minus what a skill names ANYWHERE, for a skill that reaches
+    """The sixteen minus what a skill names ANYWHERE, for a skill that reaches
     the Kamerplanter server at all.
 
     The selector is the reference to `mcp__kamerplanter__`, not "every skill":
@@ -429,11 +474,13 @@ SKILL_LINE_ALLOWANCES = {
         "add_plant_diary_entry, confirm_care_task, archive_plant, "
         "set_plant_location, claim_diary_analysis, submit_diary_analysis, "
         "transition_plant_phase, assign_species_phase_sequence, "
-        "assign_nutrient_plan, record_feeding_event and create_inspection, and "
-        "the setup tool create_site; none does.",
+        "assign_nutrient_plan, record_feeding_event, create_inspection, "
+        "clone_nutrient_plan, set_nutrient_plan_phase_targets, "
+        "create_substrate_mix and set_plant_substrate, and the setup tool "
+        "create_site; none does.",
     ): (
         "spec/process/plant-planning-and-planting-calendar/en.md §F requires "
-        "every plan's APPLY CONTRACT to enumerate the twelve write tools"
+        "every plan's APPLY CONTRACT to enumerate the sixteen write tools"
     ),
 }
 
@@ -776,7 +823,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
         # Keying the suppression on `missing` alone had also removed a check
         # `develop` has. Measured: a recipe with no `prompt` that calls
         # `archive_plant` from `instructions` reported twice on `develop` and
-        # once here, because `missing` is all twelve for an empty prompt while
+        # once here, because `missing` is the whole set for an empty prompt while
         # completeness stays silent for the same reason.
         block_collapsed = bool(policy_spans(prompt_text, "Forbidden by name:")) and len(
             missing
@@ -800,11 +847,12 @@ def check_recipe(path: Path, findings: Findings) -> None:
                 f"suffix. {advice}",
             )
     # The prohibition has to name each tool individually, and the catalog has
-    # grown twice — four names, then seven, then twelve. A list written against
-    # an earlier count is a subset today, and the guard above cannot see that:
-    # it reads names OUTSIDE a policy block, and an absent name is outside
-    # nothing. Measured on 2026-09-14: every recipe here names all twelve, so
-    # this check starts green and stays a floor.
+    # grown three times — four names, then seven, then twelve, then sixteen. A
+    # list written against an earlier count is a subset today, and the guard
+    # above cannot see that: it reads names OUTSIDE a policy block, and an
+    # absent name is outside nothing. Measured on 2026-09-14: every recipe
+    # here named all twelve then, so this check started green and stays a
+    # floor.
     #
     # Scoped to `prompt`, never to `body`. The MUST is about the prompt
     # precisely because `instructions` is not enforced on a headless run, so
@@ -824,7 +872,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # markers either way.
     #
     # What this therefore does NOT bound is what an `-apply` recipe may
-    # declare permitted: one that puts all twelve under `Permitted by name:`
+    # declare permitted: one that puts the whole set under `Permitted by name:`
     # passes completeness, measured. Bounding that needs a per-recipe
     # allowance register, which this branch removed deliberately after it
     # produced findings in every round it existed. Tracked in #34.
@@ -838,7 +886,7 @@ def check_recipe(path: Path, findings: Findings) -> None:
     # with all twelve missing.
     #
     # The cost is the other direction: a future recipe that loads only Home
-    # Assistant would have to name twelve kamerplanter tools it never calls.
+    # Assistant would have to name sixteen kamerplanter tools it never calls.
     # No such recipe exists — all ten reach this server — and when one arrives,
     # the filter belongs on the declared extensions, not on tool names.
     if prompt_text.strip() and missing:
@@ -857,37 +905,46 @@ def check_recipe(path: Path, findings: Findings) -> None:
             "block.",
         )
 
-    # Home Assistant (#75), for read-only recipes only: an `-apply` recipe
-    # forbids every Home Assistant tool outright. `extensions.yaml` loads the
-    # server into every run, so every read-only recipe is selected, not only
-    # those that mention it. The category marker and the intent block are read
-    # in `prompt` alone, for the reason the twelve are; a promptless recipe
-    # already has its finding. A call is a call wherever it sits, so the
-    # outside-policy read covers the whole body, as the write-guard's does.
+    # Home Assistant (#75), for read-only recipes only: the rule is scoped to
+    # them (spec/mcp/home-assistant-mcp-server/en.md). An `-apply` recipe is
+    # not selected, and what it may do on Home Assistant — CLAUDE.md lets it
+    # actuate, and its `description` has to say so — is not checked here.
+    # `extensions.yaml` loads the server into every run, so every read-only
+    # recipe is selected, not only those that mention it. The category marker
+    # and the intent block are read in `prompt` alone, for the reason the
+    # sixteen are; a promptless recipe already has its finding. A call is a
+    # call wherever it sits, so the outside-policy read covers the whole body,
+    # as the write-guard's does.
     if not is_apply:
         if prompt_text.strip():
-            if not ha_category_paragraphs(prompt_text):
+            if not ha_category_scopes(prompt_text):
                 findings.error(
                     where,
                     f"has no `{HA_CATEGORY_MARKER}` marker in its `prompt`. "
                     "The Home Assistant catalog is assembled per instance, so "
                     "a read-only recipe cannot forbid its actuating tools by "
                     "name and has to forbid them by category "
-                    "(spec/mcp/home-assistant-mcp-server/en.md). Open one "
-                    f"paragraph with the marker and name in it: "
+                    "(spec/mcp/home-assistant-mcp-server/en.md). Write the "
+                    "marker and name, in the same sentence: "
                     f"{', '.join(HA_CATEGORY_TERMS)}.",
                 )
             elif omitted := ha_category_missing(prompt_text):
                 findings.error(
                     where,
-                    f"its `{HA_CATEGORY_MARKER}` paragraph omits "
+                    f"its `{HA_CATEGORY_MARKER}` sentence omits "
                     f"{', '.join(omitted)}. A Home Assistant category left "
                     "unnamed is one the per-instance catalog may still offer "
-                    "(spec/mcp/home-assistant-mcp-server/en.md). The "
-                    "paragraph ends at a blank line or at a bullet no deeper "
-                    "than the marker's line.",
+                    "(spec/mcp/home-assistant-mcp-server/en.md). The scope "
+                    "ends at the marker's sentence end (`.`, `!` or `?` "
+                    "before whitespace — `e.g.` counts), and earlier at a "
+                    "blank line, at a list item no deeper than the marker's "
+                    "line, or at a prose line indented less than the marker "
+                    "line's text; a backticked marker opens none, and each "
+                    "category must appear as a whole word.",
                 )
-            if absent := ha_intents_missing_from_policy(prompt_text, READ_ONLY_MARKERS):
+            if absent := missing_from_policy(
+                prompt_text, READ_ONLY_MARKERS, tools=HA_UNCLASSIFIED_INTENTS
+            ):
                 findings.error(
                     where,
                     "leaves unclassified Home Assistant intents out of its "
@@ -897,7 +954,9 @@ def check_recipe(path: Path, findings: Findings) -> None:
                     "(spec/mcp/home-assistant-mcp-server/en.md); a prose "
                     "prohibition is not a block.",
                 )
-        if named := ha_intents_outside_policy(body, READ_ONLY_MARKERS):
+        if named := calls_state_changing_tools(
+            body, is_apply=False, tools=HA_UNCLASSIFIED_INTENTS
+        ):
             findings.error(
                 where,
                 f"calls unclassified Home Assistant intents ({', '.join(named)}) "
@@ -1106,7 +1165,9 @@ def check_skills(findings: Findings) -> None:
             )
         # A skill composes into the recipe's context, so an intent it names in
         # instruction text is a call in every recipe that loads it (#75).
-        intents = ha_intents_outside_policy(skill_instruction_text(text))
+        intents = calls_state_changing_tools(
+            skill_instruction_text(text), tools=HA_UNCLASSIFIED_INTENTS
+        )
         if intents:
             findings.error(
                 f".claude/skills/{skill}",
@@ -1391,17 +1452,17 @@ WRITE_GUARD_CASES = [
 
 # The completeness guard has its own shapes, because it answers a different
 # question than the write-guard above and shares none of its marker logic.
-ALL_TWELVE = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
+ALL_SIXTEEN = ", ".join(f"`mcp__kamerplanter__{t}`" for t in sorted(STATE_CHANGING_TOOLS))
 
 COMPLETENESS_CASES = [
     (
         "a complete list inside the block is complete",
-        f"  - Call NO tool that changes state. Forbidden by name: {ALL_TWELVE}.",
+        f"  - Call NO tool that changes state. Forbidden by name: {ALL_SIXTEEN}.",
         [],
     ),
     (
-        "prose naming all twelve declares nothing — no block, no policy",
-        f"Never call {ALL_TWELVE}. This recipe reads and judges.",
+        "prose naming all sixteen declares nothing — no block, no policy",
+        f"Never call {ALL_SIXTEEN}. This recipe reads and judges.",
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
@@ -1428,8 +1489,12 @@ COMPLETENESS_CASES = [
         [
             "assign_nutrient_plan",
             "assign_species_phase_sequence",
+            "clone_nutrient_plan",
             "create_inspection",
+            "create_substrate_mix",
             "record_feeding_event",
+            "set_nutrient_plan_phase_targets",
+            "set_plant_substrate",
             "transition_plant_phase",
         ],
     ),
@@ -1457,7 +1522,7 @@ COMPLETENESS_CASES = [
         "a fenced example counts as declared — the one way to silence this",
         "This recipe declares no policy of its own. It prints the template:\n"
         "```\n"
-        f"Forbidden by name: {ALL_TWELVE}.\n"
+        f"Forbidden by name: {ALL_SIXTEEN}.\n"
         "```\n",
         [],
     ),
@@ -1506,7 +1571,7 @@ REAL_CALL = "\n  Step 5 - then call `mcp__kamerplanter__archive_plant` for real.
 
 COMPLETE_BLOCK = (
     "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
-    + ALL_TWELVE
+    + ALL_SIXTEEN
     + "."
 )
 
@@ -1519,7 +1584,7 @@ COLLAPSED_BLOCK = (
     for tool in sorted(STATE_CHANGING_TOOLS)
 )
 
-ELEVEN_OF_TWELVE = (
+FIFTEEN_OF_SIXTEEN = (
     "  - Call NO tool that changes state.\n    Forbidden by name:\n    "
     + ", ".join(
         f"`mcp__kamerplanter__{tool}`"
@@ -1535,9 +1600,9 @@ ELEVEN_OF_TWELVE = (
 # or the count can be wrong.
 SKILL_COMPLETENESS_CASES = [
     (
-        "a skill naming all twelve is complete",
+        "a skill naming all sixteen is complete",
         "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
-        f"Never call {ALL_TWELVE}.",
+        f"Never call {ALL_SIXTEEN}.",
         [],
     ),
     (
@@ -1575,7 +1640,7 @@ SKILL_COMPLETENESS_CASES = [
     (
         "a name that is called still counts as named",
         "Reads a garden through `mcp__kamerplanter__get_plant`.\n"
-        f"Never call {ALL_TWELVE}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
+        f"Never call {ALL_SIXTEEN}.\nStep 9 - call `mcp__kamerplanter__archive_plant`.",
         [],
     ),
 ]
@@ -1585,7 +1650,7 @@ ALLOWED_PLANT_PLANNING_LINE = next(
     line for skill, line in SKILL_LINE_ALLOWANCES if skill == "plant-planning"
 )
 
-SKILL_FORBID_ALL = "- Call no tool that changes state. Forbidden by name: " + ALL_TWELVE + "."
+SKILL_FORBID_ALL = "- Call no tool that changes state. Forbidden by name: " + ALL_SIXTEEN + "."
 
 # One shape per way the skill obedience guard can misread a section. Each case
 # is (name, skill directory name, SKILL.md text, expected calls, expected stale
@@ -1869,13 +1934,13 @@ PERMITTED_SPLIT = (
     + "."
 )
 
-# One shape per way the Home Assistant category paragraph can be bounded wrong:
-# (name, prompt, expected paragraph count, expected missing terms). The count
+# One shape per way the Home Assistant category scope can be bounded wrong:
+# (name, prompt, expected scope count, expected missing terms). The count
 # pins "no marker" apart from "marker with nothing after it", which
 # `ha_category_missing` alone cannot tell apart.
 HA_CATEGORY_CASES = [
     (
-        "no marker is no paragraph, and every category is missing",
+        "no marker is no scope, and every category is missing",
         "  - Call NO Home Assistant tool. Do not turn anything on or off, set a\n"
         "    value, or run a script, scene, or automation.",
         0,
@@ -1888,7 +1953,7 @@ HA_CATEGORY_CASES = [
         [],
     ),
     (
-        "continuation lines belong to the paragraph",
+        "continuation lines belong to the sentence",
         "  - Forbidden on Home Assistant: any tool that turns something on or off,\n"
         "    sets a value, or runs a script, scene, or automation.",
         1,
@@ -1901,23 +1966,25 @@ HA_CATEGORY_CASES = [
         1,
         [],
     ),
+    # At column 0, so the blank line is the only cut: under an indented marker
+    # an empty line is also a dedent and the row would not isolate this rule.
     (
-        "a blank line ends the paragraph",
-        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "a blank line ends an unterminated scope",
+        "Forbidden on Home Assistant: turning on or off, setting a value\n"
         "\n"
-        "    Nor run a script, scene, or automation.",
+        "nor run a script, scene, or automation.",
         1,
         ["automation", "scene", "script"],
     ),
     (
-        "a sibling bullet ends the paragraph",
-        "  - Forbidden on Home Assistant: turning on or off, setting a value.\n"
+        "a sibling bullet ends an unterminated scope",
+        "  - Forbidden on Home Assistant: turning on or off, setting a value\n"
         "  - Do not run a script, scene, or automation.",
         1,
         ["automation", "scene", "script"],
     ),
     (
-        "a deeper bullet continues the paragraph",
+        "a deeper bullet continues the scope",
         "  - Forbidden on Home Assistant:\n"
         "    - turning something on or off\n"
         "    - setting a value\n"
@@ -1928,10 +1995,10 @@ HA_CATEGORY_CASES = [
     # connectivity-check's shape: the marker opens a continuation line of a
     # bullet, so the next bullet sits shallower than the marker's line.
     (
-        "a shallower bullet after a continuation-line marker ends the paragraph",
+        "a shallower bullet after a continuation-line marker ends the scope",
         "  - Call NO tool that changes state.\n"
         "    Forbidden on Home Assistant: any tool that turns something on or off,\n"
-        "    sets a value, or runs a script or scene.\n"
+        "    sets a value, or runs a script or scene\n"
         "  - Never trigger an automation.",
         1,
         ["automation"],
@@ -1960,11 +2027,180 @@ HA_CATEGORY_CASES = [
         [],
     ),
     (
-        "a marker with nothing after it is a paragraph missing every category",
+        "a marker with nothing after it is a scope missing every category",
         "  - Forbidden on Home Assistant:\n"
         "  - Call no Kamerplanter write.",
         1,
         sorted(HA_CATEGORY_TERMS),
+    ),
+    # #77: a prose line back at the bullet's own indent is the next element,
+    # not a continuation. Before the dedent rule this read as complete. No
+    # period, so the dedent cut is the one tested, not the sentence end.
+    (
+        "a prose line dedented below the bullet's text ends the scope",
+        "  - Forbidden on Home Assistant: turning anything on or off\n"
+        "  Step 1 — Read the value of each script, scene and automation.\n",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # provider-surface-check's shape: the marker opens a plain prose line, so
+    # its continuation sits at the marker's own indent and must still count.
+    (
+        "a plain marker line continues at its own indent",
+        "  Forbidden on Home Assistant: any tool that turns something on or off, sets a\n"
+        "  value, or runs a script, scene, or automation.",
+        1,
+        [],
+    ),
+    (
+        "a prose line dedented below a plain marker line ends the scope",
+        "    Forbidden on Home Assistant: turning anything on or off, setting a value\n"
+        "  Run a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script"],
+    ),
+    (
+        "a prose line dedented below nested bullets ends the scope",
+        "  - Forbidden on Home Assistant:\n"
+        "    - turning something on or off\n"
+        "    - setting a value\n"
+        "  Run a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script"],
+    ),
+    (
+        "a nested bullet's own continuation line continues the scope",
+        "  - Forbidden on Home Assistant:\n"
+        "    - turning something on or off, or setting a\n"
+        "      value\n"
+        "    - running a script, scene, or automation",
+        1,
+        [],
+    ),
+    # #77: a marker quoted as code is a mention of the rule, not the rule.
+    (
+        "a backticked marker opens no scope",
+        "  - Report whether the `Forbidden on Home Assistant:` rule covers on or off,\n"
+        "    value, script, scene and automation.",
+        0,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "a bare marker after a backticked one on the same line still opens",
+        "  - The `Forbidden on Home Assistant:` rule. Forbidden on Home Assistant:\n"
+        "    on or off, value, script, scene, automation.",
+        1,
+        [],
+    ),
+    # #77: the categories are words, not substrings. A plural `s` is allowed.
+    (
+        "plural category words count",
+        "  - Forbidden on Home Assistant: turning things on or off, setting values,\n"
+        "    running scripts, scenes, or automations.",
+        1,
+        [],
+    ),
+    (
+        "a category inside a longer word does not count",
+        "  - Forbidden on Home Assistant: a button or offset, devalued data, the\n"
+        "    scenery, a transcript, any automationist.",
+        1,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "Evaluate does not name the value category",
+        "  - Forbidden on Home Assistant: Evaluate nothing; turning on or off, a\n"
+        "    script, scene, or automation.",
+        1,
+        ["value"],
+    ),
+    # Pre-merge review R1: a numbered list is a list. The next item is the
+    # next step, not the marker's continuation.
+    (
+        "a numbered next item ends the scope",
+        "1. Forbidden on Home Assistant: turning anything on or off.\n"
+        "2. Read the value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # Pre-merge review R2: a plain marker line followed by plain prose at the
+    # same indent. No structural boundary separates them; the sentence does.
+    (
+        "a sentence end ends a plain marker line's scope",
+        "Forbidden on Home Assistant: turning on or off.\n"
+        "Step 2: read value, script, scene, automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # The text column of a numbered marker line is past `1. `, so prose back
+    # at the number's indent is the next element. (A following `2. ` item
+    # needs no list rule: its period before a space is already a sentence end.)
+    (
+        "a prose line dedented below a numbered marker's text ends the scope",
+        "1. Forbidden on Home Assistant: turning anything on or off\n"
+        "Read the value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    (
+        "a parenthesised number and a plus bullet are list items too",
+        "  1) Forbidden on Home Assistant: turning anything on or off\n"
+        "  2) Read the value of each script\n"
+        "  + Forbidden on Home Assistant: setting a value\n"
+        "  + Read each scene and automation.",
+        2,
+        ["automation", "scene", "script"],
+    ),
+    # A numbered marker line wraps at its text column, past `1. `.
+    (
+        "a numbered marker line's wrapped text continues the sentence",
+        "1. Forbidden on Home Assistant: turning anything on or off, setting a\n"
+        "   value, and running a script, scene, or automation.\n"
+        "2. Read the plant.",
+        1,
+        [],
+    ),
+    (
+        "an exclamation or question mark ends the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off! Setting a\n"
+        "    value? Running a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    (
+        "a closing bracket after the period still ends the sentence",
+        "  - (Forbidden on Home Assistant: turning anything on or off.) Read the\n"
+        "    value of each script, scene and automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # A period with no whitespace after it ends nothing: decimals and dotted
+    # entity or tool names sit inside the sentence.
+    (
+        "a decimal or a dotted name does not end the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off, setting a\n"
+        "    value such as 0.5, calling `light.turn_on`, or running a script,\n"
+        "    scene, or automation.",
+        1,
+        [],
+    ),
+    # Known limit, fail-closed: an abbreviation's period followed by a space is
+    # a sentence end to this rule. It can fail a recipe, never pass one.
+    (
+        "an abbreviation's period ends the sentence",
+        "  - Forbidden on Home Assistant: turning anything on or off, e.g. a\n"
+        "    light, setting a value, or running a script, scene, or automation.",
+        1,
+        ["automation", "scene", "script", "value"],
+    ),
+    # The real recipes' shape: the sentence after the marker's is the next
+    # rule, and its words do not count.
+    (
+        "the sentence after the marker's does not count",
+        "  Forbidden on Home Assistant: any tool that turns something on or off,\n"
+        "  sets a value, or runs a script or scene. Never trigger an automation.",
+        1,
+        ["automation"],
     ),
 ]
 
@@ -2022,7 +2258,7 @@ HA_INTENT_CASES = [
         ["TimeTillErnte", "time_till"],
     ),
     (
-        "an intent named in the category paragraph is outside policy",
+        "an intent named in the category sentence is outside policy",
         "  - Forbidden on Home Assistant: on or off, value, script, scene,\n"
         "    automation, and by name `TimeTillErnte` and `time_till`.",
         ["TimeTillErnte", "time_till"],
@@ -2090,18 +2326,18 @@ RECIPE_CASES = [
         [
             "calls state-changing tools",
             "parses as empty",
-            "declares 0 of the 12",
+            "declares 0 of the 16",
         ],
         [],
     ),
     (
-        "eleven of twelve plus a real call advises the rename, not the list",
-        ELEVEN_OF_TWELVE + REAL_CALL,
+        "fifteen of sixteen plus a real call advises the rename, not the list",
+        FIFTEEN_OF_SIXTEEN + REAL_CALL,
         PLAIN_INSTRUCTIONS,
         [
             "calls state-changing tools",
             "rename the file",
-            "declares 11 of the 12",
+            "declares 15 of the 16",
         ],
         ["parses as empty"],
     ),
@@ -2109,7 +2345,7 @@ RECIPE_CASES = [
         "a complete block in `instructions` declares nothing",
         PLAIN_PROMPT,
         COMPLETE_BLOCK,
-        ["declares 0 of the 12"],
+        ["declares 0 of the 16"],
         ["calls state-changing tools"],
     ),
     (
@@ -2133,14 +2369,14 @@ RECIPE_CASES = [
         "no marker at all is not a collapsed block",
         "  Read-only run. Then call `mcp__kamerplanter__archive_plant`.",
         PLAIN_INSTRUCTIONS,
-        ["rename the file", "declares 0 of the 12"],
+        ["rename the file", "declares 0 of the 16"],
         ["parses as empty"],
     ),
     (
         "a block in `instructions` does not collapse the prompt's advice",
         "  Then call `mcp__kamerplanter__archive_plant`.",
         COMPLETE_BLOCK,
-        ["calls state-changing tools", "rename the file", "declares 0 of the 12"],
+        ["calls state-changing tools", "rename the file", "declares 0 of the 16"],
         ["parses as empty"],
     ),
     # The Home Assistant guard (#75). Each Home Assistant finding names "Home
@@ -2158,7 +2394,7 @@ RECIPE_CASES = [
         COMPLETE_BLOCK + "\n" + HA_INTENT_BLOCK,
         PLAIN_INSTRUCTIONS,
         ["no `Forbidden on Home Assistant:` marker"],
-        ["paragraph omits"],
+        ["sentence omits"],
     ),
     (
         "a marker missing a category names the category",
@@ -2167,10 +2403,10 @@ RECIPE_CASES = [
         "    sets a value, or runs a script or automation.\n"
         + HA_INTENT_BLOCK,
         PLAIN_INSTRUCTIONS,
-        ["paragraph omits scene"],
+        ["sentence omits scene"],
         ["no `Forbidden on Home Assistant:` marker"],
     ),
-    # Only `prompt` counts, for the reason the twelve's completeness check is
+    # Only `prompt` counts, for the reason the sixteen's completeness check is
     # scoped to it: `instructions` is not enforced on a headless run.
     (
         "the category marker in `instructions` does not count",
@@ -2226,8 +2462,10 @@ RECIPE_CASES = [
         ],
         [],
     ),
-    # The rule is for read-only recipes; an `-apply` recipe forbids every Home
-    # Assistant tool outright and is not selected at all.
+    # The rule is scoped to read-only recipes
+    # (spec/mcp/home-assistant-mcp-server/en.md), so an `-apply` recipe is not
+    # selected at all. What an `-apply` recipe may do on Home Assistant is not
+    # checked here; this case pins only that it draws no finding.
     (
         "an -apply recipe reports no Home Assistant finding",
         COMPLETE_BLOCK + "\n  - Call NO Home Assistant tool at all, not `TimeTillErnte` either.",
@@ -2324,13 +2562,13 @@ def run_self_test() -> int:
     print(f"OK — {len(PERMITTING_LOAD_CASES)} permitting-load cases hold.")
 
     for name, prompt, count, expected in HA_CATEGORY_CASES:
-        paragraphs = len(ha_category_paragraphs(prompt))
+        scopes = len(ha_category_scopes(prompt))
         actual = ha_category_missing(prompt)
-        if paragraphs != count or actual != sorted(expected):
+        if scopes != count or actual != sorted(expected):
             failures += 1
             print(
-                f"  FAIL {name}\n       expected {count} paragraph(s) / missing "
-                f"{sorted(expected)}, got {paragraphs} / missing {actual}"
+                f"  FAIL {name}\n       expected {count} scope(s) / missing "
+                f"{sorted(expected)}, got {scopes} / missing {actual}"
             )
     if failures:
         print(f"\n{failures} of {len(HA_CATEGORY_CASES)} Home Assistant category case(s) failed.")
@@ -2338,8 +2576,12 @@ def run_self_test() -> int:
     print(f"OK — {len(HA_CATEGORY_CASES)} Home Assistant category cases hold.")
 
     for name, text, outside_expected, missing_expected in HA_INTENT_CASES:
-        outside = ha_intents_outside_policy(text, READ_ONLY_MARKERS)
-        missing = ha_intents_missing_from_policy(text, READ_ONLY_MARKERS)
+        outside = calls_state_changing_tools(
+            text, is_apply=False, tools=HA_UNCLASSIFIED_INTENTS
+        )
+        missing = missing_from_policy(
+            text, READ_ONLY_MARKERS, tools=HA_UNCLASSIFIED_INTENTS
+        )
         if outside != sorted(outside_expected) or missing != sorted(missing_expected):
             failures += 1
             print(
@@ -2353,7 +2595,9 @@ def run_self_test() -> int:
     print(f"OK — {len(HA_INTENT_CASES)} Home Assistant intent cases hold.")
 
     for name, skill_text, expected in HA_SKILL_INTENT_CASES:
-        actual = ha_intents_outside_policy(skill_instruction_text(skill_text))
+        actual = calls_state_changing_tools(
+            skill_instruction_text(skill_text), tools=HA_UNCLASSIFIED_INTENTS
+        )
         if actual != sorted(expected):
             failures += 1
             print(f"  FAIL {name}\n       expected {sorted(expected)}, got {actual}")

@@ -92,7 +92,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 
 ### H. Separation and forbidden tools
 
-- **MUST** keep both skills and both recipes free of every state-changing tool, and **MUST** name all twelve that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
+- **MUST** keep both skills and both recipes free of every state-changing tool, and **MUST** name every one that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
 - **MUST** forbid Home Assistant actuation by category in the weather recipe's prompt (turning a device on or off, setting a value, running a script, scene or automation), and **MUST NOT** call `TimeTillErnte` or `time_till`, whose effect is unclassified
 - **MUST NOT** call a Home Assistant tool from the growth-stage skill or recipe, or from the daily check
 - **MUST NOT** ship an `-apply` sibling of either recipe
@@ -111,7 +111,7 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 - [ ] Each result returns findings in the care planning plug-in shape, plus the named hand-off blocks for plant health and harvest planning
 - [ ] A questionable stage names `transition_plant_phase` as a mutation, and nothing calls it
 - [ ] Two runs over the same input give the same facts on a fixed fixture, and the result says what is not claimed
-- [ ] Neither skill nor recipe calls a state-changing tool, each recipe's prompt forbids all twelve by name, the weather recipe forbids actuation by category and `TimeTillErnte` and `time_till`, and the growth-stage recipe calls no Home Assistant tool
+- [ ] Neither skill nor recipe calls a state-changing tool, each recipe's prompt forbids every state-changing tool by name, the weather recipe forbids actuation by category and `TimeTillErnte` and `time_till`, and the growth-stage recipe calls no Home Assistant tool
 - [ ] Every claim about the tool surface cites a spec in this repository, and a claim not re-measured says so
 - [ ] The German and the English file have the same headings in the same order, the same number of requirement bullets and the same number of acceptance checkboxes
 

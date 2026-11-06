@@ -106,7 +106,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 
 ### I. Separation and forbidden tools
 
-- **MUST** keep both skills and both recipes free of every state-changing tool, and **MUST** name all twelve that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
+- **MUST** keep both skills and both recipes free of every state-changing tool, and **MUST** name every one that the Kamerplanter server spec lists, individually, in each recipe's prompt as forbidden
 - **MUST NOT** call a Home Assistant tool from either skill or recipe, and **MUST** forbid in each recipe's prompt actuation by category (turning a device on or off, setting a value, running a script, scene or automation) and `TimeTillErnte` and `time_till`, whose effect is unclassified
 - **MUST** compose the sub-skills in the recipe, by name, and **MUST NOT** rely on `sub_recipes:` or `--sub-recipe`, which do not work under the `claude-code` provider
 - **MUST NOT** ship an `-apply` sibling of either recipe
@@ -126,7 +126,7 @@ Readers: authors of garden skills and recipes in this repository, and the people
 - [ ] No two measures sharing an active ingredient are offered as alternatives, and an unplaceable `treatment_type` is reported as such
 - [ ] Both skills return findings in the care planning plug-in shape, and a monitoring step names `create_inspection` as a mutation that nothing calls
 - [ ] Two runs over the same input give the same facts on a fixed fixture, and the result says what is not claimed
-- [ ] Neither skill nor recipe calls a state-changing tool or a Home Assistant tool, and each recipe's prompt forbids all twelve state-changing tools by name, actuation by category, and `TimeTillErnte` and `time_till`
+- [ ] Neither skill nor recipe calls a state-changing tool or a Home Assistant tool, and each recipe's prompt forbids every state-changing tool by name, actuation by category, and `TimeTillErnte` and `time_till`
 - [ ] Every claim about the tool surface cites a spec in this repository, and a claim not re-measured says so
 - [ ] The German and the English file have the same headings in the same order, the same number of requirement bullets and the same number of acceptance checkboxes
 

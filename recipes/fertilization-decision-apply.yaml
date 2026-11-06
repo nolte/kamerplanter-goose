@@ -1,7 +1,7 @@
 version: "1.0.0"
 title: "Fertilization Decision Apply"
 description: >-
-  WRITES to Kamerplanter: records one fertigation that a person carried out, as a feeding event on the plant, using only the amounts and readings the person gives. It takes the fertilisation decision the person approved (feed) and the feeding that was done, and refuses without them. It feeds nothing and measures nothing; the effect is a record, and it is not measured whether any read tool returns recorded feeding events (nolte/kamerplanter-goose#54).
+  WRITES to Kamerplanter: records one fertigation that a person carried out, as a feeding event on the plant, using only the amounts and readings the person gives. It takes the fertilisation decision the person approved (feed) and the feeding that was done, and refuses without them. It feeds nothing and measures nothing; the effect is a record, read back by get_plant_diagnostics within its window.
 
 parameters:
   - key: plant_key
@@ -107,6 +107,10 @@ prompt: |
     `mcp__kamerplanter__submit_diary_analysis`,
     `mcp__kamerplanter__transition_plant_phase`,
     `mcp__kamerplanter__create_inspection`,
+    `mcp__kamerplanter__clone_nutrient_plan`,
+    `mcp__kamerplanter__set_nutrient_plan_phase_targets`,
+    `mcp__kamerplanter__create_substrate_mix`,
+    `mcp__kamerplanter__set_plant_substrate`,
     `mcp__kamerplanter__assign_nutrient_plan`,
     `mcp__kamerplanter__assign_species_phase_sequence`.
   - Call NO Home Assistant tool at all. Not for context, not for a reading,
@@ -159,8 +163,9 @@ prompt: |
   One row per step above, Result being exactly OK, SKIP, or FAIL, Detail being
   one line. Then the values that were passed, one per line, and the tool result
   verbatim. Then this statement: this run wrote a record of a feeding that a
-  person says they carried out; it fed nothing, and it is not measured whether
-  any read tool returns recorded feeding events (nolte/kamerplanter-goose#54).
+  person says they carried out; it fed nothing. The record is read back by
+  get_plant_diagnostics within its window_days (default 14), and it reaches
+  tier 2 of the nutrient ladder only where a nutrient plan gives a target.
 
   Close with the line `RECORDED: feeding event for {{ plant_key }}` or, if
   nothing was written, `NOT RECORDED: <reason>`, as the very last line, on a
