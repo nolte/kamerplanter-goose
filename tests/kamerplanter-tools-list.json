@@ -1,0 +1,414 @@
+{
+  "instance": "http://localhost:3000",
+  "server": {
+    "name": "kamerplanter-mcp",
+    "version": "1.0"
+  },
+  "measured": "2026-11-06",
+  "tools": {
+    "add_plant_diary_entry": [
+      "dry_run",
+      "entry_type",
+      "idempotency_key",
+      "measurements",
+      "plant_key",
+      "tags",
+      "tenant",
+      "text",
+      "title"
+    ],
+    "archive_plant": [
+      "dry_run",
+      "idempotency_key",
+      "plant_key",
+      "tenant",
+      "termination_type"
+    ],
+    "assign_nutrient_plan": [
+      "dry_run",
+      "idempotency_key",
+      "plan_key",
+      "plant_key",
+      "tenant"
+    ],
+    "assign_species_phase_sequence": [
+      "dry_run",
+      "idempotency_key",
+      "sequence_key",
+      "species_key"
+    ],
+    "calculate_mixing_protocol": [
+      "alkalinity_ppm",
+      "base_water_ec",
+      "base_water_ph",
+      "fertilizer_keys",
+      "phase",
+      "substrate_key",
+      "substrate_type",
+      "target_ec_ms",
+      "target_ph",
+      "target_volume_liters",
+      "tenant"
+    ],
+    "check_batch_reusability": [
+      "batch_key",
+      "tenant"
+    ],
+    "claim_diary_analysis": [
+      "dry_run",
+      "entry_key",
+      "idempotency_key",
+      "lease_seconds",
+      "tenant",
+      "worker_id"
+    ],
+    "clone_nutrient_plan": [
+      "dry_run",
+      "idempotency_key",
+      "name",
+      "plan_key",
+      "tenant"
+    ],
+    "confirm_care_task": [
+      "dry_run",
+      "idempotency_key",
+      "notes",
+      "plant_key",
+      "reminder_type",
+      "tenant"
+    ],
+    "create_inspection": [
+      "detected_disease_keys",
+      "detected_pest_keys",
+      "dry_run",
+      "environmental_conditions",
+      "findings",
+      "idempotency_key",
+      "inspected_at",
+      "inspector",
+      "notes",
+      "plant_key",
+      "pressure_level",
+      "symptoms_observed",
+      "tenant"
+    ],
+    "create_site": [
+      "climate_zone",
+      "dry_run",
+      "idempotency_key",
+      "name",
+      "tenant",
+      "type"
+    ],
+    "create_substrate_mix": [
+      "components",
+      "dry_run",
+      "idempotency_key",
+      "name_de",
+      "name_en",
+      "tenant"
+    ],
+    "get_cultivar": [
+      "cultivar_key",
+      "tenant"
+    ],
+    "get_diary_entry": [
+      "entry_key",
+      "tenant"
+    ],
+    "get_diary_entry_photos": [
+      "entry_key",
+      "photo_ids",
+      "size",
+      "tenant"
+    ],
+    "get_disease": [
+      "disease_key"
+    ],
+    "get_due_care_tasks": [
+      "tenant",
+      "urgency"
+    ],
+    "get_harvest_readiness": [
+      "limit",
+      "tenant"
+    ],
+    "get_location": [
+      "location_key",
+      "tenant"
+    ],
+    "get_mcp_activity": [
+      "limit"
+    ],
+    "get_nutrient_plan": [
+      "plan_key",
+      "tenant"
+    ],
+    "get_pest": [
+      "pest_key"
+    ],
+    "get_plant": [
+      "plant_key",
+      "tenant"
+    ],
+    "get_plant_care_log": [
+      "limit",
+      "plant_key",
+      "reminder_type",
+      "tenant"
+    ],
+    "get_plant_diagnostics": [
+      "include_sensors",
+      "plant_key",
+      "tenant",
+      "window_days"
+    ],
+    "get_plant_inspections": [
+      "limit",
+      "plant_key",
+      "tenant"
+    ],
+    "get_plant_nutrient_plan": [
+      "plant_key",
+      "tenant"
+    ],
+    "get_plant_phase_history": [
+      "limit",
+      "plant_key",
+      "tenant"
+    ],
+    "get_plant_phase_status": [
+      "plant_key",
+      "tenant"
+    ],
+    "get_sowing_calendar": [
+      "limit",
+      "query",
+      "site_key",
+      "tenant",
+      "year"
+    ],
+    "get_species_info": [
+      "include_cultivars",
+      "species_key",
+      "tenant"
+    ],
+    "get_species_lifecycle": [
+      "species_key"
+    ],
+    "get_species_phase_sequence": [
+      "species_key"
+    ],
+    "get_substrate": [
+      "substrate_key",
+      "tenant"
+    ],
+    "get_substrate_batch": [
+      "batch_key",
+      "tenant"
+    ],
+    "get_treatment": [
+      "treatment_key"
+    ],
+    "list_cultivars": [
+      "species_key",
+      "tenant"
+    ],
+    "list_diary_entries": [
+      "analysis_state",
+      "created_from",
+      "created_to",
+      "entry_type",
+      "limit",
+      "offset",
+      "plant_key",
+      "species_key",
+      "tag",
+      "tenant"
+    ],
+    "list_diseases": [
+      "limit",
+      "query"
+    ],
+    "list_fertilizers": [
+      "limit",
+      "organic_only",
+      "query",
+      "tenant"
+    ],
+    "list_hardiness_zones": [],
+    "list_nutrient_plans": [
+      "limit",
+      "offset",
+      "query",
+      "tenant"
+    ],
+    "list_overwintering_profiles": [
+      "limit",
+      "offset",
+      "tenant"
+    ],
+    "list_pending_diary_analyses": [
+      "include_stale",
+      "limit",
+      "tenant"
+    ],
+    "list_pests": [
+      "limit",
+      "query"
+    ],
+    "list_phase_definitions": [
+      "limit",
+      "name_filter",
+      "offset"
+    ],
+    "list_phase_sequences": [
+      "include_entries",
+      "limit",
+      "offset",
+      "query"
+    ],
+    "list_planting_runs": [
+      "limit",
+      "offset",
+      "status",
+      "tenant"
+    ],
+    "list_plants": [
+      "include_archived",
+      "limit",
+      "offset",
+      "query",
+      "tenant"
+    ],
+    "list_plants_at_location": [
+      "include_archived",
+      "limit",
+      "location_key",
+      "site_key",
+      "slot_key",
+      "tenant"
+    ],
+    "list_species": [
+      "limit",
+      "offset",
+      "tenant"
+    ],
+    "list_species_by_phase_sequence": [
+      "limit",
+      "offset",
+      "sequence_key",
+      "tenant"
+    ],
+    "list_starter_kits": [
+      "difficulty",
+      "tenant"
+    ],
+    "list_substrate_batches": [
+      "substrate_key",
+      "tenant"
+    ],
+    "list_substrates": [
+      "limit",
+      "query",
+      "tenant"
+    ],
+    "list_tasks": [
+      "limit",
+      "offset",
+      "status",
+      "tenant"
+    ],
+    "list_tenants": [],
+    "preview_substrate_mix": [
+      "components",
+      "tenant"
+    ],
+    "record_feeding_event": [
+      "application_method",
+      "dry_run",
+      "fertilizers_used",
+      "idempotency_key",
+      "is_supplemental",
+      "measured_ec_after",
+      "measured_ec_before",
+      "measured_ph_after",
+      "measured_ph_before",
+      "notes",
+      "plant_key",
+      "runoff_ec",
+      "runoff_ph",
+      "runoff_volume_liters",
+      "tank_fill_event_key",
+      "tenant",
+      "volume_applied_liters"
+    ],
+    "search_glossary": [
+      "category",
+      "language",
+      "limit",
+      "query"
+    ],
+    "search_plant_knowledge": [
+      "doc_language",
+      "full_content",
+      "min_score",
+      "query",
+      "top_k"
+    ],
+    "set_nutrient_plan_phase_targets": [
+      "dry_run",
+      "idempotency_key",
+      "phase",
+      "plan_key",
+      "reference_ec_ms",
+      "target_ec_ms",
+      "tenant"
+    ],
+    "set_plant_location": [
+      "dry_run",
+      "idempotency_key",
+      "location_key",
+      "plant_key",
+      "site_key",
+      "slot_key",
+      "tenant"
+    ],
+    "set_plant_substrate": [
+      "dry_run",
+      "idempotency_key",
+      "plant_key",
+      "substrate_batch_key",
+      "substrate_key",
+      "tenant"
+    ],
+    "submit_diary_analysis": [
+      "analyzed_photo_ids",
+      "dry_run",
+      "entry_key",
+      "error",
+      "findings",
+      "idempotency_key",
+      "lease_token",
+      "model",
+      "recipe_version",
+      "recommended_actions",
+      "status",
+      "summary",
+      "tenant"
+    ],
+    "transition_plant_phase": [
+      "dry_run",
+      "force",
+      "idempotency_key",
+      "plant_key",
+      "reason",
+      "target_phase_key",
+      "tenant"
+    ],
+    "validate_nutrient_plan_coverage": [
+      "plant_key",
+      "tenant"
+    ]
+  }
+}
