@@ -134,6 +134,7 @@ The plan document has four blocks, in this order and under these names: `PLAN HE
 - [The garden decision policy](../garden-decision-policy/en.md) — evidence levels, the recommendation output and the garden context
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Issue nolte/kamerplanter-goose#42 — the planning factors and the five criteria are taken from its body; nolte/kamerplanter-goose#43, #46, #47, #59 and #39 — the consumers, rotation, the apply half and the audit
+- The audit for nolte/kamerplanter-goose#39 (2026-11-06) kept the calendar and the plan as two artifacts, `planting-calendar` and `plant-planning`, after `garden-context`, `site-analysis` and `crop-selection` in the planning chain
 
 ## Open Questions
 
@@ -145,4 +146,3 @@ The plan document has four blocks, in this order and under these names: `PLAN HE
 - **Whether a live instance has a tool that creates planting runs.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipes wait on it, tracked as nolte/kamerplanter-goose#59.
 - **How rotation constraints will arrive.** [Crop rotation planning](../crop-rotation-planning/en.md) judges rotation per bed and season, and a run here is assigned no bed, so rotation stays unknown in every run; the two plans join on the `species_key/cultivar_key` prefix of the run identifier. Answered by [bed layout and succession planning](../bed-layout-and-succession-planning/en.md): the layout carries the rotation verdict per placement, copied from the rotation plan, and the runs of this plan stay `rotation: unknown`.
 - **How determinism is measured.** This spec defines the plan facts and requires them to be the same over the same input blocks. It is checked on a fixed fixture of input blocks written out as text, repeated runs compared; that shows the property for that fixture and not for a live garden, and the number of runs needed to call it stable is not settled here.
-- **Where the audit, nolte/kamerplanter-goose#39, places planning relative to the garden context and site analysis.** Whether the calendar and the plan stay two artifacts is the audit's decision.

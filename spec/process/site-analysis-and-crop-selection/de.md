@@ -126,6 +126,7 @@ Das Ergebnis hat drei Blöcke: das Standortprofil (Abschnitt A, sieben Parameter
 - [Die Entscheidungsregeln für den Garten](../garden-decision-policy/de.md) — Belegstufen, die Ausgabe einer Empfehlung und der Gartenkontext
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
 - Issue nolte/kamerplanter-goose#41 — die Scope-Listen und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#42, #47 und #39 — der Verbraucher, die Fruchtfolgearbeit und das Audit
+- Das Audit zu nolte/kamerplanter-goose#39 (2026-11-06) hat Standortanalyse und Gartenkontext als zwei Artefakte belassen: `garden-context` sammelt, `site-analysis` legt aus und setzt dessen Block voraus
 
 ## Offene Fragen
 
@@ -136,4 +137,3 @@ Das Ergebnis hat drei Blöcke: das Standortprofil (Abschnitt A, sieben Parameter
 - **Die Antwortfelder von `list_hardiness_zones` und `get_sowing_calendar`.** Festgehalten ist nur, dass die Antwort des Saatkalenders Frostdaten enthält. Die genauen Felder sind nicht gemessen, weil der Server beim Schreiben dieser Spezifikation nicht erreichbar war.
 - **Die Parameter von `list_species`.** Ob es eingeschränkt, geblättert oder gefiltert werden kann, ist nicht festgehalten; deshalb ist das Lesen des Pools eine begrenzte Seite und eine Stichprobe.
 - **Wie Fruchtfolgebedingungen in die Kulturwahl eingespeist werden.** Die [Fruchtfolgeplanung](../crop-rotation-planning/de.md) beurteilt Familien je Beet und Saison nach der Auswahl und speist nichts in ein Urteil hier zurück, daher ist die Fruchtfolge in der Kulturwahl unbekannt, und `compatible_companions` wird nur als Präferenz gelesen. Ob ein Fruchtfolgeurteil die Kandidatenliste je einengen soll, ist offen.
-- **Wo das Audit, nolte/kamerplanter-goose#39, die Standortanalyse im Verhältnis zum Gartenkontext einordnet.** Beide beschreiben, was ein Garten enthält; diese Spezifikation fügt die Auslegung hinzu, und der Gartenkontext sammelt nur. Ob es zwei Artefakte bleiben, entscheidet das Audit.

@@ -50,7 +50,8 @@ Belege werden in acht Stufen geordnet, höchste zuerst. Der Rang wandert mit jed
 | 7 | Eine dokumentierte Fachquelle: eine zitierte Referenz, nicht die Erinnerung des Modells | `search_plant_knowledge` ist deklariert; am 2026-08-16 gemessen antwortete es mit `service.unavailable`, weil die Wissensbasis eine optionale, auf der Referenzinstanz nicht bereitgestellte Komponente ist. `search_glossary` liefert die projekteigenen Begriffsdefinitionen, das ist Vokabular, kein Beleg | Ob irgendeine Instanz die Wissensbasis bereitstellt |
 | 8 | Allgemeinwissen des Modells, das in keinem Datensatz steht | Keine, per Definition | Wird stets als nicht aus dem Datensatz gekennzeichnet |
 
-- **MUSS [MUST]** jede Aussage einer Empfehlung genau einer Stufe zuordnen und die Stufe mit der Aussage in die Ausgabe mitführen
+- **MUSS [MUST]** jede Aussage einer Empfehlung genau einer Stufe zuordnen und die Stufe mit der Aussage in die Ausgabe mitführen, ausgenommen eine unbestätigte Modell-Lesung eines Bildes, siehe unten
+- **DARF NICHT [MUST NOT]** einer unbestätigten Modell-Lesung eines Bildes eine Stufe geben: Sie wird als Lesung gemeldet, die eine eingestufte Aussage stützen oder ihr widersprechen kann und **DARF NICHT [MUST NOT]** allein entscheiden; trifft sie auf Wissen der Stufe 8, werden beide ohne Rangfolge gemeldet. Eine Lesung, die eine Person oder eine erfasste Inspektion bestätigt, ist Stufe 3. Eine unbestätigte Lesung auf Stufe 3 stünde über den Artdaten, was ihr beide bestehenden Leitern verweigern (entschieden durch das Audit zu nolte/kamerplanter-goose#39)
 - **DARF NICHT [MUST NOT]** Belege einer niedrigeren Stufe Belege einer höheren Stufe überstimmen lassen; niedrigere Belege stützen oder widersprechen, und ein Widerspruch wird als solcher gemeldet, nicht stillschweigend zugunsten des niedrigeren aufgelöst
 - **MUSS [MUST]** Belege der Stufe 8 überall, wo sie auftreten, als nicht aus dem Datensatz kennzeichnen
 - **MUSS [MUST]** innerhalb von Stufe 4 Sortendaten vor Artdaten für dasselbe Attribut bevorzugen
@@ -84,16 +85,17 @@ Ein Gartenkontext ist eine normalisierte Sicht auf einen Garten. Er ist ein Wert
 | Beete und Gefäße | Keine Quelle gemessen | Ob ein Ort ein Beet oder ein Gefäß ist, ist kein Feld, das die Server-Spezifikation nennt |
 | Kulturen und Sorten | `list_plants` (`species_key`), `get_species_info`, `list_cultivars`, `get_cultivar` | — |
 | Pflanzdurchläufe | `list_planting_runs` | Das Paginierungsverhalten ist nicht gemessen |
-| Wachstumsstadium | `current_phase_key` aus `list_plants`; `get_plant_phase_status`, `get_plant_phase_history` | Ein Phasenzustand `unresolved` ist ein fehlendes Stadium, kein normales |
-| Aktuelle Messungen | Tagebucheinträge (`list_diary_entries`, `get_diary_entry`) | Der Schlüsselsatz von `measurements` |
-| Historische Beobachtungen | `get_plant_inspections`, `list_diary_entries`, `get_plant_care_log` | — |
+| Wachstumsstadium | `current_phase_key` aus `list_plants`. Je Pflanze, nicht auf Gartenebene: `get_plant_phase_status`, `get_plant_phase_history` | Ein Phasenzustand `unresolved` ist ein fehlendes Stadium, kein normales |
+| Aktuelle Messungen | Keine auf Gartenebene: `not collected`. Je Pflanze: Tagebucheinträge (`list_diary_entries`, `get_diary_entry`) | Der Schlüsselsatz von `measurements` |
+| Historische Beobachtungen | Keine auf Gartenebene: `not collected`. Je Pflanze: `get_plant_inspections`, `list_diary_entries`, `get_plant_care_log` | — |
 | Wetter | Keine Quelle gemessen | Alles |
 | Boden und Substrat | `substrate_key` aus `list_plants`; `list_substrates` | — |
-| Gieß- und Düngezustand | `get_plant_care_log`, `get_due_care_tasks`, `list_tasks`, `get_plant_nutrient_plan` | Dosismengen: Das Pflegeprotokoll hält eine Bestätigung fest, keine Menge |
+| Gieß- und Düngezustand | `get_due_care_tasks`, `list_tasks`. Je Pflanze: `get_plant_care_log`, `get_plant_nutrient_plan` | Dosismengen: Das Pflegeprotokoll hält eine Bestätigung fest, keine Menge |
 | Ziele und Einschränkungen der Nutzerin | Keine Quelle gemessen; kann vom Aufrufer geliefert werden | Ob irgendeine Instanz Ziele speichert |
 
 - **MUSS [MUST]** jedes Feld des Kontexts als `present` oder `absent` melden und **MUSS [MUST]** jedem `present`-Feld sein Quellwerkzeug und den Abrufzeitpunkt mitgeben
-- **MUSS [MUST]** jedem `absent`-Feld den Grund mitgeben: „keine Quelle gemessen“, die typisierte Absage des Servers oder das leere Ergebnis, und **DARF NICHT [MUST NOT]** es mit einem Standardwert füllen
+- **MUSS [MUST]** jedem `absent`-Feld den Grund mitgeben: „keine Quelle gemessen“, `not collected` für ein Feld, dessen Quelle je Pflanze gelesen wird, die typisierte Absage des Servers oder das leere Ergebnis, und **DARF NICHT [MUST NOT]** es mit einem Standardwert füllen
+- **MUSS [MUST]** Belege je Pflanze der Sammlung je Pflanze überlassen: Der Gartenkontext besitzt die Felder auf Gartenebene, `plant-context-collect` den Kontext einer Pflanze und `diary-measurements-read` die Messwerte des Tagebuchs; der Gartenkontext **DARF NICHT [MUST NOT]** sie erneut sammeln (entschieden durch das Audit zu nolte/kamerplanter-goose#39)
 - **MUSS [MUST]** den Garten ausdrücklich bestimmen, bevor irgendetwas gesammelt wird, über `list_tenants` oder eine `tenant`-Eingabe, gemäß der [Server-Spezifikation](../../mcp/kamerplanter-mcp-server/de.md), und **DARF NICHT [MUST NOT]** annehmen, ein Schlüssel decke genau einen Garten ab
 - **DARF NICHT [MUST NOT]** beim Sammeln eines Kontexts ein zustandsänderndes Werkzeug aufrufen; das Sammeln ist rein lesend
 - **SOLLTE [SHOULD]** die Liste der fehlenden Felder als eigenen Block getrennt von den Daten ausgeben, damit ein nachgelagerter Schritt nicht daran vorbeiliest
@@ -111,13 +113,14 @@ Die Leitern im [Nährstoffprozess](../nutrient-imbalance-detection/de.md) und im
 | Katalogfelder | — | Stufe 2 | 4 |
 | Muster im Pflegeprotokoll | Stufe 3 | — | 3 |
 | Situationspassung: Kategorie, Phase, Jahreszeit, Pflegehistorie, Umgebung | — | Stufe 3 | 4 und 5, mit der Pflegehistorie bei 3 |
-| Sichtbare Symptome aus einem Bild | Stufe 4 | Stufe 4 | Keine Stufe (siehe Offene Fragen) |
+| Sichtbare Symptome aus einem Bild | Stufe 4 | Stufe 4 | Keine Stufe: eine Lesung (Abschnitt A); Stufe 3, sobald bestätigt |
 | Nährstoffbedarfsstufe der Art und Phasenerwartung | Stufe 5 | — | 4 |
 | Allgemeinwissen über das Taxon, als nicht aus dem Datensatz gekennzeichnet | — | Stufe 5 | 8 |
 
 - **MUSS [MUST]** die eigene Leiter eines Prozesses für die Entscheidungen maßgeblich halten, die ihm gehören, und **DARF NICHT [MUST NOT]** seine Stufen mit dieser Rangfolge neu ordnen
 - **MUSS [MUST]** diese Rangfolge nutzen, um Belege prozessübergreifend zu vergleichen, wo zwei Leitern sonst nach Stufennummer verglichen würden
 - **MUSS [MUST]**, wo diese Spezifikation und eine Prozessleiter sich widersprechen, den Widerspruch als Offene Frage festhalten und **DARF NICHT [MUST NOT]** ihn durch eine Änderung der anderen Spezifikation auflösen
+- **DARF NICHT [MUST NOT]** eine Prozessleiter in einen gemeinsamen Skill verlagern: Jede Leiter bleibt beim Skill des Prozesses, dem sie gehört, und diese Rangfolge bildet nur zwischen ihnen ab (entschieden durch das Audit zu nolte/kamerplanter-goose#39)
 
 ## Akzeptanzkriterien
 
@@ -137,15 +140,13 @@ Die Leitern im [Nährstoffprozess](../nutrient-imbalance-detection/de.md) und im
 - [Nährstoffprozess](../nutrient-imbalance-detection/de.md) — §„Die Belegleiter“
 - [Schädlingsprozess](../pest-pressure-assessment/de.md) — §„Die Belegleiter“
 - [Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
-- Issue nolte/kamerplanter-goose#40 — die acht Stufen und sechs Regeln stammen aus seinem Text; nolte/kamerplanter-goose#39 — das Audit, dem die Zuständigkeitsgrenzen gehören
+- Issue nolte/kamerplanter-goose#40 — die acht Stufen und sechs Regeln stammen aus seinem Text; nolte/kamerplanter-goose#39 — das Audit (2026-11-06), das entschieden hat, wo ein Fotobefund steht und welches Artefakt welchen Kontext besitzt
 
 ## Offene Fragen
 
-- **Wo ein Fotobefund einzuordnen ist.** Beide bestehenden Leitern ordnen ein aus einem Bild gelesenes Symptom an vierter Stelle ein; diese Rangfolge hat dafür keine Stufe. Ein durch eine Person oder eine erfasste Inspektion bestätigter Befund gehört auf Stufe 3, ein unbestätigter Befund eines Modells ist aber weder eine bestätigte Beobachtung noch Allgemeinwissen. Offen, weil die Einordnung ändert, was ihn überstimmt: Auf Stufe 3 würde er Artdaten überstimmen, was beide bestehenden Prozesse ihm verwehren. Gemeinsam mit dem Audit zu entscheiden, nolte/kamerplanter-goose#39.
 - **Wo abgeleiteter Beleg einzuordnen ist.** Stufe 2 des Nährstoffprozesses verbindet ein Plansoll, eine bestätigte Häufigkeit mit erfassten Dosismengen und eine Substratbasis zu einer rekonstruierten Versorgung. Die Rangfolge ordnet Quellen, keine Ableitungen, und gibt einer solchen Ableitung keine Stufe. Offen, weil die Ableitung dem Nährstoffprozess selbst gehört und ihre Einordnung hier seine Leiter neu ordnen würde. Ob die Regel des Nährstoffprozesses, dass Stufe 2 erfasste Dosismengen braucht, daran etwas ändert, wird hier nicht entschieden.
 - **Ob die Rangfolge global oder je Frage gilt.** Die bestehenden Leitern ordnen Belege für eine Frage und lassen einen Artwert die niedrigste Stufe sein; diese Rangfolge stellt Artdaten über Standortdaten und Wetter. Für eine Frage, bei der das Wetter entscheidet — ein Frost, eine Hitzespitze —, kann eine globale Ordnung die falsche sein. Offen, weil bisher kein Prozess in diesem Repository beide Ordnungen zugleich brauchte.
 - **Ob eine gemeinsame Handlungsschwelle nötig ist.** Der Nährstoffprozess schlägt keine Dosisänderung vor, wenn sein bester Beleg auf seiner Stufe 3 oder darunter liegt, und der Schädlingsprozess schlägt eine Behandlung nur vor, wenn die Bestimmung auf seiner Stufe 1 oder auf seiner Stufe 4 plus einer nicht widerlegten Stufe 2 ruht; das sind Schwellen auf zwei verschiedenen Leitern, und diese Spezifikation setzt keine. Offen, weil eine auf der Rangfolge formulierte Schwelle mit beiden abgestimmt werden müsste und die Zuordnung in Abschnitt E durch Lesen entstand, nicht dadurch, dass ein Fall durch beide geführt wurde.
 - **Was „aktuell genug“ für Stufe 1 heißt.** Der Nährstoffprozess sagt „wenn aktuell genug“ ohne Schwelle; kein Prozess nennt eine je Größe. Offen, weil die Schwelle davon abhängt, wie schnell sich die Größe ändert (ein Bodenfeuchtewert und ein EC-Wert altern nicht gleich), und es dafür keine gemessene Quelle im Datensatz gibt.
 - **Ob eine laufende Instanz Quellen bietet, die diese Spezifikation mit „keine Quelle gemessen“ markiert.** Niemand hat ein `tools/list` an einer erreichbaren Instanz auf Beet-, Gefäß-, Wetter- oder Zielwerkzeuge ausgeführt; der Server war beim Schreiben dieser Spezifikation nicht erreichbar. Die Felder bleiben fehlend, bis eine Messung etwas anderes sagt, und ein gefundenes Werkzeug verschiebt das Feld, nicht den Vertrag.
 - **Ob die Wissensbasis bereitstellbar ist.** `search_plant_knowledge` ist deklariert und wurde als nicht verfügbar gemessen; Stufe 7 hat auf der gemessenen Instanz keine funktionierende Quelle. Offen, weil sie eine optionale Komponente ist und nichts im Datensatz sagt, ob der Betreiber sie bereitstellen will.
-- **Welches Artefakt was besitzt.** `plant-context-collect` sammelt den Kontext einer Pflanze, und der Kontextvertrag in Abschnitt D sammelt den Kontext eines Gartens; wo das eine endet und das andere beginnt und ob die bestehenden Leitern in einen gemeinsamen Skill wandern, entscheidet das Audit, nolte/kamerplanter-goose#39.

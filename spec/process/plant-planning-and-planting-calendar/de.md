@@ -134,6 +134,7 @@ Das Plandokument hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen:
 - [Die Entscheidungsregeln für den Garten](../garden-decision-policy/de.md) — Belegstufen, die Ausgabe einer Empfehlung und der Gartenkontext
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
 - Issue nolte/kamerplanter-goose#42 — die Planungsfaktoren und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#43, #46, #47, #59 und #39 — die Verbraucher, die Fruchtfolge, die Anwendungshälfte und das Audit
+- Das Audit zu nolte/kamerplanter-goose#39 (2026-11-06) hat Kalender und Plan als zwei Artefakte belassen, `planting-calendar` und `plant-planning`, in der Planungskette nach `garden-context`, `site-analysis` und `crop-selection`
 
 ## Offene Fragen
 
@@ -145,4 +146,3 @@ Das Plandokument hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen:
 - **Ob eine laufende Instanz ein Werkzeug hat, das Pflanzdurchläufe anlegt.** Der gemessene Katalog hat keines, die Server-Spezifikation sagt, jede Werkzeugzahl als Untergrenze zu behandeln, und niemand hat `tools/list` an einer erreichbaren Instanz ausgeführt. Die `-apply`-Rezepte warten darauf, geführt als nolte/kamerplanter-goose#59.
 - **Wie Fruchtfolgebedingungen ankommen.** Die [Fruchtfolgeplanung](../crop-rotation-planning/de.md) beurteilt die Fruchtfolge je Beet und Saison, und einem Durchlauf hier wird kein Beet zugeordnet, daher bleibt die Fruchtfolge in jedem Durchlauf unbekannt; die beiden Pläne werden über das Präfix `species_key/cultivar_key` der Durchlaufkennung zusammengeführt. Beantwortet durch die [Beetaufteilung und Folgesaatplanung](../bed-layout-and-succession-planning/de.md): Die Beetaufteilung trägt das Fruchtfolgeurteil je Platzierung, übernommen aus dem Fruchtfolgeplan, und die Durchläufe dieses Plans bleiben `rotation: unknown`.
 - **Wie der Determinismus gemessen wird.** Diese Spezifikation legt die Plan-Fakten fest und verlangt, dass sie über dieselben Eingabeblöcke gleich sind. Geprüft wird das an einem festen Beispiel aus als Text ausgeschriebenen Eingabeblöcken, mit Vergleich wiederholter Läufe; das zeigt die Eigenschaft für dieses Beispiel und nicht für einen laufenden Garten, und wie viele Läufe nötig sind, um sie stabil zu nennen, wird hier nicht entschieden.
-- **Wo das Audit, nolte/kamerplanter-goose#39, die Planung im Verhältnis zu Gartenkontext und Standortanalyse einordnet.** Ob Kalender und Plan zwei Artefakte bleiben, entscheidet das Audit.

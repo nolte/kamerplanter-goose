@@ -149,6 +149,7 @@ The succession plan has four blocks, in this order and under these names: `SUCCE
 - [The crop rotation planning spec](../crop-rotation-planning/en.md) — the rotation slots, the crop keys and the conflicts this spec reads
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Issue nolte/kamerplanter-goose#46 — the layout factors and the five criteria are taken from its body; nolte/kamerplanter-goose#74 — the blocked apply half; nolte/kamerplanter-goose#59 and #68 — the precedents for a blocked apply half; nolte/kamerplanter-goose#39 — the audit
+- The audit for nolte/kamerplanter-goose#39 (2026-11-06) kept collection, succession and layout as three skills — `companion-spacing-collect`, `succession-planning`, `bed-layout-planning` — each answering its own question, with layout consuming the rotation plan and the successions
 
 ## Open Questions
 
@@ -157,4 +158,3 @@ The succession plan has four blocks, in this order and under these names: `SUCCE
 - **Whether a live instance has a tool that records a bed, a layout or a planting run.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, in nolte/kamerplanter-goose#74.
 - **Crops that span the season boundary.** A run whose harvest reaches into the next year has unknown occupancy here, because one run plans one season. A multi-season layout would need the rotation plan's later seasons and is out of scope.
 - **How determinism is measured.** This spec defines the plan facts and requires them to be the same over the same input blocks. It is checked on a fixed fixture written out as text, repeated runs compared; that shows the property for that fixture and not for a live garden, and the number of runs needed to call it stable is not settled here.
-- **Where the audit, nolte/kamerplanter-goose#39, places layout relative to planting and rotation.** Whether collection, succession and layout stay three skills is the audit's decision.

@@ -124,11 +124,11 @@ Readers: authors of garden skills and recipes in this repository, the authors of
 - [The growth stage and weather impact spec](../growth-stage-and-weather-impact/en.md) — the growth-stage and weather assessments, which return findings in this shape
 - [The plant health and IPM planning spec](../plant-health-and-ipm-planning/en.md) — the plant health assessment and the IPM plan, which return findings in this shape
 - Issue nolte/kamerplanter-goose#43 — the scope and the five acceptance criteria are taken from its body; #44, #45, #48 and #49 — the domains that plug in; #39 — the audit
+- The audit for nolte/kamerplanter-goose#39 (2026-11-06) kept care planning as one skill, `care-planning`, an aggregator over the plant-care results that reads no garden; the garden context stays with `garden-context`
 
 ## Open Questions
 
 - **Whether the domain skills need an explicit urgency field in the plug-in contract.** Urgency is derived here from the stated consequence. The watering and fertilisation decisions leave the consequence absent unless an input states one, and no input does today, so their recommendations rank `routine`; whether a consequence can be stated for them in one shape is open until a domain does.
 - **How the nutrient tier 2 rule shows up as confidence in a care item.** Tier 2 needs recorded dose amounts and carries no decision-policy level (section C), so a care item resting on it says that no level applies. Whether that is the right place for it is open.
-- **Where the audit, nolte/kamerplanter-goose#39, places care planning relative to the garden context.** Whether the layer stays one skill is the audit's decision.
 - **The response fields of `get_due_care_tasks`.** No spec here records whether a task carries a due date or an interval, so no overdue computation is specified and a due task is `routine` at most. A measurement against a reachable instance would settle it.
 - **Whether five plants is the right cap.** The number is chosen to bound the per-plant calls, not measured against a garden's size or the server's limits.

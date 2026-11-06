@@ -188,6 +188,7 @@ Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen
 - `recipes/plant-master-data-check.yaml` — `list_plants` gemessen mit `matched: 9` gegenüber `total_in_tenant: 11`, der einzige Beleg dafür, dass archivierte Pflanzen existieren
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
 - Issue nolte/kamerplanter-goose#47 — die Fruchtfolgefaktoren und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#68 — die blockierte Anwendungshälfte; nolte/kamerplanter-goose#46, #59 und #39 — der Verbraucher, der Präzedenzfall für eine blockierte Anwendungshälfte und das Audit
+- Das Audit zu nolte/kamerplanter-goose#39 (2026-11-06) hat Sammeln und Planen als zwei Skills belassen, `rotation-history-collect` und `crop-rotation-planning`, in der Planungskette zwischen Pflanzplanung und Beetaufteilung
 
 ## Offene Fragen
 
@@ -198,4 +199,3 @@ Das Plandokument hat sechs Blöcke, in dieser Reihenfolge und unter diesen Namen
 - **Die Form von `list_planting_runs`.** Pflanzdurchläufe bleiben Kontext, bis ihre Form festgehalten ist.
 - **Ob eine laufende Instanz ein Werkzeug hat, das eine Fruchtfolge oder eine Beetzuordnung festhält.** Der gemessene Katalog hat keines, die Server-Spezifikation sagt, jede Werkzeugzahl als Untergrenze zu behandeln, und niemand hat `tools/list` an einer erreichbaren Instanz ausgeführt. Das `-apply`-Rezept wartet darauf, geführt als nolte/kamerplanter-goose#68.
 - **Wie Determinismus gemessen wird.** Diese Spezifikation legt die Plan-Fakten fest und verlangt, dass sie über dieselben Eingabeblöcke gleich sind. Geprüft wird das an einer festen, als Text ausgeschriebenen Vorlage, wiederholte Läufe verglichen; das zeigt die Eigenschaft für diese Vorlage und nicht für einen laufenden Garten, und die Zahl der Läufe, die nötig ist, um sie stabil zu nennen, wird hier nicht festgelegt.
-- **Wo das Audit, nolte/kamerplanter-goose#39, die Fruchtfolge gegenüber Pflanzplanung und Beetaufteilung einordnet.** Ob Sammeln und Planen zwei Skills bleiben, entscheidet das Audit.
