@@ -3,12 +3,12 @@ title: Season review
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Season review
 
-`season-review` closes the cycle that [`garden-plan`](garden-plan.md) opens. It looks back over one season of a garden, **archived plants included, so the failures are not hidden**, and ends in a next-cycle block whose lines are the parameters of the next season's plan. It gives the same blocks as [`garden-review`](garden-review.md) — history records, cultivar performance, lessons and the domain status — over a season you name.
+[`garden-review`](garden-review.md) with `season` set closes the cycle that [`garden-plan`](garden-plan.md) opens. It looks back over one season of a garden, **archived plants included, so the failures are not hidden**, and ends in a next-cycle block whose lines are the parameters of the next season's plan. It gives the same blocks as the in-season review — history records, cultivar performance, lessons and the domain status — over a season you name.
 
 The run **only reads**. It writes the review nowhere — no file, no diary entry — has no apply recipe and calls no Home Assistant tool.
 
@@ -23,7 +23,7 @@ The run **only reads**. It writes the review nowhere — no file, no diary entry
 ## Run it
 
 ```sh
-goose run --recipe season-review \
+goose run --recipe garden-review \
   --params season=2026 \
   --params tenant=my-garden \
   --params plants=42,43,51 \
@@ -34,7 +34,7 @@ goose run --recipe season-review \
 
 | Parameter | Required | Effect when omitted |
 |-----------|:--------:|---------------------|
-| `season` | yes | — a year (`2026`) or a span (`2026-03-01..2026-10-31`); anything else stops the run |
+| `season` | yes | a year (`2026`) or a span (`2026-03-01..2026-10-31`); anything else stops the run. Without it the run is the in-season [garden review](garden-review.md) |
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `plants` | no | no plant is reviewed; the season's plants are listed so you can name them |
 | `yields` | no | every yield is absent; the record has no yield field |
@@ -83,6 +83,6 @@ goose run --recipe garden-plan \
 
 ## Sources
 
-- [`recipes/season-review.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/season-review.yaml) — the parameters, the archived-plant listing and the report format
+- [`recipes/garden-review.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/garden-review.yaml) — the parameters, the archived-plant listing and both report formats
 - [`.claude/skills/garden-review/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/garden-review/SKILL.md) — the history record, the lessons and the next-cycle block
 - [`spec/process/garden-and-season-review/en.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/garden-and-season-review/en.md) — the process this recipe implements

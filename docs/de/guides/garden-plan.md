@@ -3,7 +3,7 @@ title: Gartenplan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Gartenplan
@@ -41,6 +41,7 @@ goose run --recipe garden-plan \
 | `hardiness_zone` | nein | die Härtezonen-Prüfung bleibt unentschieden: Kein Werkzeug sagt, in welcher Zone ein Garten liegt |
 | `beds` | nein | für die Beetaufteilung werden keine Beete aufgeführt |
 | `planting_method` | nein | jede Anbauweise mit bekanntem Aussaatfenster wird angeboten, jede als eigener Durchlauf |
+| `view` | nein | `runs`, diese Seite; `months` legt denselben Plan auf zwölf Monate — siehe den [Saisonplan](season-plan.md) |
 
 `crops` ist eine durch Kommas getrennte Liste; jeder Eintrag ist ein Artschlüssel oder ein Artschlüssel und ein Sortenschlüssel, durch einen Doppelpunkt verbunden. `beds` ist eine durch Kommas getrennte Liste aus `name:area_or_volume`, zum Beispiel `bed-1:2m2,tub-1:10l`. `planting_method` ist `direct_sow` oder `indoor_then_transplant`; anderer Text ist keine Präferenz.
 

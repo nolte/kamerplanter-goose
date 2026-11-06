@@ -3,7 +3,7 @@ title: References
 audience: [recipe-author, self-hoster, maintainer]
 content_mode: meta
 track: developer-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # References
@@ -37,13 +37,13 @@ Each recipe has a guide of its own, linked from its name.
 | [`harvest-readiness-check`](../guides/harvest-readiness-check.md) | no | Ready, approaching, not ready, not harvestable or not enough evidence, for one plant, with its safety-interval gate; harvests nothing |
 | [`harvest-plan`](../guides/harvest-plan.md) | no | The harvests of up to five plants in one order, with windows and workload counts; schedules nothing |
 | [`garden-review`](../guides/garden-review.md) | no | A garden's history so far, plant by plant, with lessons and a next-cycle block; writes nothing |
-| [`season-review`](../guides/season-review.md) | no | A season's history, archived plants included, handed to the next plan; writes nothing |
+| [`garden-review` `season=…`](../guides/season-review.md) | no | A season's history, archived plants included, handed to the next plan; writes nothing |
 | [`species-baseline-check`](../guides/species-baseline-check.md) | no | Whether a species record is plausible, and what its lifecycle is |
 | [`garden-context-check`](../guides/garden-context-check.md) | no | Which parts of a garden's context are known and which are absent |
 | [`crop-selection`](../guides/crop-selection.md) | no | Which candidate crops a site supports, and which constraints it fails |
 | [`planting-calendar`](../guides/planting-calendar.md) | no | When each chosen crop can be sown, transplanted and harvested at a garden |
 | [`garden-plan`](../guides/garden-plan.md) | no | Planting-run proposals for chosen crops, for review; applies nothing |
-| [`season-plan`](../guides/season-plan.md) | no | The plan laid on twelve months, with its successions |
+| [`garden-plan` `view=months`](../guides/season-plan.md) | no | The plan laid on twelve months, with its successions |
 | [`crop-rotation-plan`](../guides/crop-rotation-plan.md) | no | One plant family per bed and season, with verdicts and conflicts; records nothing |
 | [`succession-plan`](../guides/succession-plan.md) | no | Sequential and staggered successions per bed for one season; records nothing |
 | [`bed-layout-plan`](../guides/bed-layout-plan.md) | no | Runs per bed with capacity per month, conflicts and runs not placed; records nothing |

@@ -3,12 +3,12 @@ title: Saisonrückschau
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-11-05
+last_updated: 2026-11-06
 ---
 
 # Saisonrückschau
 
-`season-review` schließt den Kreis, den [`garden-plan`](garden-plan.md) öffnet. Sie blickt auf eine Saison eines Gartens zurück, **archivierte Pflanzen eingeschlossen, damit die Ausfälle nicht verborgen bleiben**, und endet in einem Block für den nächsten Zyklus, dessen Zeilen die Parameter des Plans für die nächste Saison sind. Sie liefert dieselben Blöcke wie [`garden-review`](garden-review.md) — Verlaufsdatensätze, Leistung der Sorten, Lehren und den Domänenstatus — über eine Saison, die du nennst.
+[`garden-review`](garden-review.md) mit gesetztem `season` schließt den Kreis, den [`garden-plan`](garden-plan.md) öffnet. Sie blickt auf eine Saison eines Gartens zurück, **archivierte Pflanzen eingeschlossen, damit die Ausfälle nicht verborgen bleiben**, und endet in einem Block für den nächsten Zyklus, dessen Zeilen die Parameter des Plans für die nächste Saison sind. Sie liefert dieselben Blöcke wie die Rückschau mitten in der Saison — Verlaufsdatensätze, Leistung der Sorten, Lehren und den Domänenstatus — über eine Saison, die du nennst.
 
 Der Lauf **liest nur**. Er schreibt die Rückschau nirgendwohin — keine Datei, kein Tagebucheintrag —, hat kein Anwendungsrezept und ruft kein Home-Assistant-Tool auf.
 
@@ -23,7 +23,7 @@ Der Lauf **liest nur**. Er schreibt die Rückschau nirgendwohin — keine Datei,
 ## Ausführen
 
 ```sh
-goose run --recipe season-review \
+goose run --recipe garden-review \
   --params season=2026 \
   --params tenant=my-garden \
   --params plants=42,43,51 \
@@ -34,7 +34,7 @@ goose run --recipe season-review \
 
 | Parameter | Pflicht | Wirkung, wenn weggelassen |
 |-----------|:-------:|---------------------------|
-| `season` | ja | — ein Jahr (`2026`) oder eine Spanne (`2026-03-01..2026-10-31`); alles andere hält den Lauf an |
+| `season` | ja | ein Jahr (`2026`) oder eine Spanne (`2026-03-01..2026-10-31`); alles andere hält den Lauf an. Ohne ihn ist der Lauf die [Gartenrückschau](garden-review.md) mitten in der Saison |
 | `tenant` | nein | der Lauf ermittelt den Garten-Slug über `list_tenants` |
 | `plants` | nein | keine Pflanze wird betrachtet; die Pflanzen der Saison werden aufgelistet, damit du sie nennen kannst |
 | `yields` | nein | jeder Ertrag fehlt; der Datenbestand hat kein Ertragsfeld |
@@ -83,6 +83,6 @@ goose run --recipe garden-plan \
 
 ## Quellen
 
-- [`recipes/season-review.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/season-review.yaml) — die Parameter, die Auflistung archivierter Pflanzen und das Berichtsformat
+- [`recipes/garden-review.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/garden-review.yaml) — die Parameter, die Auflistung archivierter Pflanzen und beide Berichtsformate
 - [`.claude/skills/garden-review/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/garden-review/SKILL.md) — der Verlaufsdatensatz, die Lehren und der Block für den nächsten Zyklus
 - [`spec/process/garden-and-season-review/de.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/spec/process/garden-and-season-review/de.md) — der Prozess, den dieses Rezept umsetzt

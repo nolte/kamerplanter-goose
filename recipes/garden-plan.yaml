@@ -1,7 +1,7 @@
 version: "1.0.0"
 title: "Garden Plan"
 description: >-
-  Read-only: from chosen crops to planting-run proposals for one Kamerplanter garden, each with a stable identifier, method, windows, rationale and confidence, and a list of what was not planned and why. The plan is a document for review; it applies nothing, and the measured catalog has no tool that could. Light, area, volume, water, beds, the hardiness zone and a method preference count only when you supply them. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
+  Read-only: from chosen crops to planting-run proposals for one Kamerplanter garden, each with a stable identifier, method, windows, rationale and confidence, and a list of what was not planned and why; with view=months the same plan is shown as a twelve-month season view with the succession opportunities it names, and adds no date. The plan is a document for review; it applies nothing, and the measured catalog has no tool that could. Light, area, volume, water, beds, the hardiness zone and a method preference count only when you supply them. Must run with the working directory set to this repository checkout, because it loads project skills from .claude/skills/.
 
 parameters:
   - key: tenant
@@ -90,12 +90,22 @@ parameters:
     description: >-
       A preference: direct_sow or indoor_then_transplant. Any other text is not a
       preference. Empty offers every method that has a known sowing window.
+  - key: view
+    input_type: string
+    requirement: optional
+    default: runs
+    description: >-
+      How the plan is reported: runs (one row per planting run, with what was
+      not planned and the apply contract) or months (the runs laid on twelve
+      months, with the succession opportunities and the windows not placed).
+      Anything else stops the run before any tool call.
 
 # No `extensions:` block on purpose — see extensions.yaml.
 
 instructions: |
-  You turn chosen crops into a reviewable planting plan and report it. You never
-  apply the plan, advise beyond it, or write. Only candidates that are eligible
+  You turn chosen crops into a reviewable planting plan and report it, as a run
+  table or as a twelve-month season view. You never apply the plan, add a date,
+  advise beyond it, or write. Only candidates that are eligible
   and have a known sowing window or indoor sowing date become runs; every other
   candidate is listed with its reason. A bed is never assigned, and rotation is
   unknown.
@@ -105,7 +115,7 @@ instructions: |
   fields were measured absent, and what the sowing calendar returns.
 
 prompt: |
-  Make a planting plan for garden "{{ tenant }}".
+  Make a planting plan for garden "{{ tenant }}"{% if view == "months" %}, shown as a season{% endif %}.
   Use MCP tools only: do not shell out, do not fetch URLs, and read or write no
   local file other than loading the named skills (`garden-context`, `site-analysis`, `crop-selection`, `planting-calendar`, `plant-planning`, `decision-policy`) and the files they instruct you to read.
 
@@ -147,6 +157,13 @@ prompt: |
     that no recorded field supports. Report it unknown, with the missing input.
   - Never use a typical date, duration or offset from general knowledge.
 
+  {% if view != "runs" and view != "months" %}
+  Step 0 — View.
+  The view "{{ view }}" is neither runs nor months. Call no tool, report this
+  step as FAIL naming the value, and close with the single line
+  `PLAN: not planned (invalid view) — {{ view }}`.
+
+  {% endif %}
   Step 1 — Garden.
   Load the skill `garden-context` and follow it for garden "{{ tenant }}". Keep
   the block it returns.
@@ -174,6 +191,30 @@ prompt: |
   records, the garden context, the beds, the harvest window and the method
   preference above, passing only the ones that are not empty.
   Step 7 — Report.
+  {% if view == "months" %}
+  Build the report only from the plan the skill returned. Do not add a date
+  that is not in it. Print this and nothing after it:
+
+  ## Season Plan — <the slug the skills resolved, given or discovered>
+
+  A month view over the runs of the plan. One row per run; for each of the
+  twelve months, mark S where the sowing window covers it, I for the month of
+  the indoor sowing date, T from the start of the transplant window, and H where
+  the harvest window covers it. Use a month only where the window states it as
+  months or as a date; a window that is unknown is not placed.
+
+  | Run | Jan | Feb | Mar | Apr | May | Jun | Jul | Aug | Sep | Oct | Nov | Dec |
+  |-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|-----|
+
+  Then the succession opportunities the plan names and no others (precedes /
+  follows, with both run identifiers), the windows that were not placed with the
+  reason, and the candidates that were not planned. If any window is unknown,
+  say that the season view is incomplete and name them. Any tool error is
+  reported verbatim.
+
+  Close with one line, `SEASON: <r> runs, <s> successions — <slug>`, and a second
+  line, `NOT PLACED: <run / window with its reason, comma-separated>`.
+  {% else %}
   Build the report only from what the skills returned. Print this and nothing
   after it:
 
@@ -196,3 +237,4 @@ prompt: |
 
   Close with one line, `PLAN: <r> runs, <n> not planned — <slug>`, and a second
   line, `APPLY: no write tool measured (nolte/kamerplanter-goose#59)`.
+  {% endif %}

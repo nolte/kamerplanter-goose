@@ -3,12 +3,12 @@ title: Season plan
 audience: [plant-owner, recipe-author]
 content_mode: how-to
 track: user-docs
-last_updated: 2026-10-14
+last_updated: 2026-11-06
 ---
 
 # Season plan
 
-The same plan, laid on a year. `season-plan` makes the plan of [`garden-plan`](garden-plan.md) for the crops you name and shows its runs month by month, with the successions the plan names. It is built from the plan only: it adds no date.
+The same plan, laid on a year. [`garden-plan`](garden-plan.md) with `view=months` makes its plan for the crops you name and shows the runs month by month, with the successions the plan names. It is built from the plan only: it adds no date.
 
 It applies nothing, and the Kamerplanter tools this repository has measured include none that could ([#59](https://github.com/nolte/kamerplanter-goose/issues/59)).
 
@@ -24,7 +24,8 @@ This run **only reads**. It changes no record.
 ## Run it
 
 ```sh
-goose run --recipe season-plan \
+goose run --recipe garden-plan \
+  --params view=months \
   --params tenant=my-garden \
   --params crops="allium-porrum"
 ```
@@ -32,6 +33,7 @@ goose run --recipe season-plan \
 | Parameter | Required | Effect when omitted |
 |-----------|:--------:|---------------------|
 | `crops` | yes | — |
+| `view` | yes, `months` | without it the run reports the plan as a run table — the [garden plan](garden-plan.md) |
 | `tenant` | no | the run discovers the garden slug from `list_tenants` |
 | `goals` | no | no goal is judged; none is reported met |
 | `harvest_window` | no | the harvest preference is reported unknown; it never drops a crop |
@@ -57,7 +59,7 @@ The successions listed are the ones the plan names (`precedes` and `follows`, wi
 
 ## Sources
 
-- [`recipes/season-plan.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/season-plan.yaml) — the parameters and the report format
+- [`recipes/garden-plan.yaml`](https://github.com/nolte/kamerplanter-goose/blob/develop/recipes/garden-plan.yaml) — the parameters and both report formats
 - [`.claude/skills/plant-planning/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/plant-planning/SKILL.md) — the runs, their identifiers and the apply contract
 - [`.claude/skills/planting-calendar/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/planting-calendar/SKILL.md) — the windows behind each run
 - [`.claude/skills/crop-selection/SKILL.md`](https://github.com/nolte/kamerplanter-goose/blob/develop/.claude/skills/crop-selection/SKILL.md) — which crops may be planned
