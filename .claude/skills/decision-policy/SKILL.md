@@ -40,7 +40,7 @@ List every item the caller holds with its source and retrieval time. An item wit
 
 ### 2. Assign each claim one level
 
-A claim that rests on two items takes the level of the weaker. A model reading of a photo has no level in this hierarchy: report it as a reading. It may corroborate or contradict, never decide alone, and when it meets level-8 knowledge report both without ranking them. A reading a person or a recorded inspection has confirmed is level 3.
+A claim that rests on several items takes the level of the weakest, and so does a value derived from them, such as a reconstructed supply; inside the process that owns the derivation, its own tier still decides. A model reading of a photo has no level in this hierarchy: report it as a reading. It may corroborate or contradict, never decide alone, and when it meets level-8 knowledge report both without ranking them. A reading a person or a recorded inspection has confirmed is level 3.
 
 ### 3. Check the six rules
 
@@ -74,7 +74,7 @@ The recommendation is a proposal to a person, never an instruction to a device o
 
 ## How the existing ladders relate
 
-The nutrient and pest processes keep their own ladders for their own decisions. Read across, by reading rather than by running a case through both:
+The nutrient, pest and species-baseline processes keep their own ladders for their own decisions. Read across, by reading rather than by running a case through both:
 
 | In the process | Reads as |
 |----------------|----------|
@@ -83,10 +83,13 @@ The nutrient and pest processes keep their own ladders for their own decisions. 
 | Care-log pattern (nutrient tier 3) | Level 3 |
 | Catalogue fields, species demand and phase expectation (pest tier 2, nutrient tier 5) | Level 4 |
 | Visible symptoms read from an image (tier 4 in both) | No level: a reading; level 3 once confirmed |
-| Plan target against reconstructed supply (nutrient tier 2) | No level: derived |
+| Plan target against reconstructed supply (nutrient tier 2) | Its weakest input: at most level 4 |
+| The recorded species or cultivar value under check (species baseline) | Level 4 |
+| A cited source of rank 1 to 5 (species baseline) | Level 7 |
+| Species-baseline confidence (*established* … *unverifiable*) | No level: an agreement count over level 7 sources; only *established* licenses a proposed correction |
 | General knowledge of the taxon (pest tier 5) | Level 8 |
 
-A photo reading has no level by decision; a derived supply has none because the derivation is the nutrient process's own, an open question in the spec. Nothing here re-ranks either process.
+A photo reading has no level by decision. Whether another process may rely on an *established* species-baseline finding before the record is corrected is an open question in the spec; until it is decided, keep the recorded level 4 value and report the finding beside it. Nothing here re-ranks any process.
 
 ## Hard rules
 

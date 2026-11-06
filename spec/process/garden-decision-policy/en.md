@@ -55,6 +55,7 @@ Evidence is ranked in eight levels, highest first. The rank travels with each cl
 - **MUST NOT** let evidence of a lower level override evidence of a higher level; lower evidence corroborates or contradicts, and a contradiction is reported as such, not resolved silently in favour of the lower
 - **MUST** label level 8 evidence as not from the record wherever it appears
 - **MUST** prefer, within level 4, cultivar data over species data for the same attribute
+- **MUST** give a claim that rests on several items the level of the weakest of them, and a derivation — a value computed from several items, such as the nutrient process's reconstructed supply — the level of its weakest input; inside the process that owns the derivation, that process's own tier stays authoritative (section E)
 - **MUST NOT** treat a level for which the measured catalog names no source as available; the field is reported absent with the reason "no source measured"
 
 ### B. Core rules
@@ -109,13 +110,22 @@ The ladders in [the nutrient process](../nutrient-imbalance-detection/en.md) and
 |---------------|------------------|--------------|-----------------|
 | Measured value from a diary entry | Tier 1 | — | 1, or 2 when no longer current |
 | Recorded inspection naming the organism | — | Tier 1 | 3 |
-| Plan target against reconstructed supply | Tier 2 | — | No level: derived from 3 and 4 (see Open Questions) |
+| Plan target against reconstructed supply | Tier 2 | — | The level of its weakest input (section A): at most 4, the plan target's level |
 | Catalogue fields | — | Tier 2 | 4 |
 | Care-log pattern | Tier 3 | — | 3 |
 | Situation fit: category, phase, season, care history, enclosure | — | Tier 3 | 4 and 5, with care history at 3 |
 | Visible symptoms read from an image | Tier 4 | Tier 4 | No level: a reading (section A); level 3 once confirmed |
 | Species demand level and phase expectation | Tier 5 | — | 4 |
 | General knowledge of the taxon, labelled as not from the record | — | Tier 5 | 8 |
+
+[The species baseline process](../species-baseline-verification/en.md) ranks sources for one question — whether the record itself is right — rather than evidence about a plant, and it decides with a confidence level, of which only *established* licenses a proposed correction. Read across:
+
+| In the species baseline process | Hierarchy level |
+|---------------------------------|-----------------|
+| The recorded value under check (`get_species_info`, `get_cultivar`) | 4 |
+| A cited source of rank 1 to 5 (institutes and extension services down to forums) | 7 |
+| Wikipedia, AI-generated text, unattributed posts — never sufficient alone there | 8 |
+| Confidence level (*established*, *probable*, *uncertain*, *unverifiable*) | No level: an agreement count over level 7 sources, and that process's action threshold |
 
 - **MUST** keep a process's own ladder authoritative for the decisions that process owns, and **MUST NOT** re-rank its tiers using this hierarchy
 - **MUST** use this hierarchy to compare evidence across processes, where two ladders would otherwise be compared by tier number
@@ -130,7 +140,7 @@ The ladders in [the nutrient process](../nutrient-imbalance-detection/en.md) and
 - [ ] A garden context lists every field of section D as present or absent; each absent field names its reason; no absent field holds a default
 - [ ] Beds and containers, weather and user goals are reported absent with "no source measured" unless a tool named in the server spec supplies them, or the caller does
 - [ ] The collection step calls no state-changing tool and resolves the tenant before reading anything
-- [ ] Neither existing ladder is changed by the work that implements this spec, and every disagreement between the two sets of rules is listed under Open Questions
+- [ ] No existing process ladder is changed by the work that implements this spec, and every disagreement between this hierarchy and a process ladder is listed under Open Questions
 - [ ] Every claim about the tool surface cites the server spec; a claim not re-measured says so
 - [ ] The German and the English file have the same headings in the same order, the same number of requirement bullets and the same number of acceptance checkboxes
 
@@ -139,12 +149,13 @@ The ladders in [the nutrient process](../nutrient-imbalance-detection/en.md) and
 - [the Kamerplanter MCP server spec](../../mcp/kamerplanter-mcp-server/en.md) — tool catalog, caveats and tenancy, measured against the reference instance on 2026-08-16
 - [the nutrient imbalance process](../nutrient-imbalance-detection/en.md) — §"The evidence ladder"
 - [the pest pressure process](../pest-pressure-assessment/en.md) — §"The evidence ladder"
+- [the species baseline process](../species-baseline-verification/en.md) — §"The source hierarchy and the three-source rule", §"Confidence, and what each level licenses"
 - [the recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Issue nolte/kamerplanter-goose#40 — the eight levels and six rules are taken from its body; nolte/kamerplanter-goose#39 — the audit (2026-11-06) that decided where a photo reading sits and which artifact owns which context
 
 ## Open Questions
 
-- **Where derived evidence sits.** The nutrient process's tier 2 combines a plan target, a confirmed frequency with recorded dose amounts and a substrate baseline into a reconstructed supply. The hierarchy ranks sources, not derivations, and gives such a derivation no level. Open because the derivation is the nutrient process's own and ranking it here would re-rank its ladder. Whether the nutrient process's rule that tier 2 needs recorded dose amounts changes this is not decided here.
+- **Whether three agreeing level 7 sources may correct level 4 data.** The species baseline process proposes a correction to the record when three independent cited sources agree (*established*); this hierarchy lets no lower level override a higher one. Inside that process its rule stays authoritative (section E), and it proposes a correction rather than applying one. Open: whether a recommendation in another process may rely on an *established* finding before the record is corrected, or must keep the recorded level 4 value until it is.
 - **Whether the ranking is global or per question.** The existing ladders order evidence for one question and let a species prior be the lowest tier; this hierarchy places species data above site data and weather. For a question where weather decides — a frost, a heat spike — a global order may be the wrong one. Open because no process in this repository has yet needed both orders at once.
 - **Whether a common action threshold is needed.** The nutrient process proposes no dosage change when its best evidence is its tier 3 or lower, and the pest process proposes a treatment only when the identification rests on its tier 1, or on its tier 4 plus an uncontradicted tier 2; these are thresholds on two different ladders, and this spec sets none. Open because a threshold stated on the hierarchy would have to be reconciled with both, and the mapping in section E is by reading, not by running a case through both.
 - **What "recent enough" means for level 1.** The nutrient process says "when recent enough" without a threshold; no process states one per quantity. Open because the threshold depends on how fast the quantity moves (a soil moisture reading and an EC reading do not age alike) and no measured source of that exists in the record.

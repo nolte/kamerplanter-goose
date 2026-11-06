@@ -55,6 +55,7 @@ Belege werden in acht Stufen geordnet, höchste zuerst. Der Rang wandert mit jed
 - **DARF NICHT [MUST NOT]** Belege einer niedrigeren Stufe Belege einer höheren Stufe überstimmen lassen; niedrigere Belege stützen oder widersprechen, und ein Widerspruch wird als solcher gemeldet, nicht stillschweigend zugunsten des niedrigeren aufgelöst
 - **MUSS [MUST]** Belege der Stufe 8 überall, wo sie auftreten, als nicht aus dem Datensatz kennzeichnen
 - **MUSS [MUST]** innerhalb von Stufe 4 Sortendaten vor Artdaten für dasselbe Attribut bevorzugen
+- **MUSS [MUST]** einer Aussage, die auf mehreren Belegen ruht, die Stufe des schwächsten davon geben, und einer Ableitung — einem aus mehreren Belegen berechneten Wert wie der rekonstruierten Versorgung des Nährstoffprozesses — die Stufe ihres schwächsten Eingangs; innerhalb des Prozesses, dem die Ableitung gehört, bleibt dessen eigene Stufe maßgeblich (Abschnitt E)
 - **DARF NICHT [MUST NOT]** eine Stufe, für die der gemessene Katalog keine Quelle nennt, als verfügbar behandeln; das Feld wird mit dem Grund „keine Quelle gemessen“ als fehlend gemeldet
 
 ### B. Kernregeln
@@ -109,13 +110,22 @@ Die Leitern im [Nährstoffprozess](../nutrient-imbalance-detection/de.md) und im
 |------------------|------------------|-------------------|---------------------|
 | Messwert aus einem Tagebucheintrag | Stufe 1 | — | 1, oder 2, wenn nicht mehr aktuell |
 | Erfasste Inspektion, die den Organismus nennt | — | Stufe 1 | 3 |
-| Plansoll gegen rekonstruierte Versorgung | Stufe 2 | — | Keine Stufe: abgeleitet aus 3 und 4 (siehe Offene Fragen) |
+| Plansoll gegen rekonstruierte Versorgung | Stufe 2 | — | Die Stufe ihres schwächsten Eingangs (Abschnitt A): höchstens 4, die Stufe des Plansolls |
 | Katalogfelder | — | Stufe 2 | 4 |
 | Muster im Pflegeprotokoll | Stufe 3 | — | 3 |
 | Situationspassung: Kategorie, Phase, Jahreszeit, Pflegehistorie, Umgebung | — | Stufe 3 | 4 und 5, mit der Pflegehistorie bei 3 |
 | Sichtbare Symptome aus einem Bild | Stufe 4 | Stufe 4 | Keine Stufe: eine Lesung (Abschnitt A); Stufe 3, sobald bestätigt |
 | Nährstoffbedarfsstufe der Art und Phasenerwartung | Stufe 5 | — | 4 |
 | Allgemeinwissen über das Taxon, als nicht aus dem Datensatz gekennzeichnet | — | Stufe 5 | 8 |
+
+Der [Prozess zur Prüfung der Artbasis](../species-baseline-verification/de.md) ordnet Quellen für eine Frage — ob der Datensatz selbst stimmt — statt Belegen über eine Pflanze, und er entscheidet mit einer Konfidenzstufe, von der nur *gesichert* eine vorgeschlagene Korrektur erlaubt. Quer gelesen:
+
+| Im Prozess zur Prüfung der Artbasis | Stufe der Rangfolge |
+|-------------------------------------|---------------------|
+| Der geprüfte erfasste Wert (`get_species_info`, `get_cultivar`) | 4 |
+| Eine zitierte Quelle der Ränge 1 bis 5 (Institute und Beratungsdienste bis hin zu Foren) | 7 |
+| Wikipedia, KI-generierter Text, Beiträge ohne Urheber — dort nie allein ausreichend | 8 |
+| Konfidenzstufe (*gesichert*, *wahrscheinlich*, *unsicher*, *nicht verifizierbar*) | Keine Stufe: eine Übereinstimmungszählung über Quellen der Stufe 7 und die Handlungsschwelle dieses Prozesses |
 
 - **MUSS [MUST]** die eigene Leiter eines Prozesses für die Entscheidungen maßgeblich halten, die ihm gehören, und **DARF NICHT [MUST NOT]** seine Stufen mit dieser Rangfolge neu ordnen
 - **MUSS [MUST]** diese Rangfolge nutzen, um Belege prozessübergreifend zu vergleichen, wo zwei Leitern sonst nach Stufennummer verglichen würden
@@ -130,7 +140,7 @@ Die Leitern im [Nährstoffprozess](../nutrient-imbalance-detection/de.md) und im
 - [ ] Ein Gartenkontext führt jedes Feld aus Abschnitt D als vorhanden oder fehlend; jedes fehlende Feld nennt seinen Grund; kein fehlendes Feld enthält einen Standardwert
 - [ ] Beete und Gefäße, Wetter und Nutzerziele werden mit „keine Quelle gemessen“ als fehlend gemeldet, es sei denn, ein in der Server-Spezifikation genanntes Werkzeug oder der Aufrufer liefert sie
 - [ ] Der Sammelschritt ruft kein zustandsänderndes Werkzeug auf und bestimmt den Mandanten, bevor er etwas liest
-- [ ] Keine der beiden bestehenden Leitern wird durch die Arbeit geändert, die diese Spezifikation umsetzt, und jeder Widerspruch zwischen den beiden Regelwerken steht unter Offene Fragen
+- [ ] Keine bestehende Prozessleiter wird durch die Arbeit geändert, die diese Spezifikation umsetzt, und jeder Widerspruch zwischen dieser Rangfolge und einer Prozessleiter steht unter Offene Fragen
 - [ ] Jede Aussage über die Werkzeugoberfläche zitiert die Server-Spezifikation; eine nicht erneut gemessene Aussage sagt das
 - [ ] Die deutsche und die englische Datei haben dieselben Überschriften in derselben Reihenfolge, dieselbe Zahl an Anforderungs-Aufzählungspunkten und dieselbe Zahl an Akzeptanz-Kontrollkästchen
 
@@ -139,12 +149,13 @@ Die Leitern im [Nährstoffprozess](../nutrient-imbalance-detection/de.md) und im
 - [Spezifikation des Kamerplanter-MCP-Servers](../../mcp/kamerplanter-mcp-server/de.md) — Werkzeugkatalog, Vorbehalte und Mandantenfähigkeit, am 2026-08-16 an der Referenzinstanz gemessen
 - [Nährstoffprozess](../nutrient-imbalance-detection/de.md) — §„Die Belegleiter“
 - [Schädlingsprozess](../pest-pressure-assessment/de.md) — §„Die Belegleiter“
+- [Prozess zur Prüfung der Artbasis](../species-baseline-verification/de.md) — §„Quellenhierarchie und Drei-Quellen-Regel“, §„Konfidenz, und was jede Stufe erlaubt“
 - [Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
 - Issue nolte/kamerplanter-goose#40 — die acht Stufen und sechs Regeln stammen aus seinem Text; nolte/kamerplanter-goose#39 — das Audit (2026-11-06), das entschieden hat, wo ein Fotobefund steht und welches Artefakt welchen Kontext besitzt
 
 ## Offene Fragen
 
-- **Wo abgeleiteter Beleg einzuordnen ist.** Stufe 2 des Nährstoffprozesses verbindet ein Plansoll, eine bestätigte Häufigkeit mit erfassten Dosismengen und eine Substratbasis zu einer rekonstruierten Versorgung. Die Rangfolge ordnet Quellen, keine Ableitungen, und gibt einer solchen Ableitung keine Stufe. Offen, weil die Ableitung dem Nährstoffprozess selbst gehört und ihre Einordnung hier seine Leiter neu ordnen würde. Ob die Regel des Nährstoffprozesses, dass Stufe 2 erfasste Dosismengen braucht, daran etwas ändert, wird hier nicht entschieden.
+- **Ob drei übereinstimmende Quellen der Stufe 7 Daten der Stufe 4 korrigieren dürfen.** Der Prozess zur Prüfung der Artbasis schlägt eine Korrektur des Datensatzes vor, wenn drei unabhängige zitierte Quellen übereinstimmen (*gesichert*); diese Rangfolge lässt keine niedrigere Stufe eine höhere überstimmen. Innerhalb dieses Prozesses bleibt seine Regel maßgeblich (Abschnitt E), und er schlägt eine Korrektur vor, statt sie anzuwenden. Offen ist, ob eine Empfehlung in einem anderen Prozess sich auf einen *gesicherten* Befund stützen darf, bevor der Datensatz korrigiert ist, oder bis dahin beim erfassten Wert der Stufe 4 bleiben muss.
 - **Ob die Rangfolge global oder je Frage gilt.** Die bestehenden Leitern ordnen Belege für eine Frage und lassen einen Artwert die niedrigste Stufe sein; diese Rangfolge stellt Artdaten über Standortdaten und Wetter. Für eine Frage, bei der das Wetter entscheidet — ein Frost, eine Hitzespitze —, kann eine globale Ordnung die falsche sein. Offen, weil bisher kein Prozess in diesem Repository beide Ordnungen zugleich brauchte.
 - **Ob eine gemeinsame Handlungsschwelle nötig ist.** Der Nährstoffprozess schlägt keine Dosisänderung vor, wenn sein bester Beleg auf seiner Stufe 3 oder darunter liegt, und der Schädlingsprozess schlägt eine Behandlung nur vor, wenn die Bestimmung auf seiner Stufe 1 oder auf seiner Stufe 4 plus einer nicht widerlegten Stufe 2 ruht; das sind Schwellen auf zwei verschiedenen Leitern, und diese Spezifikation setzt keine. Offen, weil eine auf der Rangfolge formulierte Schwelle mit beiden abgestimmt werden müsste und die Zuordnung in Abschnitt E durch Lesen entstand, nicht dadurch, dass ein Fall durch beide geführt wurde.
 - **Was „aktuell genug“ für Stufe 1 heißt.** Der Nährstoffprozess sagt „wenn aktuell genug“ ohne Schwelle; kein Prozess nennt eine je Größe. Offen, weil die Schwelle davon abhängt, wie schnell sich die Größe ändert (ein Bodenfeuchtewert und ein EC-Wert altern nicht gleich), und es dafür keine gemessene Quelle im Datensatz gibt.
