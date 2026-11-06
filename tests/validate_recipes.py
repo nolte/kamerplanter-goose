@@ -17,6 +17,7 @@ Exit:   0 when every check passes, 1 on the first failure category found.
 
 from __future__ import annotations
 
+import json
 import re
 import shutil
 import subprocess
@@ -32,34 +33,52 @@ RECIPES_DIR = REPO_ROOT / "recipes"
 EXTENSIONS_FILE = REPO_ROOT / "extensions.yaml"
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
+TOOLS_SNAPSHOT = REPO_ROOT / "tests" / "kamerplanter-tools-list.json"
+
+# The two inputSchema keys that mark a Kamerplanter MCP tool as state-changing.
+# Measured: every write carries both and no read carries either (12/12 on
+# 2026-08-16, 16/16 on 2026-11-05 and 2026-11-06), so a tool carrying only one
+# of them breaks the classifier and is refused rather than guessed.
+WRITE_MARKER_KEYS = frozenset({"dry_run", "idempotency_key"})
+
+
+def classify_tools(tools: dict[str, list[str]]) -> tuple[set[str], list[str]]:
+    """Return the state-changing tools of a tools/list snapshot, plus every
+    tool whose inputSchema carries only one of the two marker keys."""
+    writes = {name for name, keys in tools.items() if WRITE_MARKER_KEYS <= set(keys)}
+    ambiguous = sorted(
+        name for name, keys in tools.items() if len(WRITE_MARKER_KEYS & set(keys)) == 1
+    )
+    return writes, ambiguous
+
+
+def load_state_changing_tools(path: Path = TOOLS_SNAPSHOT) -> set[str]:
+    """The state-changing set, derived from the checked-in tools/list snapshot.
+
+    Refresh the snapshot with scripts/snapshot-tools-list.sh whenever the
+    server's surface changes. A new write tool then joins this set in the same
+    change, and every policy block that does not name it fails, instead of the
+    tool passing the guard silently as it did three times while this set was a
+    hand-maintained list (#80, #85).
+    """
+    try:
+        tools = json.loads(path.read_text())["tools"]
+    except (OSError, ValueError, KeyError) as error:
+        sys.exit(f"{path.relative_to(REPO_ROOT)}: unreadable tools/list snapshot ({error})")
+    writes, ambiguous = classify_tools(tools)
+    if ambiguous:
+        sys.exit(
+            f"{path.relative_to(REPO_ROOT)}: {', '.join(ambiguous)} carry only one of "
+            f"{sorted(WRITE_MARKER_KEYS)}; the write classifier no longer holds"
+        )
+    if not writes:
+        sys.exit(f"{path.relative_to(REPO_ROOT)}: no state-changing tool found")
+    return writes
+
+
 # Kamerplanter MCP tools that change server state. A recipe naming any of these
 # outside a policy block has to carry the -apply suffix.
-#
-# Sixteen as of 2026-11-05 (15 `mcp.write` plus the `mcp.setup` tool
-# `create_site`), counted against the server's live tool surface. Twelve as of
-# 2026-08-16, whose last five arrived after the first seven were written; the
-# four nutrient-plan and substrate writes arrived after that (#80). A tool
-# this set has never heard of passes the guard silently: `task test` reports
-# OK and CI stays green while a write-capable recipe carries no -apply suffix.
-# Re-count this against the server whenever the MCP surface changes.
-STATE_CHANGING_TOOLS = {
-    "add_plant_diary_entry",
-    "archive_plant",
-    "assign_nutrient_plan",
-    "assign_species_phase_sequence",
-    "claim_diary_analysis",
-    "clone_nutrient_plan",
-    "confirm_care_task",
-    "create_inspection",
-    "create_site",
-    "create_substrate_mix",
-    "record_feeding_event",
-    "set_nutrient_plan_phase_targets",
-    "set_plant_location",
-    "set_plant_substrate",
-    "submit_diary_analysis",
-    "transition_plant_phase",
-}
+STATE_CHANGING_TOOLS = load_state_changing_tools()
 
 VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
@@ -1388,6 +1407,22 @@ def run_goose_validate(findings: Findings) -> None:
 # One case per shape a review round actually turned up. They pin the
 # convention, not a parser: every entry is a policy block or a call, and none
 # of them depends on how the surrounding English reads.
+CLASSIFIER_CASES = [
+    (
+        "both marker keys make a write, neither a read",
+        {"get_plant": ["plant_key", "tenant"], "archive_plant": ["dry_run", "idempotency_key", "plant_key"]},
+        ["archive_plant"],
+        [],
+    ),
+    (
+        "one marker key alone is refused, not guessed",
+        {"new_tool": ["dry_run", "plant_key"], "other": ["idempotency_key"]},
+        [],
+        ["new_tool", "other"],
+    ),
+]
+
+
 WRITE_GUARD_CASES = [
     (
         "names inside the block are policy",
@@ -1634,17 +1669,18 @@ COMPLETENESS_CASES = [
         "`mcp__kamerplanter__add_plant_diary_entry`, "
         "`mcp__kamerplanter__claim_diary_analysis`, "
         "`mcp__kamerplanter__submit_diary_analysis`.",
-        [
-            "assign_nutrient_plan",
-            "assign_species_phase_sequence",
-            "clone_nutrient_plan",
-            "create_inspection",
-            "create_substrate_mix",
-            "record_feeding_event",
-            "set_nutrient_plan_phase_targets",
-            "set_plant_substrate",
-            "transition_plant_phase",
-        ],
+        sorted(
+            STATE_CHANGING_TOOLS
+            - {
+                "confirm_care_task",
+                "archive_plant",
+                "set_plant_location",
+                "create_site",
+                "add_plant_diary_entry",
+                "claim_diary_analysis",
+                "submit_diary_analysis",
+            }
+        ),
     ),
     (
         "a permitted/forbidden split is complete as a union",
@@ -1935,7 +1971,10 @@ SKILL_OBEDIENCE_CASES = [
         "plant-planning",
         "## Procedure\n\n" + ALLOWED_PLANT_PLANNING_LINE + "\n\n"
         + ALLOWED_PLANT_PLANNING_LINE + "\n",
-        sorted(STATE_CHANGING_TOOLS),
+        sorted(
+            t for t in STATE_CHANGING_TOOLS
+            if tool_pattern(t).search(ALLOWED_PLANT_PLANNING_LINE)
+        ),
         [ALLOWED_PLANT_PLANNING_LINE],
     ),
     (
@@ -2560,7 +2599,7 @@ RECIPE_CASES = [
         [
             "calls state-changing tools",
             "parses as empty",
-            "declares 0 of the 16",
+            f"declares 0 of the {len(STATE_CHANGING_TOOLS)}",
         ],
         [],
     ),
@@ -2571,7 +2610,7 @@ RECIPE_CASES = [
         [
             "calls state-changing tools",
             "rename the file",
-            "declares 15 of the 16",
+            f"declares {len(STATE_CHANGING_TOOLS) - 1} of the {len(STATE_CHANGING_TOOLS)}",
         ],
         ["parses as empty"],
     ),
@@ -2579,7 +2618,7 @@ RECIPE_CASES = [
         "a complete block in `instructions` declares nothing",
         PLAIN_PROMPT,
         COMPLETE_BLOCK,
-        ["declares 0 of the 16"],
+        [f"declares 0 of the {len(STATE_CHANGING_TOOLS)}"],
         ["calls state-changing tools"],
     ),
     (
@@ -2603,14 +2642,14 @@ RECIPE_CASES = [
         "no marker at all is not a collapsed block",
         "  Read-only run. Then call `mcp__kamerplanter__archive_plant`.",
         PLAIN_INSTRUCTIONS,
-        ["rename the file", "declares 0 of the 16"],
+        ["rename the file", f"declares 0 of the {len(STATE_CHANGING_TOOLS)}"],
         ["parses as empty"],
     ),
     (
         "a block in `instructions` does not collapse the prompt's advice",
         "  Then call `mcp__kamerplanter__archive_plant`.",
         COMPLETE_BLOCK,
-        ["calls state-changing tools", "rename the file", "declares 0 of the 16"],
+        ["calls state-changing tools", "rename the file", f"declares 0 of the {len(STATE_CHANGING_TOOLS)}"],
         ["parses as empty"],
     ),
     # The Home Assistant guard (#75). Each Home Assistant finding names "Home
@@ -2741,6 +2780,22 @@ def recipe_case_findings(
 
 def run_self_test() -> int:
     failures = 0
+    for name, tools, expected, expected_ambiguous in CLASSIFIER_CASES:
+        writes, ambiguous = classify_tools(tools)
+        if sorted(writes) != expected or ambiguous != expected_ambiguous:
+            failures += 1
+            print(
+                f"  FAIL {name}\n       expected {expected} / ambiguous "
+                f"{expected_ambiguous}, got {sorted(writes)} / ambiguous {ambiguous}"
+            )
+    if failures:
+        print(f"\n{failures} of {len(CLASSIFIER_CASES)} classifier case(s) failed.")
+        return 1
+    print(
+        f"OK — {len(CLASSIFIER_CASES)} classifier cases hold; "
+        f"{len(STATE_CHANGING_TOOLS)} state-changing tools in {TOOLS_SNAPSHOT.name}."
+    )
+
     for name, body, expected in WRITE_GUARD_CASES:
         actual = calls_state_changing_tools(body)
         if actual != sorted(expected):
