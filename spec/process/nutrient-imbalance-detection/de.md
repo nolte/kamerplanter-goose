@@ -45,11 +45,12 @@ Leserschaft: alle, die das Nährstoff-Rezept in diesem Repository schreiben, sow
 
 ### Die Ist-Seite und ihre Grenzen
 
-Drei gemessene Quellen beschreiben, was die Pflanze tatsächlich erhalten hat, und keine davon ist ein Dosierprotokoll. Von `record_feeding_event` geschriebene Düngeereignisse sind eine vierte Kandidatin; ob ein Tool sie zurückliest, ist offen (siehe Offene Fragen). Bis das gemessen ist, ist Stufe 2 nur erreichbar, wo ein Tagebucheintrag oder eine Pflegenotiz eine Menge trägt:
+Vier gemessene Quellen beschreiben, was die Pflanze tatsächlich erhalten hat. Drei davon sind kein Dosierprotokoll, die vierte ist eines: die von `record_feeding_event` geschriebenen Düngeereignisse, die `get_plant_diagnostics` zurückgibt (gemessen am 2026-11-05, #54). Stufe 2 ist erreichbar, wo ein solches Ereignis, ein Tagebucheintrag oder eine Pflegenotiz eine Menge trägt:
 
 | Quelle | Was sie gibt | Was sie nicht gibt |
 |--------|--------------|--------------------|
-| `get_plant_care_log` | Bestätigte Erinnerungen mit `reminder_type`, `action` (`confirmed` / `snoozed`), `confirmed_at`, `interval_at_time_days`, `notes` | Welches Produkt, welche Konzentration, welches Volumen — eine bestätigte Düngung ist ein Wahrheitswert, keine Dosis |
+| `get_plant_care_log` | Bestätigte Erinnerungen mit `reminder_type`, `action` (`confirmed` / `snoozed`), `confirmed_at`, `interval_at_time_days`, `notes` | Welches Produkt, welche Konzentration, welches Volumen — eine bestätigte Düngung ist ein Wahrheitswert, keine Dosis. Erfasste Düngeereignisse erscheinen hier nicht (gemessen: null Einträge bei einer Pflanze mit zweien) |
+| `get_plant_diagnostics` → `feeding_events` | Je Düngung: `timestamp`, `volume_applied_liters`, `fertilizers_used`, `application_method`, `measured_ec_before` / `_after`, `measured_ph_before` / `_after`, `runoff_ec`, `runoff_ph`, `runoff_volume_liters`, `notes` | Alles, was älter ist als `window_days` (Standard 14, höchstens 365): Ein Ereignis außerhalb des Fensters fehlt in der Antwort, es ist nicht null. Die Produktkonzentration, sofern `fertilizers_used` die Produkte nicht nennt |
 | Tagebuch-`measurements` | Frei geformte Messwerte | Überhaupt ein Schema: Das Feld ist ein offenes Objekt, dokumentiert nur durch das Beispiel `{'height_cm': 42, 'ph': 6.3}` |
 | Einträge vom Typ `measurement` oder `problem` | Beobachtertext und Tags um einen Messwert herum | Einheiten, Methode oder Kalibrierung des Messgeräts |
 
@@ -156,16 +157,17 @@ Eine vorgeschlagene Korrektur nennt das angestrebte Ziel, die Belegstufe dahinte
 ## Offene Fragen
 
 - Welche `measurements`-Schlüssel in den Tagebucheinträgen der Instanz tatsächlich vorkommen. Das Schema deklariert keine, sodass die von dieser Spec geforderte Normalisierungstabelle weiterhin auf Konvention ruht — aber nun, da jeder Lauf die Einträge liest, sind die Läufe selbst der Stichprobenmechanismus, der die Frage beantworten wird.
-- Ob Ablauf-EC und Tank-EC in der Akte unterscheidbar sind. Die Unterscheidung entscheidet, ob ein Messwert beschreibt, was die Pflanze erhält, oder was im Medium zurückbleibt, und nichts im offenen Schema trennt beides.
+- Ob Ablauf-EC und Tank-EC in einem Tagebucheintrag unterscheidbar sind. Die Unterscheidung entscheidet, ob ein Messwert beschreibt, was die Pflanze erhält, oder was im Medium zurückbleibt, und nichts im offenen Schema von `measurements` trennt beides. Ein Düngeereignis trennt sie (`measured_ec_before`, `measured_ec_after`, `runoff_ec`).
 - Ob Home Assistant Sensoren für Bodenfeuchte oder Leitfähigkeit führt, die Belege der Stufe 1 je Pflanze liefern könnten, und wie ein Sensor an eine Pflanzeninstanz gebunden würde. `GetLiveContext` liefert Entity-Zustände, eine Zuordnung Pflanze-zu-Entity wurde nicht gefunden.
 - Ob die nennenswerten Antagonismen (welches Ion welches unterdrückt) in diese Spec gehören, in das über `search_glossary` erreichbare Glossar des Backends oder in die Wissensbasis. Sie hier zu kodieren, birgt dieselbe Drift, die dieses Repository bei Artdaten vermeidet.
 - Wie ein Plan zu gewichten ist, dessen `is_global_template` wahr ist und dessen `tags` eine andere Kultur nennen als die Art der Pflanze — gemessen sind die Pläne der Referenzinstanz weitgehend cannabis-spezifische Vorlagen, ihre Pflanzen jedoch nicht.
-- Ob irgendein Lese-Tool die von `record_feeding_event` geschriebenen Düngeereignisse zurückgibt (verfolgt in #54). Bis das gemessen ist, ist eine bestätigte Düngehäufigkeit ohne erfasste Dosismengen Stufe 3, nicht Stufe 2, und „Zufuhr über dem Ziel" wird nicht allein aus der Häufigkeit rekonstruiert.
+- Ob die EC- und pH-Werte eines Düngeereignisses als Stufe 1 zählen. Es sind Messwerte mit Einheit (`mS/cm`, wie `get_plant_diagnostics` sein `ec_ph_trend` beschriftet), aber die Leiter nennt Tagebucheinträge als Quelle der Stufe 1, und ein Düngeereignis hält die Lösung und den Ablauf zum Zeitpunkt der Gabe fest, nicht das Medium jetzt. Bis das entschieden ist, gehen sie als Teil der Zufuhrakte in Stufe 2 ein, und ein Lauf sagt das.
 
 ## Quelle
 
 - Gemessen gegen die Kamerplanter-Referenzinstanz am 2026-08-05 über `POST /api/v1/mcp`, nur lesend: `get_plant_nutrient_plan` (lieferte `plan: null`), `list_nutrient_plans` (38 Pläne), `get_nutrient_plan` für die Phasenstruktur einer globalen Vorlage, `get_plant_care_log`, `list_substrates` und `get_species_info`. Kein Schreib-Tool wurde aufgerufen.
 - Eingabeschemata von `calculate_mixing_protocol` und `add_plant_diary_entry` live gelesen, einschließlich des offenen Objekts `measurements` und des Enums `DiaryEntryType` (`observation`, `problem`, `milestone`, `measurement`, `photo`, `note`)
+- Gemessen an einer lokalen Instanz aus `nolte/kamerplanter` @ `5fc20429a` am 2026-11-05 (#54): zwei mit `record_feeding_event` erfasste Düngeereignisse an einer Pflanze, keines an einer Vergleichspflanze. `get_plant_diagnostics` lieferte beide unter `feeding_events` mit jedem oben genannten Feld, und sein `ec_ph_trend` zählte zwei Eingangswerte; `get_plant_care_log`, `get_plant` und `get_plant_nutrient_plan` lieferten nichts davon. Bei der Vergleichspflanze war `feeding_events` `[]`.
 - Begleitender Prozess: [bildgestützte Pflanzengesundheitsanalyse](../plant-health-image-analysis/de.md)
 - Rezept-Mechanik: [Goose-Rezept-Projektmuster](../../goose/recipe-project-pattern/de.md)
 - Server-Vertrag: [Spec zum Kamerplanter-MCP-Server](../../mcp/kamerplanter-mcp-server/de.md)

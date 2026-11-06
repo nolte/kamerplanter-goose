@@ -113,6 +113,7 @@ Signatures worth naming, because a recipe gets them wrong otherwise:
 | `get_disease` | `disease_key` | no | Carries `environmental_triggers[]` and `incubation_period_days` |
 | `get_treatment` | `treatment_key` | no | Carries `safety_interval_days` — the pre-harvest Karenz |
 | `get_plant_inspections` | `plant_key` | yes | IPM history; measured empty on a plant never inspected |
+| `get_plant_diagnostics` | `plant_key` | yes | `window_days` (default 14, 1–365) bounds every history it returns. Returns `plant`, `window`, `ec_ph_trend` (EC and pH, each split into `input`, `after`, `runoff`, `sensor`), `feeding_events[]`, `sensors`, `inspections`, `karenz`, `care_events`. **The only read measured to return what `record_feeding_event` wrote** — every field of the write except `dry_run` and `idempotency_key`, plus `feeding_event_key` and `timestamp`; `get_plant_care_log` returns none of it (2026-11-05, #54) |
 | `get_sowing_calendar` | — | yes | **Refuses an unnarrowed call**: without `query` it answers `validation.error` naming the species count and the `limit` ceiling of 25 |
 | `list_phase_definitions` | — | no | 29 definitions measured; the lifecycle engine's vocabulary |
 | `search_glossary` | — | no | The project's own definitions of EC, VPD, Karenz |
