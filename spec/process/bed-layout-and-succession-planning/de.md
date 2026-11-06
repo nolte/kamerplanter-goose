@@ -149,6 +149,7 @@ Der Folgesaatplan hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen
 - [Die Spezifikation zur Fruchtfolgeplanung](../crop-rotation-planning/de.md) — die Fruchtfolgefelder, die Kulturschlüssel und die Konflikte, die diese Spezifikation liest
 - [Das Rezeptprojekt-Muster](../../goose/recipe-project-pattern/de.md)
 - Issue nolte/kamerplanter-goose#46 — die Faktoren der Beetaufteilung und die fünf Kriterien stammen aus seinem Text; nolte/kamerplanter-goose#74 — die blockierte Anwendungshälfte; nolte/kamerplanter-goose#59 und #68 — die Präzedenzfälle für eine blockierte Anwendungshälfte; nolte/kamerplanter-goose#39 — das Audit
+- Das Audit zu nolte/kamerplanter-goose#39 (2026-11-06) hat Sammeln, Folgesaat und Beetaufteilung als drei Skills belassen — `companion-spacing-collect`, `succession-planning`, `bed-layout-planning` —, von denen jeder seine eigene Frage beantwortet; die Beetaufteilung verbraucht den Fruchtfolgeplan und die Folgesaaten
 
 ## Offene Fragen
 
@@ -157,4 +158,3 @@ Der Folgesaatplan hat vier Blöcke, in dieser Reihenfolge und unter diesen Namen
 - **Ob eine laufende Instanz ein Werkzeug hat, das ein Beet, eine Beetaufteilung oder einen Pflanzdurchlauf festhält.** Der gemessene Katalog hat keines, die Server-Spezifikation sagt, jede Werkzeugzahl als Untergrenze zu behandeln, und niemand hat `tools/list` an einer erreichbaren Instanz ausgeführt. Das `-apply`-Rezept wartet darauf, in nolte/kamerplanter-goose#74.
 - **Kulturen, die über die Saisongrenze reichen.** Ein Durchlauf, dessen Ernte ins nächste Jahr reicht, hat hier eine unbekannte Belegung, weil ein Lauf eine Saison plant. Eine Beetaufteilung über mehrere Saisons bräuchte die späteren Saisons des Fruchtfolgeplans und liegt außerhalb des Umfangs.
 - **Wie Determinismus gemessen wird.** Diese Spezifikation legt die Plan-Fakten fest und verlangt, dass sie über dieselben Eingabeblöcke gleich sind. Geprüft wird das an einer festen, als Text ausgeschriebenen Vorlage, wiederholte Läufe verglichen; das zeigt die Eigenschaft für diese Vorlage und nicht für einen laufenden Garten, und die Zahl der Läufe, die nötig ist, um sie stabil zu nennen, wird hier nicht festgelegt.
-- **Wo das Audit, nolte/kamerplanter-goose#39, die Beetaufteilung gegenüber Pflanzung und Fruchtfolge einordnet.** Ob Sammeln, Folgesaat und Beetaufteilung drei Skills bleiben, ist die Entscheidung des Audits.

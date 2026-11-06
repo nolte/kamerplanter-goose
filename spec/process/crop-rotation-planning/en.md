@@ -188,6 +188,7 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 - `recipes/plant-master-data-check.yaml` — `list_plants` measured with `matched: 9` against `total_in_tenant: 11`, the only evidence that archived plants exist
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Issue nolte/kamerplanter-goose#47 — the rotation factors and the five criteria are taken from its body; nolte/kamerplanter-goose#68 — the blocked apply half; nolte/kamerplanter-goose#46, #59 and #39 — the consumer, the precedent for a blocked apply half, and the audit
+- The audit for nolte/kamerplanter-goose#39 (2026-11-06) kept collection and planning as two skills, `rotation-history-collect` and `crop-rotation-planning`, between plant planning and bed layout in the planning chain
 
 ## Open Questions
 
@@ -198,4 +199,3 @@ The plan document has six blocks, in this order and under these names: `ROTATION
 - **The shape of `list_planting_runs`.** Planting runs stay context until their shape is recorded.
 - **Whether a live instance has a tool that records a rotation or a bed assignment.** The measured catalog has none, the server spec says to treat any tool count as a floor, and nobody has run `tools/list` against a reachable instance. The `-apply` recipe waits on it, tracked as nolte/kamerplanter-goose#68.
 - **How determinism is measured.** This spec defines the plan facts and requires them to be the same over the same input blocks. It is checked on a fixed fixture written out as text, repeated runs compared; that shows the property for that fixture and not for a live garden, and the number of runs needed to call it stable is not settled here.
-- **Where the audit, nolte/kamerplanter-goose#39, places rotation relative to planting and bed layout.** Whether collection and planning stay two skills is the audit's decision.

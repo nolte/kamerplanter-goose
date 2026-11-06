@@ -126,6 +126,7 @@ The result has three blocks: the site profile (section A, seven parameters), the
 - [The garden decision policy](../garden-decision-policy/en.md) — evidence levels, the recommendation output and the garden context
 - [The recipe project pattern](../../goose/recipe-project-pattern/en.md)
 - Issue nolte/kamerplanter-goose#41 — the scope lists and the five criteria are taken from its body; nolte/kamerplanter-goose#42, #47 and #39 — the consumer, the rotation work and the audit
+- The audit for nolte/kamerplanter-goose#39 (2026-11-06) kept site analysis and the garden context as two artifacts: `garden-context` collects, `site-analysis` interprets and requires its block
 
 ## Open Questions
 
@@ -136,4 +137,3 @@ The result has three blocks: the site profile (section A, seven parameters), the
 - **The response fields of `list_hardiness_zones` and `get_sowing_calendar`.** Only the existence of frost dates in the sowing calendar's response is recorded. The exact fields are unmeasured because the server was unreachable when this spec was written.
 - **The parameters of `list_species`.** Whether it can be narrowed, paged or filtered is not recorded, which is why the pool read is one bounded page and a sample.
 - **How rotation constraints will be fed into crop selection.** [Crop rotation planning](../crop-rotation-planning/en.md) judges families per bed and season after selection and feeds nothing back into a verdict here, so rotation is unknown in crop selection and `compatible_companions` is read only as a preference. Whether a rotation verdict should ever narrow the candidate list is open.
-- **Where the audit, nolte/kamerplanter-goose#39, places site analysis relative to the garden context.** Both describe what a garden holds; this spec adds interpretation and the garden context only collects. Whether they stay two artifacts is the audit's decision.

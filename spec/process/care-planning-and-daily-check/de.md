@@ -124,11 +124,11 @@ Leserinnen und Leser: Autorinnen und Autoren von Garten-Skills und -Rezepten in 
 - [Die Spezifikation zu Wachstumsstadium und Wetterwirkung](../growth-stage-and-weather-impact/de.md) — die Beurteilungen von Wachstumsstadium und Wetter, die Befunde in dieser Form liefern
 - [Die Spezifikation zu Pflanzengesundheit und IPM-Planung](../plant-health-and-ipm-planning/de.md) — die Beurteilung der Pflanzengesundheit und der IPM-Plan, die Befunde in dieser Form liefern
 - Issue nolte/kamerplanter-goose#43 — der Umfang und die fünf Akzeptanzkriterien stammen aus seinem Text; #44, #45, #48 und #49 — die Domänen, die sich einklinken; #39 — das Audit
+- Das Audit zu nolte/kamerplanter-goose#39 (2026-11-06) hat die Pflegeplanung als einen Skill belassen, `care-planning`, der die Ergebnisse der Pflegeprüfungen zusammenführt und keinen Garten liest; der Gartenkontext bleibt bei `garden-context`
 
 ## Offene Fragen
 
 - **Ob die Domänen-Skills ein ausdrückliches Dringlichkeitsfeld im Einklinkvertrag brauchen.** Die Dringlichkeit wird hier aus der genannten Folge abgeleitet. Die Bewässerungs- und die Düngeentscheidung lassen die Folge fehlen, wenn keine Eingabe eine nennt, und heute nennt keine eine, sodass ihre Empfehlungen `routine` einstufen; ob für sie eine Folge in einer Form genannt werden kann, bleibt offen, bis eine Domäne es tut.
 - **Wie sich die Regel zu Nährstoff-Stufe 2 als Konfidenz in einem Pflegeeintrag zeigt.** Stufe 2 braucht erfasste Dosismengen und trägt keine Stufe der Entscheidungsrichtlinie (Abschnitt C), also sagt ein Pflegeeintrag, der darauf ruht, dass keine Stufe gilt. Ob das der richtige Ort dafür ist, bleibt offen.
-- **Wo das Audit nolte/kamerplanter-goose#39 die Pflegeplanung relativ zum Gartenkontext einordnet.** Ob die Schicht ein Skill bleibt, entscheidet das Audit.
 - **Die Antwortfelder von `get_due_care_tasks`.** Keine Spezifikation hier hält fest, ob eine Aufgabe ein Fälligkeitsdatum oder ein Intervall trägt, also ist keine Überfälligkeitsberechnung festgelegt, und eine fällige Aufgabe ist höchstens `routine`. Eine Messung an einer erreichbaren Instanz würde das klären.
 - **Ob fünf Pflanzen die richtige Obergrenze ist.** Die Zahl ist gewählt, um die Aufrufe je Pflanze zu begrenzen, nicht an der Gartengröße oder den Serverlimits gemessen.

@@ -50,7 +50,8 @@ Evidence is ranked in eight levels, highest first. The rank travels with each cl
 | 7 | A documented expert source: a cited reference, not the model's recollection | `search_plant_knowledge` is declared; measured on 2026-08-16 it answered `service.unavailable` because the knowledge base is an optional component not deployed on the reference instance. `search_glossary` returns the project's own definitions of terms, which is vocabulary, not evidence | Whether any instance deploys the knowledge base |
 | 8 | General knowledge of the model that is not in any record | None, by definition | Always labelled as not from the record |
 
-- **MUST** assign every claim in a recommendation to exactly one level and carry the level with the claim into the output
+- **MUST** assign every claim in a recommendation to exactly one level and carry the level with the claim into the output, except an unconfirmed model reading of an image, below
+- **MUST NOT** give an unconfirmed model reading of an image a level: it is reported as a reading, which may corroborate or contradict a ranked claim and **MUST NOT** decide alone; when it meets level 8 knowledge, both are reported without ranking them. A reading confirmed by a person or by a recorded inspection is level 3. Placing an unconfirmed reading at level 3 would rank it above species data, which both existing ladders deny it (decided by the audit for nolte/kamerplanter-goose#39)
 - **MUST NOT** let evidence of a lower level override evidence of a higher level; lower evidence corroborates or contradicts, and a contradiction is reported as such, not resolved silently in favour of the lower
 - **MUST** label level 8 evidence as not from the record wherever it appears
 - **MUST** prefer, within level 4, cultivar data over species data for the same attribute
@@ -84,16 +85,17 @@ A garden context is a normalised view of one garden. It is a value passed betwee
 | Beds and containers | No source measured | Whether a location is a bed or a container is not a field the server spec names |
 | Crops and cultivars | `list_plants` (`species_key`), `get_species_info`, `list_cultivars`, `get_cultivar` | — |
 | Planting runs | `list_planting_runs` | Pagination behaviour is not measured |
-| Growth stage | `current_phase_key` from `list_plants`; `get_plant_phase_status`, `get_plant_phase_history` | An `unresolved` phase state is an absent stage, not a normal one |
-| Current measurements | Diary entries (`list_diary_entries`, `get_diary_entry`) | The key set of `measurements` |
-| Historical observations | `get_plant_inspections`, `list_diary_entries`, `get_plant_care_log` | — |
+| Growth stage | `current_phase_key` from `list_plants`. Per plant, not at garden level: `get_plant_phase_status`, `get_plant_phase_history` | An `unresolved` phase state is an absent stage, not a normal one |
+| Current measurements | None at garden level: `not collected`. Per plant: diary entries (`list_diary_entries`, `get_diary_entry`) | The key set of `measurements` |
+| Historical observations | None at garden level: `not collected`. Per plant: `get_plant_inspections`, `list_diary_entries`, `get_plant_care_log` | — |
 | Weather | No source measured | Everything |
 | Soil and substrate | `substrate_key` from `list_plants`; `list_substrates` | — |
-| Watering and fertilisation state | `get_plant_care_log`, `get_due_care_tasks`, `list_tasks`, `get_plant_nutrient_plan` | Dose amounts: the care log records a confirmation, not a quantity |
+| Watering and fertilisation state | `get_due_care_tasks`, `list_tasks`. Per plant: `get_plant_care_log`, `get_plant_nutrient_plan` | Dose amounts: the care log records a confirmation, not a quantity |
 | User goals and constraints | No source measured; may be supplied by the caller | Whether any instance stores goals |
 
 - **MUST** report every field of the context as `present` or `absent`, and **MUST** give each `present` field its source tool and retrieval time
-- **MUST** give each `absent` field the reason: "no source measured", the typed refusal the server answered, or the empty result, and **MUST NOT** fill it with a default
+- **MUST** give each `absent` field the reason: "no source measured", `not collected` for a field whose source is read per plant, the typed refusal the server answered, or the empty result, and **MUST NOT** fill it with a default
+- **MUST** leave per-plant evidence to the per-plant collection: the garden context owns the garden-level fields, `plant-context-collect` the context of one plant, and `diary-measurements-read` the diary's measurements; the garden context **MUST NOT** re-collect them (decided by the audit for nolte/kamerplanter-goose#39)
 - **MUST** resolve the garden explicitly before collecting anything, through `list_tenants` or a `tenant` input, per [the server spec](../../mcp/kamerplanter-mcp-server/en.md), and **MUST NOT** assume a key covers exactly one garden
 - **MUST NOT** call any state-changing tool while collecting a context; the collection is read-only
 - **SHOULD** report the list of absent fields as its own block, separate from the data, so a downstream step cannot read past it
@@ -111,13 +113,14 @@ The ladders in [the nutrient process](../nutrient-imbalance-detection/en.md) and
 | Catalogue fields | — | Tier 2 | 4 |
 | Care-log pattern | Tier 3 | — | 3 |
 | Situation fit: category, phase, season, care history, enclosure | — | Tier 3 | 4 and 5, with care history at 3 |
-| Visible symptoms read from an image | Tier 4 | Tier 4 | No level (see Open Questions) |
+| Visible symptoms read from an image | Tier 4 | Tier 4 | No level: a reading (section A); level 3 once confirmed |
 | Species demand level and phase expectation | Tier 5 | — | 4 |
 | General knowledge of the taxon, labelled as not from the record | — | Tier 5 | 8 |
 
 - **MUST** keep a process's own ladder authoritative for the decisions that process owns, and **MUST NOT** re-rank its tiers using this hierarchy
 - **MUST** use this hierarchy to compare evidence across processes, where two ladders would otherwise be compared by tier number
 - **MUST** record, where this spec and a process ladder disagree, the disagreement as an Open Question and **MUST NOT** resolve it by editing the other spec
+- **MUST NOT** move a process ladder into a shared skill: each ladder stays with the skill of the process that owns it, and this hierarchy only maps across them (decided by the audit for nolte/kamerplanter-goose#39)
 
 ## Acceptance Criteria
 
@@ -137,15 +140,13 @@ The ladders in [the nutrient process](../nutrient-imbalance-detection/en.md) and
 - [the nutrient imbalance process](../nutrient-imbalance-detection/en.md) — §"The evidence ladder"
 - [the pest pressure process](../pest-pressure-assessment/en.md) — §"The evidence ladder"
 - [the recipe project pattern](../../goose/recipe-project-pattern/en.md)
-- Issue nolte/kamerplanter-goose#40 — the eight levels and six rules are taken from its body; nolte/kamerplanter-goose#39 — the audit that owns ownership boundaries
+- Issue nolte/kamerplanter-goose#40 — the eight levels and six rules are taken from its body; nolte/kamerplanter-goose#39 — the audit (2026-11-06) that decided where a photo reading sits and which artifact owns which context
 
 ## Open Questions
 
-- **Where a photo reading sits.** Both existing ladders rank a symptom read from an image fourth; this hierarchy has no level for it. A reading confirmed by a person or a recorded inspection belongs at level 3, but an unconfirmed reading by a model is neither a confirmed observation nor general knowledge. Open because placing it either way changes what outranks it: at level 3 it would outrank species data, which both existing processes deny it. To be decided with the audit, nolte/kamerplanter-goose#39.
 - **Where derived evidence sits.** The nutrient process's tier 2 combines a plan target, a confirmed frequency with recorded dose amounts and a substrate baseline into a reconstructed supply. The hierarchy ranks sources, not derivations, and gives such a derivation no level. Open because the derivation is the nutrient process's own and ranking it here would re-rank its ladder. Whether the nutrient process's rule that tier 2 needs recorded dose amounts changes this is not decided here.
 - **Whether the ranking is global or per question.** The existing ladders order evidence for one question and let a species prior be the lowest tier; this hierarchy places species data above site data and weather. For a question where weather decides — a frost, a heat spike — a global order may be the wrong one. Open because no process in this repository has yet needed both orders at once.
 - **Whether a common action threshold is needed.** The nutrient process proposes no dosage change when its best evidence is its tier 3 or lower, and the pest process proposes a treatment only when the identification rests on its tier 1, or on its tier 4 plus an uncontradicted tier 2; these are thresholds on two different ladders, and this spec sets none. Open because a threshold stated on the hierarchy would have to be reconciled with both, and the mapping in section E is by reading, not by running a case through both.
 - **What "recent enough" means for level 1.** The nutrient process says "when recent enough" without a threshold; no process states one per quantity. Open because the threshold depends on how fast the quantity moves (a soil moisture reading and an EC reading do not age alike) and no measured source of that exists in the record.
 - **Whether a live instance offers sources this spec marks "no source measured".** Nobody has run a `tools/list` against a reachable instance for bed, container, weather or goal tools; the server was unreachable when this spec was written. The fields stay absent until a measurement says otherwise, and finding a tool moves the field, not the contract.
 - **Whether the knowledge base is deployable.** `search_plant_knowledge` is declared and was measured unavailable; level 7 has no working source on the measured instance. Open because it is an optional component and nothing in the record says whether the operator intends to deploy it.
-- **Which artifact owns what.** `plant-context-collect` collects the context of one plant, and the context contract in section D collects the context of a garden; where one ends and the other begins, and whether the existing ladders move into a shared skill, is the audit's decision, nolte/kamerplanter-goose#39.

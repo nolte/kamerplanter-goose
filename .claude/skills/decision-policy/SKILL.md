@@ -40,7 +40,7 @@ List every item the caller holds with its source and retrieval time. An item wit
 
 ### 2. Assign each claim one level
 
-A claim that rests on two items takes the level of the weaker. A model reading of a photo has no level in this hierarchy yet; report it as a reading: it may corroborate or contradict, never decide alone, and when it meets level-8 knowledge report both without ranking them. Name that placement as an open question in the result; the spec lists it as one.
+A claim that rests on two items takes the level of the weaker. A model reading of a photo has no level in this hierarchy: report it as a reading. It may corroborate or contradict, never decide alone, and when it meets level-8 knowledge report both without ranking them. A reading a person or a recorded inspection has confirmed is level 3.
 
 ### 3. Check the six rules
 
@@ -82,11 +82,11 @@ The nutrient and pest processes keep their own ladders for their own decisions. 
 | A recorded inspection naming the organism (pest tier 1) | Level 3 |
 | Care-log pattern (nutrient tier 3) | Level 3 |
 | Catalogue fields, species demand and phase expectation (pest tier 2, nutrient tier 5) | Level 4 |
-| Visible symptoms read from an image (tier 4 in both) | No level yet |
+| Visible symptoms read from an image (tier 4 in both) | No level: a reading; level 3 once confirmed |
 | Plan target against reconstructed supply (nutrient tier 2) | No level: derived |
 | General knowledge of the taxon (pest tier 5) | Level 8 |
 
-The two cases with no level are open questions in the spec, and nothing here re-ranks either process.
+A photo reading has no level by decision; a derived supply has none because the derivation is the nutrient process's own, an open question in the spec. Nothing here re-ranks either process.
 
 ## Hard rules
 
