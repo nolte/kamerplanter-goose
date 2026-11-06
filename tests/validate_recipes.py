@@ -112,6 +112,94 @@ BULLET_PREFIX_PATTERN = re.compile(r"^\s*[-*]\s")
 BULLET_TEXT_PATTERN = re.compile(r"^\s*[-*]\s+")
 BACKTICK_SPAN_PATTERN = re.compile(r"`[^`]*`")
 TABLE_ROW_PATTERN = re.compile(r"^\s*\|")
+# A fence at ANY indent, unlike CommonMark's three spaces: a prompt nests its
+# examples inside list items, and reading too much as code is the safe
+# direction for every caller of `code_spans`.
+CODE_FENCE_PATTERN = re.compile(r"^[ \t]*(`{3,}|~{3,})")
+BACKTICK_RUN_PATTERN = re.compile(r"`+")
+
+
+def code_spans(text: str) -> list[tuple[int, int]]:
+    """Character spans of `text` that are code: fenced blocks and inline spans.
+
+    The one predicate every marker check asks "is this a mention?" with (#78,
+    #84). A fence runs from its opening line to a closing line of the same
+    character, at least as long, with nothing after it — or to the end of the
+    text when none comes. Outside fences, an inline span opens at a run of
+    backticks and closes at the next run of exactly the same length within
+    the same paragraph (a blank line or a fence ends it), as in CommonMark; a
+    run with no partner is literal text. So `Don`t` does not open a span, and
+    a single backtick inside ``a ` b`` does not close one.
+
+    Not modelled: backslash escapes, and a list item ending a paragraph. Both
+    can only read more as code than CommonMark would, and a marker read as
+    code fails a recipe — its names count as calls, its categories as
+    missing — rather than passing one.
+    """
+    spans: list[tuple[int, int]] = []
+    paragraph_start = None
+    fence: tuple[str, int, int] | None = None
+    offset = 0
+
+    def close_paragraph(end: int) -> None:
+        if paragraph_start is not None:
+            spans.extend(inline_code_spans(text, paragraph_start, end))
+
+    for line in text.split("\n"):
+        line_end = offset + len(line)
+        if fence is not None:
+            char, length, start = fence
+            stripped = line.strip()
+            if (
+                stripped
+                and set(stripped) == {char}
+                and len(stripped) >= length
+            ):
+                spans.append((start, line_end))
+                fence = None
+        elif opener := CODE_FENCE_PATTERN.match(line):
+            close_paragraph(offset)
+            paragraph_start = None
+            run = opener.group(1)
+            fence = (run[0], len(run), offset)
+        elif not line.strip():
+            close_paragraph(offset)
+            paragraph_start = None
+        elif paragraph_start is None:
+            paragraph_start = offset
+        offset = line_end + 1
+    if fence is not None:
+        spans.append((fence[2], len(text)))
+    else:
+        close_paragraph(len(text))
+    return sorted(spans)
+
+
+def inline_code_spans(text: str, start: int, end: int) -> list[tuple[int, int]]:
+    """Inline code spans of `text[start:end]`, paired by run length."""
+    runs = list(BACKTICK_RUN_PATTERN.finditer(text, start, end))
+    spans, index = [], 0
+    while index < len(runs):
+        length = len(runs[index].group())
+        partner = next(
+            (
+                later
+                for later in range(index + 1, len(runs))
+                if len(runs[later].group()) == length
+            ),
+            None,
+        )
+        if partner is None:
+            index += 1
+            continue
+        spans.append((runs[index].start(), runs[partner].end()))
+        index = partner + 1
+    return spans
+
+
+def in_code(spans: list[tuple[int, int]], position: int) -> bool:
+    """True when `position` falls inside one of `code_spans`' spans."""
+    return any(start <= position < end for start, end in spans)
 
 
 def tool_pattern(tool: str) -> re.Pattern:
@@ -148,9 +236,16 @@ def policy_spans(prompt: str, marker: str) -> list[tuple[int, int]]:
 
     Spans, not strings: excision by `str.replace` is position-blind and left an
     outer block standing whenever another sat inside it.
+
+    A marker inside code (`code_spans`) is a mention of the convention and
+    opens nothing (#78): a quoted `Forbidden by name:` followed by a name on
+    the next line used to excise that name as policy, hiding a real call.
     """
     spans = []
+    code = code_spans(prompt)
     for match in re.finditer(re.escape(marker), prompt):
+        if in_code(code, match.start()):
+            continue
         # A marker on the prompt's last line has no newline after it. Treating
         # that as "the block runs to the end" handed the whole remainder to
         # policy, prose and calls included.
@@ -256,11 +351,8 @@ def calls_state_changing_tools(
     `HA_UNCLASSIFIED_INTENTS`. A read-only recipe is read at `is_apply=False`
     (the `Forbidden by name:` marker alone); a skill at the default, both
     markers. For the sixteen, whether a skill's `Permitted by name:` block is
-    legitimate is the separate `check_permitting_skill_loads` question. For
-    the Home Assistant intents nothing answers it: `permitting_skill_loads`
-    reads a permitted block for the sixteen alone, so a skill that permits
-    `TimeTillErnte` and `time_till` by name passes this read, and a read-only
-    recipe loading it gets no finding. A known gap, not closed here.
+    legitimate is the separate `check_permitting_skill_loads` question, for
+    the sixteen and the Home Assistant intents alike (#84).
     """
     markers = POLICY_MARKERS if is_apply else READ_ONLY_MARKERS
     remainder = outside_policy(body, markers)
@@ -291,9 +383,9 @@ def missing_from_policy(
     fourteen — so demanding sixteen in the forbidden half alone would fail
     exactly the recipes that declare their writes correctly.
 
-    A tool name inside a fenced example counts as declared. That is a false
-    negative — it can only make a recipe look more complete than it is, never
-    block a correct one — and it is the benign direction to leave open.
+    A marker inside a fenced example or an inline code span declares nothing:
+    `policy_spans` skips it, so a quoted template no longer makes a recipe
+    look complete (#84; before it, this was an accepted false negative).
     """
     inside = policy_text(body, markers)
     return sorted(tool for tool in tools if not tool_pattern(tool).search(inside))
@@ -353,21 +445,22 @@ def ha_category_scopes(prompt: str) -> list[str]:
     omits them; a decimal (`0.5`) or a dotted name (`light.turn_on`) has no
     whitespace after its period and does not cut.
 
-    A marker inside a backtick span on its own line — an odd number of
-    backticks before it — is a mention of the rule, not the rule, and opens
-    nothing (#77). A span that wraps across a line is not seen; that can only
-    open a scope that should not exist, the benign direction for a keyword
-    check that the marker's words still have to satisfy.
+    A marker inside code — a fenced block or an inline span, as
+    `code_spans` decides it — is a mention of the rule, not the rule, and
+    opens nothing (#77, #84). Counting backticks on the marker's line instead
+    read a fenced example as the rule, and an apostrophe typed as a backtick
+    hid a real marker.
 
     Deliberately simpler than `policy_spans`: that one bounds a run of names,
     this one bounds prose, so a prose line continues it where it would end a
     name block.
     """
     scopes = []
+    code = code_spans(prompt)
     for match in re.finditer(re.escape(HA_CATEGORY_MARKER), prompt):
-        line_start = prompt.rfind("\n", 0, match.start()) + 1
-        if prompt[line_start:match.start()].count("`") % 2:
+        if in_code(code, match.start()):
             continue
+        line_start = prompt.rfind("\n", 0, match.start()) + 1
         marker_line = prompt[line_start:]
         marker_indent = len(marker_line) - len(marker_line.lstrip())
         item = LIST_ITEM_PATTERN.match(marker_line)
@@ -652,7 +745,7 @@ def permitting_skill_loads(
         for name, text in skills.items()
         if any(
             tool_pattern(tool).search(policy_text(text, ("Permitted by name:",)))
-            for tool in STATE_CHANGING_TOOLS
+            for tool in STATE_CHANGING_TOOLS | set(HA_UNCLASSIFIED_INTENTS)
         )
     }
 
@@ -1447,6 +1540,38 @@ WRITE_GUARD_CASES = [
         "`mcp__kamerplanter__create_site` is called at step 4.",
         ["create_site"],
     ),
+    # #78: a marker quoted as code is a mention and opens no block, so the
+    # names after it stay calls.
+    (
+        "a backticked marker does not hide the call on the next line",
+        "  - Quote the marker `Forbidden by name:`\n"
+        "    `mcp__kamerplanter__archive_plant`",
+        ["archive_plant"],
+    ),
+    (
+        "a marker inside a double-backtick span opens no block",
+        "  - Write ``Forbidden by name:``\n"
+        "    `mcp__kamerplanter__archive_plant`",
+        ["archive_plant"],
+    ),
+    (
+        "a marker inside a fenced example opens no block",
+        "  ```\n"
+        "  Forbidden by name:\n"
+        "  ```\n"
+        "  `mcp__kamerplanter__archive_plant`",
+        ["archive_plant"],
+    ),
+    (
+        # As in CommonMark, the stray backtick pairs with the next single one
+        # in the paragraph — before a policy marker that is always the first
+        # name's — so the marker sits in code. The safe direction: the name
+        # reads as a call, and the recipe fails instead of passing.
+        "a stray backtick pairs with the next run in the paragraph",
+        "  - Don`t call these. Forbidden by name:\n"
+        "    `mcp__kamerplanter__archive_plant`.",
+        ["archive_plant"],
+    ),
 ]
 
 
@@ -1519,12 +1644,13 @@ COMPLETENESS_CASES = [
         sorted(STATE_CHANGING_TOOLS),
     ),
     (
-        "a fenced example counts as declared — the one way to silence this",
+        # Accepted as a false negative until #84; `code_spans` closes it.
+        "a fenced example does not count as declared",
         "This recipe declares no policy of its own. It prints the template:\n"
         "```\n"
         f"Forbidden by name: {ALL_SIXTEEN}.\n"
         "```\n",
-        [],
+        sorted(STATE_CHANGING_TOOLS),
     ),
     (
         "a conjunction before the last name leaves it outside the block",
@@ -1917,6 +2043,19 @@ PERMITTING_LOAD_CASES = [
         {"claimer": PERMITTING_SKILL},
         [],
     ),
+    # #84: a permitted Home Assistant intent is a write for this bound too.
+    (
+        "a skill permitting the Home Assistant intents fails a read-only load",
+        {"read-check.yaml": (False, "Load the skill `timer`.")},
+        {"timer": "## Hard rules\n\n- Permitted by name: `TimeTillErnte`, `time_till`.\n"},
+        [("read-check.yaml", "timer")],
+    ),
+    (
+        "the same skill loaded by an -apply recipe passes",
+        {"timer-apply.yaml": (True, "Load the skill `timer`.")},
+        {"timer": "## Hard rules\n\n- Permitted by name: `TimeTillErnte`, `time_till`.\n"},
+        [],
+    ),
 ]
 
 
@@ -2201,6 +2340,58 @@ HA_CATEGORY_CASES = [
         "  sets a value, or runs a script or scene. Never trigger an automation.",
         1,
         ["automation"],
+    ),
+    # #84: whether a marker is code is decided by `code_spans`, not by
+    # counting backticks on its line.
+    (
+        "a marker inside a fenced example opens no scope",
+        "  Step 1 - read the state.\n"
+        "\n"
+        "  ```\n"
+        "  Forbidden on Home Assistant: on or off, value, script, scene, automation.\n"
+        "  ```",
+        0,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "a marker inside a tilde fence in a list item opens no scope",
+        "  - Example:\n"
+        "\n"
+        "        ~~~\n"
+        "        Forbidden on Home Assistant: on or off, value, script, scene, automation.\n"
+        "        ~~~",
+        0,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "a marker after a closed fence opens its scope",
+        "  ```\n"
+        "  example\n"
+        "  ```\n"
+        "  - Forbidden on Home Assistant: on or off, value, script, scene, automation.",
+        1,
+        [],
+    ),
+    (
+        "an unmatched backtick before the marker is literal text",
+        "  - Don`t do it. Forbidden on Home Assistant: on or off, value, script,\n"
+        "    scene, automation.",
+        1,
+        [],
+    ),
+    (
+        "a marker inside a double-backtick span opens no scope",
+        "  - Quote it as ``Forbidden on Home Assistant: on or off, value, script,\n"
+        "    scene, automation.``",
+        0,
+        sorted(HA_CATEGORY_TERMS),
+    ),
+    (
+        "a single backtick inside a double-backtick span does not close it",
+        "  - Quote ``a ` b`` then Forbidden on Home Assistant: on or off, value,\n"
+        "    script, scene, automation.",
+        1,
+        [],
     ),
 ]
 
