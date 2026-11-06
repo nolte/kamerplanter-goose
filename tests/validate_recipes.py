@@ -33,6 +33,11 @@ RECIPES_DIR = REPO_ROOT / "recipes"
 EXTENSIONS_FILE = REPO_ROOT / "extensions.yaml"
 SKILLS_DIR = REPO_ROOT / ".claude" / "skills"
 
+# The Agent Skills format's limit on a skill's `description`. No tighter
+# repository budget: a run's skill listing showed 5 of the 32 project
+# descriptions, and which ones did not follow their length (#89).
+SKILL_DESCRIPTION_LIMIT = 1024
+
 TOOLS_SNAPSHOT = REPO_ROOT / "tests" / "kamerplanter-tools-list.json"
 
 # The two inputSchema keys that mark a Kamerplanter MCP tool as state-changing.
@@ -1302,6 +1307,19 @@ def check_skills(findings: Findings) -> None:
                 f".claude/skills/{skill_file.parent.name}",
                 "carries `disable-model-invocation: true`, which makes it "
                 "invisible to every non-interactive recipe run.",
+            )
+        description = frontmatter.get("description")
+        if not (isinstance(description, str) and description.strip()):
+            findings.error(
+                f".claude/skills/{skill_file.parent.name}",
+                "has no `description` in its frontmatter.",
+            )
+        elif len(description) > SKILL_DESCRIPTION_LIMIT:
+            findings.error(
+                f".claude/skills/{skill_file.parent.name}",
+                f"has a {len(description)}-character `description`; the Agent "
+                f"Skills format allows {SKILL_DESCRIPTION_LIMIT}. Move the "
+                "detail into the body.",
             )
         missing = skill_missing_tools(text)
         if missing:
