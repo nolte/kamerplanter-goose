@@ -8,5 +8,5 @@
 #   - tests/validate_recipes.py  -> PyYAML
 #
 # The docs-build toolchain (MkDocs plus plugins) stays in docs/requirements.txt.
-PyYAML==6.0.3
+PyYAML==6.0.4
 pre-commit>=4.4,<5
