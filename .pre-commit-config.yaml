@@ -53,6 +53,6 @@ repos:
         # additional_dependencies, so a bump there would leave the Pre-commit
         # job and every local commit on the old wheel while Recipe contract
         # runs the new one. Both are required checks.
-        additional_dependencies: ["PyYAML==6.0.3"]
+        additional_dependencies: ["PyYAML==6.0.4"]
         files: '^(recipes/|\.claude/skills/|\.claude/agents/|\.agents/agents/|tests/validate_recipes\.py$|extensions\.yaml$)'
         pass_filenames: false
